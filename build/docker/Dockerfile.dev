@@ -1,0 +1,5 @@
+FROM golang:1.26.1-alpine
+
+RUN apk add --no-cache build-base
+WORKDIR /src
+ENTRYPOINT ["go"]
