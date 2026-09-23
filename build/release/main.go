@@ -34,6 +34,7 @@ func packageWindows(directory, version string) error {
 	}{
 		{"MyApp/myapp.exe", 0o755, mustRead(filepath.Join(directory, "myapp-windows-amd64.exe"))},
 		{"MyApp/install.ps1", 0o644, []byte(windowsInstall)},
+		{"MyApp/myapp-gui.ps1", 0o644, []byte(windowsGUI)},
 		{"MyApp/uninstall.ps1", 0o644, []byte(windowsUninstall)},
 		{"MyApp/README.txt", 0o644, []byte(releaseReadme)},
 	}
@@ -54,8 +55,10 @@ func packageWindows(directory, version string) error {
 
 func packageMac(directory, version string) error {
 	files := []tarFile{
-		{"MyApp.app/Contents/MacOS/myapp", 0o755, mustRead(filepath.Join(directory, "myapp-macos-arm64"))},
+		{"MyApp.app/Contents/MacOS/myapp", 0o755, []byte(macLauncher)},
 		{"MyApp.app/Contents/Info.plist", 0o644, []byte(fmt.Sprintf(infoPlist, version, version))},
+		{"MyApp.app/Contents/Resources/myapp-bin", 0o755, mustRead(filepath.Join(directory, "myapp-macos-arm64"))},
+		{"MyApp.app/Contents/Resources/myapp-gui.command", 0o755, []byte(macGUI)},
 		{"MyApp.app/Contents/Resources/README.txt", 0o644, []byte(releaseReadme)},
 	}
 	return writeTarGZ(filepath.Join(directory, "MyApp-"+version+"-macos-arm64.tar.gz"), files)
@@ -65,6 +68,7 @@ func packageLinux(directory, version, architecture string) error {
 	files := []tarFile{
 		{"MyApp/myapp", 0o755, mustRead(filepath.Join(directory, "myapp-linux-"+architecture))},
 		{"MyApp/install.sh", 0o755, []byte(linuxInstall)},
+		{"MyApp/myapp-gui", 0o755, []byte(linuxGUI)},
 		{"MyApp/uninstall.sh", 0o755, []byte(linuxUninstall)},
 		{"MyApp/README.txt", 0o644, []byte(releaseReadme)},
 	}
@@ -120,7 +124,8 @@ func joinClose(errors ...error) error {
 
 const releaseReadme = `MyApp 0.1 alpha
 
-这是开发验证版本。请先运行 identity init、config init 和 pair，再在受控电脑运行 serve，在主电脑运行 control。
+这是开发验证版本。安装后运行 myapp gui（或随包提供的 myapp-gui 启动脚本）打开控制中心。首次启动可在页面初始化身份和配置；配对仍可通过 CLI 完成。
+请先完成配对，再在受控电脑运行 serve，在主电脑运行 control。
 macOS 需要在系统设置中授予辅助功能和输入监控权限。Linux X11 需要 xclip；Wayland 需要 wl-clipboard，键鼠控制当前要求 X11。
 `
 
@@ -128,7 +133,11 @@ const windowsInstall = `$ErrorActionPreference = "Stop"
 $target = Join-Path $env:LOCALAPPDATA "MyApp"
 New-Item -ItemType Directory -Force -Path $target | Out-Null
 Copy-Item (Join-Path $PSScriptRoot "myapp.exe") (Join-Path $target "myapp.exe") -Force
+Set-Content -Path (Join-Path $target "myapp-gui.ps1") -Value ('& "' + $target + '\\myapp.exe" gui')
 Write-Host "MyApp installed to $target"
+`
+
+const windowsGUI = `& "$env:LOCALAPPDATA\\MyApp\\myapp.exe" gui
 `
 
 const windowsUninstall = `$ErrorActionPreference = "Stop"
@@ -143,12 +152,35 @@ target="${HOME}/.local/bin"
 mkdir -p "$target"
 cp "$(dirname "$0")/myapp" "$target/myapp"
 chmod 755 "$target/myapp"
+cat > "$target/myapp-gui" <<'EOF'
+#!/bin/sh
+exec "$(dirname "$0")/myapp" gui "$@"
+EOF
+chmod 755 "$target/myapp-gui"
 printf 'MyApp installed to %s\n' "$target/myapp"
+`
+
+const linuxGUI = `#!/bin/sh
+exec "$(dirname "$0")/myapp" gui "$@"
+`
+
+const macGUI = `#!/bin/sh
+exec "$(dirname "$0")/myapp-bin" gui "$@"
+`
+
+const macLauncher = `#!/bin/sh
+set -eu
+directory="$(dirname "$0")"
+"$directory/../Resources/myapp-bin" gui "$@" >/tmp/myapp-gui.log 2>&1 &
+pid=$!
+open http://127.0.0.1:24880
+wait "$pid"
 `
 
 const linuxUninstall = `#!/bin/sh
 set -eu
 rm -f "${HOME}/.local/bin/myapp"
+rm -f "${HOME}/.local/bin/myapp-gui"
 printf 'MyApp removed\n'
 `
 

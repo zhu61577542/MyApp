@@ -2,4 +2,5 @@
 dist/
 work/
 *.log
+.codegraph
 coverage.out

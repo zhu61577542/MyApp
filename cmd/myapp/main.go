@@ -48,6 +48,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		err = runServe(args[1:], stdout, stderr)
 	case "control":
 		err = runControl(args[1:], stdout, stderr)
+	case "gui":
+		err = runNativeGUI(args[1:], stdout, stderr)
+	case "gui-web":
+		err = runGUI(args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		usage(stdout)
 	default:
@@ -211,7 +215,7 @@ func runIdentity(args []string, stdout, stderr io.Writer) error {
 }
 
 func usage(writer io.Writer) {
-	fmt.Fprintln(writer, "用法: myapp <version|config|identity|pair|serve|control>")
+	fmt.Fprintln(writer, "用法: myapp <version|config|identity|pair|serve|control|gui|gui-web>")
 }
 
 func defaultConfigPath() string {
