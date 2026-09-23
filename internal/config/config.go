@@ -27,9 +27,15 @@ type Config struct {
 	Role          Role            `json:"role"`
 	ListenAddress string          `json:"listen_address"`
 	MaxDevices    int             `json:"max_devices"`
+	Peers         []Peer          `json:"peers,omitempty"`
 	Switch        SwitchConfig    `json:"switch"`
 	Clipboard     ClipboardConfig `json:"clipboard"`
 	Files         FileConfig      `json:"files"`
+}
+
+type Peer struct {
+	ID      string `json:"id"`
+	Address string `json:"address"`
 }
 
 type SwitchConfig struct {
@@ -80,6 +86,17 @@ func (c Config) Validate() error {
 	}
 	if c.MaxDevices < 2 || c.MaxDevices > 3 {
 		problems = append(problems, errors.New("max_devices 必须在 2 到 3 之间，并包含本机"))
+	}
+	if len(c.Peers)+1 > c.MaxDevices || c.Role == RoleAgent && len(c.Peers) > 0 {
+		problems = append(problems, errors.New("peers 只能配置在主电脑且总设备数不能超过 max_devices"))
+	}
+	seen := make(map[string]bool)
+	for _, peer := range c.Peers {
+		host, port, err := net.SplitHostPort(peer.Address)
+		if peer.ID == "" || seen[peer.ID] || err != nil || host == "" || port == "" || port == "0" {
+			problems = append(problems, errors.New("peers 必须包含不重复的设备 ID 和有效地址"))
+		}
+		seen[peer.ID] = true
 	}
 	if c.Switch.Mode != "edge" {
 		problems = append(problems, errors.New("switch.mode 第一版必须是 edge"))

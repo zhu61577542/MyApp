@@ -26,7 +26,9 @@ cleanup() {
     done
     rm -rf "$root"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 go build -o "$root/myapp" ./cmd/myapp
 controller_id=$("$root/myapp" identity init -dir "$root/controller/identity" -name controller)
@@ -79,6 +81,39 @@ sleep 0.8
 DISPLAY=:99 xdotool mousemove 600 400
 DISPLAY=:99 xdotool key a
 sleep 0.3
+
+printf 'MyApp 中文同步' | DISPLAY=:99 xclip -selection clipboard -in
+attempt=0
+while [ "$(DISPLAY=:98 xclip -selection clipboard -out 2>/dev/null || true)" != 'MyApp 中文同步' ]; do
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 50 ] || exit 1
+    sleep 0.1
+done
+mkdir -p "$root/source/empty"
+printf 'file content' > "$root/source/中文.txt"
+: > "$root/source/zero.txt"
+printf 'file://%s/source\r\n' "$root" | DISPLAY=:99 xclip -selection clipboard -t text/uri-list -in
+attempt=0
+while :; do
+    received_uri=$(DISPLAY=:98 xclip -selection clipboard -t text/uri-list -out 2>/dev/null | tr -d '\r\n' || true)
+    case "$received_uri" in
+        "file://$root/agent/cache/files/"*) break ;;
+    esac
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 50 ] || exit 1
+    sleep 0.1
+done
+received_path=${received_uri#file://}
+cmp "$root/source/中文.txt" "$received_path/中文.txt"
+test -d "$received_path/empty"
+test -f "$received_path/zero.txt"
+printf '反向复制成功' | DISPLAY=:98 xclip -selection clipboard -in
+attempt=0
+while [ "$(DISPLAY=:99 xclip -selection clipboard -out 2>/dev/null || true)" != '反向复制成功' ]; do
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 50 ] || exit 1
+    sleep 0.1
+done
 DISPLAY=:99 xdotool key ctrl+alt+Escape
 wait "$control_pid"
 control_pid=""
@@ -91,3 +126,4 @@ if ! grep -A 8 'KeyPress event' "$root/xev.log" | grep -q 'keysym 0x61, a'; then
 fi
 
 printf 'PASS: paired controller %s with agent %s and delivered key a through MyApp TLS session\n' "$controller_id" "$agent_id"
+printf 'PASS: text and directory clipboard transferred through the CLI session\n'

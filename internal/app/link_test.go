@@ -30,6 +30,9 @@ func TestLinkTransfersDirectoryAndPublishesTopLevelPath(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(sourceDirectory, "内容.txt"), []byte("hello 文件"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(sourceDirectory, "empty.txt"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
 	sender, _ := NewLink(nil, nil)
 	receiver, _ := NewLink(nil, nil)
 	ready := make(chan []string, 1)
@@ -57,6 +60,9 @@ func TestLinkTransfersDirectoryAndPublishesTopLevelPath(t *testing.T) {
 		if err != nil || string(content) != "hello 文件" {
 			t.Fatalf("接收文件=%q err=%v", content, err)
 		}
+		if info, err := os.Stat(filepath.Join(paths[0], "empty.txt")); err != nil || info.Size() != 0 {
+			t.Fatalf("空文件未正确接收: %v", err)
+		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("文件传输超时")
 	}
@@ -79,6 +85,30 @@ func (i *recordingInjector) ReleaseAll() error {
 }
 
 func (i *recordingInjector) Close() error { return nil }
+
+func TestLinkCancellationClosesBlockedConnection(t *testing.T) {
+	injector := &recordingInjector{}
+	link, _ := NewLink(injector, nil)
+	client, server := net.Pipe()
+	defer server.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- link.Run(ctx, client) }()
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("取消后仍阻塞在连接读写")
+	}
+	if _, err := server.Write([]byte{1}); err == nil {
+		t.Fatal("取消后连接仍可写入")
+	}
+	injector.mu.Lock()
+	defer injector.mu.Unlock()
+	if injector.releases != 1 {
+		t.Fatalf("释放次数 = %d", injector.releases)
+	}
+}
 
 func TestLinkDeliversInputAndReleasesOnDisconnect(t *testing.T) {
 	injector := &recordingInjector{}
@@ -111,7 +141,7 @@ func TestLinkDeliversInputAndReleasesOnDisconnect(t *testing.T) {
 	_ = client.Close()
 	_ = server.Close()
 	for range 2 {
-		if err := <-done; err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, net.ErrClosed) && !errors.Is(err, io.ErrClosedPipe) {
+		if err := <-done; err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, net.ErrClosed) && !errors.Is(err, io.ErrClosedPipe) && !errors.Is(err, io.EOF) {
 			t.Fatalf("Run() = %v", err)
 		}
 	}

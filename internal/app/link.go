@@ -19,6 +19,7 @@ import (
 
 type Link struct {
 	writer       *transport.PriorityWriter
+	bulkWriter   *transport.PriorityWriter
 	injector     common.Injector
 	clipboard    *clipboard.Synchronizer
 	sequence     uint64
@@ -27,6 +28,16 @@ type Link struct {
 	transferRoot string
 	incoming     map[uint64]*incomingTransfer
 	filesReady   func(context.Context, []string) error
+	textReceived func(context.Context, clipboard.Entry) error
+	disconnected func(error)
+}
+
+// 仅在启动 Run 前设置。
+func (l *Link) SetDisconnectHandler(handler func(error)) { l.disconnected = handler }
+
+// 仅在启动 Run 前设置。
+func (l *Link) SetTextReceiver(receive func(context.Context, clipboard.Entry) error) {
+	l.textReceived = receive
 }
 
 type incomingTransfer struct {
@@ -42,6 +53,15 @@ func NewLink(injector common.Injector, clipboardSync *clipboard.Synchronizer) (*
 		return nil, err
 	}
 	return &Link{writer: writer, injector: injector, clipboard: clipboardSync, incoming: make(map[uint64]*incomingTransfer)}, nil
+}
+
+func NewSplitLink(injector common.Injector, clipboardSync *clipboard.Synchronizer) (*Link, error) {
+	link, err := NewLink(injector, clipboardSync)
+	if err != nil {
+		return nil, err
+	}
+	link.bulkWriter, err = transport.NewPriorityWriter(1, 16, protocol.DefaultMaxPayload)
+	return link, err
 }
 
 func (l *Link) EnableTransfers(cacheRoot string, filesReady func(context.Context, []string) error) error {
@@ -154,31 +174,74 @@ func (l *Link) SendFiles(ctx context.Context, transferID string, sources []trans
 	return l.enqueueStream(ctx, transport.PriorityBulk, protocol.TypeFileCommit, streamID, nil)
 }
 
-func (l *Link) Run(ctx context.Context, connection io.ReadWriter) error {
+func (l *Link) Run(ctx context.Context, connection io.ReadWriteCloser) error {
+	return l.run(ctx, connection, nil)
+}
+
+func (l *Link) RunChannels(ctx context.Context, realtime, bulk io.ReadWriteCloser) error {
+	if bulk == nil || l.bulkWriter == nil {
+		return errors.New("独立传输通道未配置")
+	}
+	return l.run(ctx, realtime, bulk)
+}
+
+func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	monitor, err := transport.NewHeartbeatMonitor(2*time.Second, time.Now())
+	monitor, err := transport.NewHeartbeatMonitor(750*time.Millisecond, time.Now())
 	if err != nil {
 		return err
 	}
 	errorsChannel := make(chan error, 3)
+	bulkErrors := make(chan error, 2)
+	realtimeRemaining, bulkRemaining := 3, 0
+	channel := transport.Channel("")
+	if bulk != nil {
+		channel = transport.ChannelRealtime
+		bulkRemaining = 2
+		go func() { bulkErrors <- l.bulkWriter.Run(ctx, bulk) }()
+		go func() { bulkErrors <- l.readChannel(ctx, bulk, monitor, transport.ChannelBulk) }()
+	}
 	go func() { errorsChannel <- l.writer.Run(ctx, connection) }()
-	go func() { errorsChannel <- l.read(ctx, connection, monitor) }()
+	go func() { errorsChannel <- l.readChannel(ctx, connection, monitor, channel) }()
 	go func() {
-		errorsChannel <- transport.RunHeartbeat(ctx, monitor, 500*time.Millisecond, func(frame protocol.Frame) error {
+		errorsChannel <- transport.RunHeartbeat(ctx, monitor, 100*time.Millisecond, func(frame protocol.Frame) error {
 			return l.writer.Enqueue(ctx, transport.PriorityRealtime, frame)
 		})
 	}()
-	err = <-errorsChannel
+	select {
+	case err = <-errorsChannel:
+		realtimeRemaining--
+	case err = <-bulkErrors:
+		bulkRemaining--
+	}
+	if l.disconnected != nil {
+		l.disconnected(err)
+	}
 	cancel()
+	_ = connection.Close()
+	if bulk != nil {
+		_ = bulk.Close()
+	}
+	for range realtimeRemaining {
+		<-errorsChannel
+	}
 	if l.injector != nil {
 		err = errors.Join(err, l.injector.ReleaseAll())
+	}
+	for range bulkRemaining {
+		<-bulkErrors
 	}
 	return err
 }
 
 func (l *Link) read(ctx context.Context, connection io.Reader, monitor *transport.HeartbeatMonitor) error {
+	return l.readChannel(ctx, connection, monitor, "")
+}
+
+func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *transport.HeartbeatMonitor, channel transport.Channel) error {
 	decoder := protocol.Decoder{MaxPayload: protocol.DefaultMaxPayload}
+	var lastInputSequence uint64
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -187,6 +250,10 @@ func (l *Link) read(ctx context.Context, connection io.Reader, monitor *transpor
 		if err != nil {
 			return err
 		}
+		realtime := frame.Type == protocol.TypeInput || frame.Type == protocol.TypeReleaseAll || frame.Type == protocol.TypeHeartbeat
+		if channel == transport.ChannelRealtime && !realtime || channel == transport.ChannelBulk && realtime {
+			return errors.New("消息类型与会话通道不匹配")
+		}
 		switch frame.Type {
 		case protocol.TypeHeartbeat:
 			if _, err := transport.ParseHeartbeat(frame); err != nil {
@@ -194,6 +261,9 @@ func (l *Link) read(ctx context.Context, connection io.Reader, monitor *transpor
 			}
 			monitor.Observe(time.Now())
 		case protocol.TypeInput:
+			if len(frame.Payload) != common.WireSize {
+				return errors.New("输入事件长度无效")
+			}
 			if l.injector == nil {
 				return errors.New("本机会话不接受输入注入")
 			}
@@ -201,6 +271,10 @@ func (l *Link) read(ctx context.Context, connection io.Reader, monitor *transpor
 			if err != nil {
 				return err
 			}
+			if event.Sequence <= lastInputSequence {
+				return errors.New("输入事件重复或序号倒退")
+			}
+			lastInputSequence = event.Sequence
 			if err := l.injector.Inject(event); err != nil {
 				return err
 			}
@@ -212,7 +286,7 @@ func (l *Link) read(ctx context.Context, connection io.Reader, monitor *transpor
 				return err
 			}
 		case protocol.TypeClipboard:
-			if l.clipboard == nil {
+			if l.clipboard == nil && l.textReceived == nil {
 				return errors.New("本机会话未启用剪贴板")
 			}
 			var entry clipboard.Entry
@@ -225,8 +299,17 @@ func (l *Link) read(ctx context.Context, connection io.Reader, monitor *transpor
 			if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
 				return errors.New("剪贴板消息包含多余数据")
 			}
-			if _, err := l.clipboard.Apply(ctx, entry); err != nil {
+			if err := entry.Validate(); err != nil {
 				return err
+			}
+			if l.textReceived != nil {
+				if err := l.textReceived(ctx, entry); err != nil {
+					return err
+				}
+			} else {
+				if _, err := l.clipboard.Apply(ctx, entry); err != nil {
+					return err
+				}
 			}
 		case protocol.TypeFileManifest, protocol.TypeFileManifestEnd, protocol.TypeFileChunk, protocol.TypeFileComplete, protocol.TypeFileCommit, protocol.TypeFileCancel:
 			if err := l.handleFileFrame(ctx, frame); err != nil {
@@ -253,6 +336,9 @@ func (l *Link) nextStreamID() uint64 {
 }
 
 func (l *Link) enqueueStream(ctx context.Context, priority transport.Priority, messageType protocol.MessageType, streamID uint64, payload []byte) error {
+	if priority == transport.PriorityBulk && l.bulkWriter != nil {
+		return l.bulkWriter.Enqueue(ctx, priority, protocol.Frame{Type: messageType, Flags: protocol.FlagCritical, StreamID: streamID, Payload: payload})
+	}
 	return l.writer.Enqueue(ctx, priority, protocol.Frame{Type: messageType, Flags: protocol.FlagCritical, StreamID: streamID, Payload: payload})
 }
 
@@ -308,6 +394,14 @@ func (l *Link) handleFileFrame(ctx context.Context, frame protocol.Frame) error 
 	case protocol.TypeFileComplete:
 		if state == nil || state.receiver == nil {
 			return errors.New("文件完成消息无效")
+		}
+		for _, entry := range state.manifest.Entries {
+			if entry.Path == string(frame.Payload) && entry.Type == transfer.File && entry.Size == 0 {
+				if _, err := state.receiver.Write(entry.Path, 0, bytes.NewReader(nil)); err != nil {
+					return err
+				}
+				break
+			}
 		}
 		return state.receiver.CompleteFile(string(frame.Payload))
 	case protocol.TypeFileCommit:

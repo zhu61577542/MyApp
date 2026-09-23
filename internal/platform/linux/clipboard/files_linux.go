@@ -36,6 +36,25 @@ func NewFiles() (*FileBackend, error) {
 }
 
 func (b *FileBackend) ReadFiles(ctx context.Context) ([]string, uint64, bool, error) {
+	var formats []byte
+	var err error
+	if b.readCommand[0] == "xclip" {
+		formats, err = exec.CommandContext(ctx, "xclip", "-selection", "clipboard", "-t", "TARGETS", "-out").Output()
+	} else {
+		formats, err = exec.CommandContext(ctx, "wl-paste", "--list-types").Output()
+	}
+	if err != nil {
+		return nil, 0, false, ctx.Err()
+	}
+	found := false
+	for _, format := range strings.Fields(string(formats)) {
+		if format == "text/uri-list" {
+			found = true
+		}
+	}
+	if !found {
+		return nil, 0, false, nil
+	}
 	data, err := exec.CommandContext(ctx, b.readCommand[0], b.readCommand[1:]...).Output()
 	if err != nil {
 		return nil, 0, false, nil

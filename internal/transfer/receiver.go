@@ -9,10 +9,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
-
-const stateFilename = ".myapp-transfer.json"
 
 type Receiver struct {
 	mu       sync.Mutex
@@ -50,7 +49,13 @@ func NewReceiver(cacheRoot string, manifest Manifest) (*Receiver, error) {
 	receiver := newReceiverState(root, partial, final, manifest)
 	for _, entry := range manifest.Entries {
 		if entry.Type == Directory {
-			if err := os.MkdirAll(receiver.path(entry.Path), os.FileMode(entry.Mode)); err != nil {
+			dataRoot, err := receiver.openData()
+			if err != nil {
+				return nil, err
+			}
+			err = dataRoot.MkdirAll(filepath.FromSlash(entry.Path), 0700)
+			dataRoot.Close()
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -70,7 +75,12 @@ func LoadReceiver(cacheRoot, transferID string) (*Receiver, error) {
 		return nil, err
 	}
 	partial := filepath.Join(root, ".partial-"+transferID)
-	data, err := os.ReadFile(filepath.Join(partial, stateFilename))
+	cache, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, err
+	}
+	defer cache.Close()
+	data, err := cache.ReadFile(".state-" + transferID + ".json")
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +99,7 @@ func LoadReceiver(cacheRoot, transferID string) (*Receiver, error) {
 	if err := envelope.Manifest.Validate(); err != nil {
 		return nil, err
 	}
-	info, err := os.Lstat(partial)
+	info, err := cache.Lstat(filepath.Base(partial))
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return nil, errors.New("传输临时目录无效")
 	}
@@ -111,7 +121,15 @@ func (r *Receiver) ResumeOffset(relative string) (int64, error) {
 	if !exists || entry.Type != File {
 		return 0, errors.New("文件不在传输清单中")
 	}
-	info, err := os.Stat(r.path(relative))
+	dataRoot, err := r.openData()
+	if err != nil {
+		return 0, err
+	}
+	defer dataRoot.Close()
+	if err := rejectLinks(dataRoot, relative); err != nil {
+		return 0, err
+	}
+	info, err := dataRoot.Stat(filepath.FromSlash(relative))
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, nil
 	}
@@ -134,11 +152,19 @@ func (r *Receiver) Write(relative string, offset int64, reader io.Reader) (int64
 	if offset < 0 || offset > entry.Size {
 		return 0, errors.New("文件偏移无效")
 	}
-	filename := r.path(relative)
-	if err := os.MkdirAll(filepath.Dir(filename), 0o700); err != nil {
+	dataRoot, err := r.openData()
+	if err != nil {
 		return 0, err
 	}
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0o600)
+	defer dataRoot.Close()
+	if err := rejectLinks(dataRoot, relative); err != nil {
+		return 0, err
+	}
+	filename := filepath.FromSlash(relative)
+	if err := dataRoot.MkdirAll(filepath.Dir(filename), 0o700); err != nil {
+		return 0, err
+	}
+	file, err := dataRoot.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return 0, err
 	}
@@ -149,6 +175,9 @@ func (r *Receiver) Write(relative string, offset int64, reader io.Reader) (int64
 	}
 	if info.Size() != offset {
 		return 0, fmt.Errorf("续传偏移不匹配: 本地 %d，请求 %d", info.Size(), offset)
+	}
+	if !info.Mode().IsRegular() {
+		return 0, errors.New("接收目标不是普通文件")
 	}
 	if _, err := file.Seek(offset, io.SeekStart); err != nil {
 		return 0, err
@@ -171,33 +200,54 @@ func (r *Receiver) CompleteFile(relative string) error {
 	if !exists || entry.Type != File {
 		return errors.New("文件不在传输清单中")
 	}
-	filename := r.path(relative)
-	info, err := os.Stat(filename)
+	dataRoot, err := r.openData()
 	if err != nil {
 		return err
 	}
-	if info.Size() != entry.Size {
+	defer dataRoot.Close()
+	if err := rejectLinks(dataRoot, relative); err != nil {
+		return err
+	}
+	filename := filepath.FromSlash(relative)
+	file, err := dataRoot.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() || info.Size() != entry.Size {
 		return fmt.Errorf("文件长度不匹配: %s", relative)
 	}
-	hash, err := hashFile(filename)
+	hash, err := hashReader(file)
 	if err != nil {
 		return err
 	}
 	if hash != entry.SHA256 {
 		return fmt.Errorf("文件哈希不匹配: %s", relative)
 	}
-	if err := os.Chmod(filename, os.FileMode(entry.Mode)); err != nil {
+	if err := file.Chmod(os.FileMode(entry.Mode) & 0777); err != nil {
 		return err
 	}
-	return os.Chtimes(filename, entry.ModifiedAt, entry.ModifiedAt)
+	return nil
 }
 
 func (r *Receiver) Commit() (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	dataRoot, err := r.openData()
+	if err != nil {
+		return "", err
+	}
+	defer dataRoot.Close()
 	for _, entry := range r.manifest.Entries {
-		filename := r.path(entry.Path)
-		info, err := os.Stat(filename)
+		if err := rejectLinks(dataRoot, entry.Path); err != nil {
+			return "", err
+		}
+		filename := filepath.FromSlash(entry.Path)
+		info, err := dataRoot.Stat(filename)
 		if err != nil {
 			return "", err
 		}
@@ -210,33 +260,50 @@ func (r *Receiver) Commit() (string, error) {
 		if !info.Mode().IsRegular() || info.Size() != entry.Size {
 			return "", fmt.Errorf("文件尚未完成: %s", entry.Path)
 		}
-		hash, err := hashFile(filename)
+		file, err := dataRoot.Open(filename)
+		if err != nil {
+			return "", err
+		}
+		hash, err := hashReader(file)
+		file.Close()
 		if err != nil || hash != entry.SHA256 {
 			return "", fmt.Errorf("文件校验失败: %s", entry.Path)
 		}
 	}
-	if err := os.Remove(filepath.Join(r.partial, stateFilename)); err != nil && !errors.Is(err, os.ErrNotExist) {
+	cache, err := os.OpenRoot(r.root)
+	if err != nil {
 		return "", err
 	}
-	if _, err := os.Stat(r.final); err == nil {
+	defer cache.Close()
+	if _, err := cache.Lstat(filepath.Base(r.final)); err == nil {
 		return "", errors.New("目标传输缓存已存在")
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
-	if err := os.Rename(r.partial, r.final); err != nil {
+	dataRoot.Close()
+	if err := cache.Rename(filepath.Base(r.partial), filepath.Base(r.final)); err != nil {
 		return "", err
 	}
+	_ = cache.Remove(".state-" + r.manifest.TransferID + ".json")
 	return r.final, nil
 }
 
 func (r *Receiver) Cancel() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return os.RemoveAll(r.partial)
-}
-
-func (r *Receiver) path(relative string) string {
-	return filepath.Join(r.partial, filepath.FromSlash(relative))
+	cache, err := os.OpenRoot(r.root)
+	if err != nil {
+		return err
+	}
+	defer cache.Close()
+	if err := cache.RemoveAll(filepath.Base(r.partial)); err != nil {
+		return err
+	}
+	err = cache.Remove(".state-" + r.manifest.TransferID + ".json")
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func (r *Receiver) saveState() error {
@@ -250,10 +317,66 @@ func (r *Receiver) saveState() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(r.partial, stateFilename), data, 0o600)
+	cache, err := os.OpenRoot(r.root)
+	if err != nil {
+		return err
+	}
+	defer cache.Close()
+	file, err := cache.OpenFile(".state-"+r.manifest.TransferID+".json", os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return err
+	}
+	_, writeErr := file.Write(data)
+	return errors.Join(writeErr, file.Sync(), file.Close())
+}
+
+func (r *Receiver) openData() (*os.Root, error) {
+	cache, err := os.OpenRoot(r.root)
+	if err != nil {
+		return nil, err
+	}
+	defer cache.Close()
+	name := filepath.Base(r.partial)
+	info, err := cache.Lstat(name)
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return nil, errors.New("缓存数据目录无效")
+	}
+	return cache.OpenRoot(name)
+}
+
+func rejectLinks(root *os.Root, relative string) error {
+	if err := ValidateRelativePath(relative); err != nil {
+		return err
+	}
+	var current string
+	for _, component := range strings.Split(relative, "/") {
+		current = filepath.Join(current, component)
+		info, err := root.Lstat(current)
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return errors.New("接收路径包含符号链接")
+		}
+	}
+	return nil
+}
+
+func hashReader(reader io.Reader) (string, error) {
+	hash := sha256.New()
+	if _, err := io.Copy(hash, reader); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func within(root, target string) bool {
 	relative, err := filepath.Rel(root, target)
-	return err == nil && relative != ".." && !filepath.IsAbs(relative) && relative != "" && relative[:1] != string(filepath.Separator)
+	return err == nil && relative != "." && filepath.IsLocal(relative)
 }

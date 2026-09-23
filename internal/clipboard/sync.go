@@ -14,6 +14,28 @@ type Backend interface {
 
 type Publisher func(context.Context, Entry) error
 
+var ErrNoText = errors.New("剪贴板当前不是纯文字")
+
+type FileDetector interface {
+	ReadFiles(context.Context) ([]string, uint64, bool, error)
+}
+
+type TextOnlyBackend struct {
+	Backend
+	Files FileDetector
+}
+
+func (b TextOnlyBackend) ReadText(ctx context.Context) (string, uint64, error) {
+	_, _, available, err := b.Files.ReadFiles(ctx)
+	if err != nil {
+		return "", 0, err
+	}
+	if available {
+		return "", 0, ErrNoText
+	}
+	return b.Backend.ReadText(ctx)
+}
+
 type Synchronizer struct {
 	engine  *Engine
 	backend Backend
@@ -44,15 +66,23 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 			if s.engine.Paused() {
 				continue
 			}
+			s.writeMu.Lock()
 			text, current, err := s.backend.ReadText(ctx)
+			if errors.Is(err, ErrNoText) {
+				s.writeMu.Unlock()
+				continue
+			}
 			if err != nil {
+				s.writeMu.Unlock()
 				return err
 			}
 			if current == revision {
+				s.writeMu.Unlock()
 				continue
 			}
 			revision = current
 			entry, decision, err := s.engine.Local(text, time.Now())
+			s.writeMu.Unlock()
 			if err != nil {
 				return err
 			}

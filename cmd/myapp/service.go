@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 	"myapp/internal/identity"
 	common "myapp/internal/input"
 	"myapp/internal/platform"
+	"myapp/internal/protocol"
 	"myapp/internal/transfer"
 	"myapp/internal/transport"
 	"myapp/internal/trust"
@@ -41,7 +43,11 @@ func runServe(args []string, stdout, stderr io.Writer) error {
 	if cfg.Role != config.RoleAgent {
 		return errors.New("serve 第一版必须在 agent 配置上运行")
 	}
-	listener, err := tls.Listen("tcp", cfg.ListenAddress, transport.ServerTLS(localIdentity, store))
+	address, err := net.ResolveTCPAddr("tcp", cfg.ListenAddress)
+	if err != nil {
+		return err
+	}
+	listener, err := net.ListenTCP("tcp", address)
 	if err != nil {
 		return err
 	}
@@ -61,7 +67,7 @@ func runServe(args []string, stdout, stderr io.Writer) error {
 			}
 			return err
 		}
-		err = serveConnection(ctx, connection.(*tls.Conn), cfg, localIdentity, stdout)
+		err = serveConnection(ctx, tls.Server(connection, transport.ServerTLS(localIdentity, store)), listener, store, cfg, localIdentity, stdout)
 		_ = connection.Close()
 		if err != nil && ctx.Err() == nil {
 			fmt.Fprintln(stderr, "会话结束:", err)
@@ -69,19 +75,42 @@ func runServe(args []string, stdout, stderr io.Writer) error {
 	}
 }
 
-func serveConnection(ctx context.Context, connection *tls.Conn, cfg config.Config, localIdentity identity.Identity, stdout io.Writer) error {
-	if err := connection.HandshakeContext(ctx); err != nil {
+func serveConnection(ctx context.Context, connection *tls.Conn, listener *net.TCPListener, store trust.Store, cfg config.Config, localIdentity identity.Identity, stdout io.Writer) error {
+	var peerID string
+	var hello, remote transport.SessionHello
+	err := withHandshakeDeadline(ctx, connection, 5*time.Second, func() error {
+		if err := connection.HandshakeContext(ctx); err != nil {
+			return err
+		}
+		var err error
+		peerID, err = transport.PeerDeviceID(connection.ConnectionState())
+		if err != nil {
+			return err
+		}
+		hello, err = transport.NewSessionHello(localIdentity, cfg.Role, transport.ChannelRealtime, time.Now())
+		if err != nil {
+			return err
+		}
+		remote, err = transport.ExchangeHello(connection, hello, peerID, false, time.Now())
 		return err
-	}
-	peerID, err := transport.PeerDeviceID(connection.ConnectionState())
+	})
 	if err != nil {
 		return err
 	}
-	hello, err := transport.NewSessionHello(localIdentity, cfg.Role, transport.ChannelControl, time.Now())
+	if err := listener.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		return err
+	}
+	rawBulk, err := listener.Accept()
+	resetErr := listener.SetDeadline(time.Time{})
 	if err != nil {
 		return err
 	}
-	if _, err := transport.ExchangeHello(connection, hello, peerID, false, time.Now()); err != nil {
+	defer rawBulk.Close()
+	if resetErr != nil {
+		return resetErr
+	}
+	bulk := tls.Server(rawBulk, transport.ServerTLS(localIdentity, store))
+	if err := negotiateBulk(ctx, bulk, hello, remote, false); err != nil {
 		return err
 	}
 	injector, err := platform.NewInjector()
@@ -90,7 +119,7 @@ func serveConnection(ctx context.Context, connection *tls.Conn, cfg config.Confi
 	}
 	defer injector.Close()
 	fmt.Fprintln(stdout, "已连接控制端", peerID)
-	return runConnected(ctx, connection, localIdentity.DeviceID, injector, cfg)
+	return runConnected(ctx, connection, bulk, localIdentity.DeviceID, injector, cfg)
 }
 
 func runControl(args []string, stdout, stderr io.Writer) error {
@@ -104,8 +133,8 @@ func runControl(args []string, stdout, stderr io.Writer) error {
 	if err := set.Parse(args); err != nil {
 		return err
 	}
-	if *peerID == "" || *address == "" {
-		return errors.New("peer 和 addr 不能为空")
+	if (*peerID == "") != (*address == "") {
+		return errors.New("peer 和 addr 必须一起提供")
 	}
 	cfg, localIdentity, store, err := loadRuntime(*configPath, *identityDirectory, *trustDirectory)
 	if err != nil {
@@ -114,93 +143,52 @@ func runControl(args []string, stdout, stderr io.Writer) error {
 	if cfg.Role != config.RoleController {
 		return errors.New("control 必须在 controller 配置上运行")
 	}
+	if *peerID != "" {
+		cfg.Peers = []config.Peer{{ID: *peerID, Address: *address}}
+	}
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+	if len(cfg.Peers) == 0 {
+		return errors.New("请在配置中填写 peers，或提供 peer 和 addr")
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	dialer := tls.Dialer{Config: transport.ClientTLS(localIdentity, *peerID, store)}
-	raw, err := dialer.DialContext(ctx, "tcp", *address)
-	if err != nil {
-		return err
-	}
-	connection := raw.(*tls.Conn)
-	defer connection.Close()
-	hello, err := transport.NewSessionHello(localIdentity, cfg.Role, transport.ChannelControl, time.Now())
-	if err != nil {
-		return err
-	}
-	if _, err := transport.ExchangeHello(connection, hello, *peerID, true, time.Now()); err != nil {
-		return err
-	}
-	capturer, err := platform.NewCapturer()
-	if err != nil {
-		return err
-	}
-	defer capturer.Close()
-	sessionCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	link, clipboardSync, fileSync, err := buildLink(localIdentity.DeviceID, nil, cfg)
-	if err != nil {
-		return err
-	}
-	done := make(chan error, 3)
-	go func() { done <- link.Run(sessionCtx, connection) }()
-	if clipboardSync != nil {
-		go func() { done <- clipboardSync.Run(sessionCtx) }()
-	}
-	if fileSync != nil {
-		go func() { done <- fileSync.Run(sessionCtx) }()
-	}
-	sessionEnd := make(chan error, 1)
-	go func() {
-		err := <-done
-		sessionEnd <- err
-		cancel()
-	}()
-	fmt.Fprintln(stdout, "已控制目标；按 Ctrl+Alt+Esc 或终止程序收回本地控制")
-	emergency := newEmergencyKeys(cancel)
-	captureErr := capturer.Capture(sessionCtx, func(event common.Event) error {
-		if emergency(event) {
-			return nil
-		}
-		return link.SendInput(sessionCtx, event)
-	})
-	_ = link.SendReleaseAll(context.Background())
-	cancel()
-	if captureErr != nil && !errors.Is(captureErr, context.Canceled) {
-		return captureErr
-	}
-	select {
-	case err := <-sessionEnd:
-		if err != nil && !errors.Is(err, context.Canceled) {
-			return err
-		}
-	default:
-	}
-	return nil
+	return runController(ctx, cfg, localIdentity, store, stdout)
 }
 
-func runConnected(ctx context.Context, connection io.ReadWriter, deviceID string, injector common.Injector, cfg config.Config) error {
+func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteCloser, deviceID string, injector common.Injector, cfg config.Config) error {
 	link, clipboardSync, fileSync, err := buildLink(deviceID, injector, cfg)
 	if err != nil {
 		return err
 	}
-	sessionCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	done := make(chan error, 3)
-	go func() { done <- link.Run(sessionCtx, connection) }()
+	if err := withHandshakeDeadline(ctx, connection, 20*time.Second, func() error {
+		frame, err := (protocol.Decoder{MaxPayload: 8}).Decode(connection)
+		if err != nil {
+			return err
+		}
+		_, err = transport.ParseHeartbeat(frame)
+		return err
+	}); err != nil {
+		return err
+	}
+	workers := []func(context.Context) error{func(ctx context.Context) error { return link.RunChannels(ctx, connection, bulk) }}
 	if clipboardSync != nil {
-		go func() { done <- clipboardSync.Run(sessionCtx) }()
+		workers = append(workers, clipboardSync.Run)
 	}
 	if fileSync != nil {
-		go func() { done <- fileSync.Run(sessionCtx) }()
+		workers = append(workers, fileSync.Run)
 	}
-	err = <-done
-	cancel()
-	return err
+	return runSession(ctx, workers...)
 }
 
 func buildLink(deviceID string, injector common.Injector, cfg config.Config) (*app.Link, *clipboard.Synchronizer, *fileclipboard.Synchronizer, error) {
 	var link *app.Link
 	var syncer *clipboard.Synchronizer
+	fileBackend, err := platform.NewFileClipboard()
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	if cfg.Clipboard.TextEnabled {
 		backend, err := platform.NewClipboard()
 		if err != nil {
@@ -210,25 +198,20 @@ func buildLink(deviceID string, injector common.Injector, cfg config.Config) (*a
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		syncer, err = clipboard.NewSynchronizer(engine, backend, func(ctx context.Context, entry clipboard.Entry) error {
+		syncer, err = clipboard.NewSynchronizer(engine, clipboard.TextOnlyBackend{Backend: backend, Files: fileBackend}, func(ctx context.Context, entry clipboard.Entry) error {
 			return link.PublishClipboard(ctx, entry)
 		}, 150*time.Millisecond)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 	}
-	var err error
-	link, err = app.NewLink(injector, syncer)
+	link, err = app.NewSplitLink(injector, syncer)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	var fileSync *fileclipboard.Synchronizer
 	if cfg.Files.Enabled {
-		backend, err := platform.NewFileClipboard()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		fileSync, err = fileclipboard.NewSynchronizer(backend, func(ctx context.Context, transferID string, paths []string) error {
+		fileSync, err = fileclipboard.NewSynchronizer(fileBackend, func(ctx context.Context, transferID string, paths []string) error {
 			sources := make([]transfer.Source, len(paths))
 			for index, path := range paths {
 				sources[index] = transfer.Source{Path: path}

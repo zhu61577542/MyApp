@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -10,6 +11,7 @@ import (
 func TestSaveLoadRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "config.json")
 	want := Default("主电脑", RoleController)
+	want.Peers = []Peer{{ID: "agent", Address: "192.168.1.2:24800"}}
 	if err := SaveNew(path, want); err != nil {
 		t.Fatal(err)
 	}
@@ -17,7 +19,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("配置不一致: got=%+v want=%+v", got, want)
 	}
 	info, err := os.Stat(path)
@@ -29,6 +31,22 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 	if err := SaveNew(path, want); !os.IsExist(err) {
 		t.Fatalf("重复初始化应失败: %v", err)
+	}
+}
+
+func TestPeerConfigurationConstraints(t *testing.T) {
+	for name, peers := range map[string][]Peer{
+		"duplicate": {{ID: "a", Address: "host:24800"}, {ID: "a", Address: "host:24801"}},
+		"capacity":  {{ID: "a", Address: "host:24800"}, {ID: "b", Address: "host:24801"}, {ID: "c", Address: "host:24802"}},
+		"address":   {{ID: "a", Address: ":24800"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg := Default("main", RoleController)
+			cfg.Peers = peers
+			if cfg.Validate() == nil {
+				t.Fatal("无效目标配置被接受")
+			}
+		})
 	}
 }
 

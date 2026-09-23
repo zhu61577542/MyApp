@@ -40,11 +40,12 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
+			s.mu.Lock()
 			paths, revision, available, err := s.backend.ReadFiles(ctx)
 			if err != nil {
+				s.mu.Unlock()
 				return err
 			}
-			s.mu.Lock()
 			if revision == s.lastSeen {
 				s.mu.Unlock()
 				continue
@@ -67,6 +68,8 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 }
 
 func (s *Synchronizer) Publish(ctx context.Context, paths []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if len(paths) == 0 {
 		return errors.New("发布文件路径不能为空")
 	}
@@ -80,9 +83,7 @@ func (s *Synchronizer) Publish(ctx context.Context, paths []string) error {
 	if !available {
 		return errors.New("平台未保留已发布的文件剪贴板")
 	}
-	s.mu.Lock()
 	s.lastSeen, s.suppress = revision, revision
-	s.mu.Unlock()
 	return nil
 }
 

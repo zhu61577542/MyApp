@@ -22,14 +22,13 @@ type Engine struct {
 	paused      bool
 	lastHash    string
 	seenVersion map[string]uint64
-	suppress    map[string]int
 }
 
 func NewEngine(deviceID string) (*Engine, error) {
 	if deviceID == "" {
 		return nil, errors.New("设备 ID 不能为空")
 	}
-	return &Engine{deviceID: deviceID, seenVersion: make(map[string]uint64), suppress: make(map[string]int)}, nil
+	return &Engine{deviceID: deviceID, seenVersion: make(map[string]uint64)}, nil
 }
 
 func (e *Engine) SetPaused(paused bool) {
@@ -51,15 +50,6 @@ func (e *Engine) Local(text string, now time.Time) (Entry, Decision, error) {
 		return Entry{}, IgnoredPaused, nil
 	}
 	hash := TextHash(text)
-	if count := e.suppress[hash]; count > 0 {
-		if count == 1 {
-			delete(e.suppress, hash)
-		} else {
-			e.suppress[hash] = count - 1
-		}
-		e.lastHash = hash
-		return Entry{}, IgnoredDuplicate, nil
-	}
 	if hash == e.lastHash {
 		return Entry{}, IgnoredDuplicate, nil
 	}
@@ -112,6 +102,7 @@ func (e *Engine) remoteDecisionLocked(entry Entry) Decision {
 		return IgnoredStale
 	}
 	if entry.Hash == e.lastHash {
+		e.seenVersion[entry.Origin] = entry.Version
 		return IgnoredDuplicate
 	}
 	return Accepted
@@ -120,5 +111,4 @@ func (e *Engine) remoteDecisionLocked(entry Entry) Decision {
 func (e *Engine) commitRemoteLocked(entry Entry) {
 	e.seenVersion[entry.Origin] = entry.Version
 	e.lastHash = entry.Hash
-	e.suppress[entry.Hash]++
 }
