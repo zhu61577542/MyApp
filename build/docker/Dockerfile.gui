@@ -1,0 +1,15 @@
+FROM golang:1.26.1-alpine
+
+RUN apk add --no-cache \
+    build-base \
+    pkgconf \
+    mesa-dev \
+    libx11-dev \
+    libxcursor-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxi-dev \
+    libxxf86vm-dev
+
+WORKDIR /src
+ENTRYPOINT ["go"]
