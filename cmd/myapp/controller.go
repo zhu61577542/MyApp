@@ -24,7 +24,35 @@ import (
 	"myapp/internal/trust"
 )
 
+var errEmergencyStop = errors.New("用户结束控制")
+
+type retryableControllerError struct{ err error }
+
+func (e retryableControllerError) Error() string { return e.err.Error() }
+func (e retryableControllerError) Unwrap() error { return e.err }
+
 func runController(ctx context.Context, cfg config.Config, local identity.Identity, store trust.Store, stdout io.Writer) error {
+	backoff, err := transport.NewBackoff(500*time.Millisecond, 10*time.Second)
+	if err != nil {
+		return err
+	}
+	for attempt := 1; ; attempt++ {
+		err := runControllerOnce(ctx, cfg, local, store, stdout)
+		if err == nil || errors.Is(err, errEmergencyStop) || ctx.Err() != nil {
+			return nil
+		}
+		var retryable retryableControllerError
+		if !errors.As(err, &retryable) {
+			return err
+		}
+		fmt.Fprintf(stdout, "连接中断，第 %d 次重连：%v\n", attempt, retryable.err)
+		if err := backoff.Wait(ctx); err != nil {
+			return nil
+		}
+	}
+}
+
+func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Identity, store trust.Store, stdout io.Writer) error {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(context.Canceled)
 	hub, err := app.NewHub(device.Device{ID: local.DeviceID, Name: cfg.DeviceName, Role: cfg.Role, Online: true}, cfg.MaxDevices)
@@ -70,7 +98,7 @@ func runController(ctx context.Context, cfg config.Config, local identity.Identi
 		dialer := tls.Dialer{NetDialer: &net.Dialer{Timeout: 5 * time.Second}, Config: transport.ClientTLS(local, peer.ID, store)}
 		raw, err := dialer.DialContext(ctx, "tcp", peer.Address)
 		if err != nil {
-			return fmt.Errorf("连接目标 %d: %w", index+1, err)
+			return retryableControllerError{fmt.Errorf("连接目标 %d: %w", index+1, err)}
 		}
 		connection := raw.(*tls.Conn)
 		connections = append(connections, connection)
@@ -85,16 +113,16 @@ func runController(ctx context.Context, cfg config.Config, local identity.Identi
 			remote, err = transport.ExchangeHello(connection, hello, peer.ID, true, time.Now())
 			return err
 		}); err != nil {
-			return err
+			return retryableControllerError{err}
 		}
 		rawBulk, err := dialer.DialContext(ctx, "tcp", peer.Address)
 		if err != nil {
-			return err
+			return retryableControllerError{err}
 		}
 		bulk := rawBulk.(*tls.Conn)
 		defer bulk.Close()
 		if err := negotiateBulk(ctx, bulk, hello, remote, true); err != nil {
-			return err
+			return retryableControllerError{err}
 		}
 		link, err := app.NewSplitLink(nil, nil)
 		if err != nil {
@@ -145,10 +173,10 @@ func runController(ctx context.Context, cfg config.Config, local identity.Identi
 		if err := withHandshakeDeadline(ctx, connection, 5*time.Second, func() error {
 			return transport.NewHeartbeat(0, time.Now()).Encode(connection, 8)
 		}); err != nil {
-			return err
+			return retryableControllerError{err}
 		}
 	}
-	emergency := newEmergencyKeys(func() { cancel(context.Canceled) })
+	emergency := newEmergencyKeys(func() { cancel(errEmergencyStop) })
 	workers = append(workers, func(ctx context.Context) error {
 		choose := newTargetKeys(len(cfg.Peers), func(index int) error { return hub.Activate(ctx, index) })
 		return capturer.Capture(ctx, func(event common.Event) error {
@@ -164,12 +192,15 @@ func runController(ctx context.Context, cfg config.Config, local identity.Identi
 	fmt.Fprintf(stdout, "已连接 %d 台子电脑；Ctrl+Alt+1/2 切换目标，Ctrl+Alt+Esc 退出控制\n", len(cfg.Peers))
 	err = runSession(ctx, workers...)
 	if cause := context.Cause(ctx); cause != nil && !errors.Is(cause, context.Canceled) {
-		return cause
+		if errors.Is(cause, errEmergencyStop) {
+			return cause
+		}
+		return retryableControllerError{cause}
 	}
-	if errors.Is(err, context.Canceled) {
+	if err == nil || errors.Is(err, context.Canceled) {
 		return nil
 	}
-	return err
+	return retryableControllerError{err}
 }
 
 func newTargetKeys(count int, activate func(int) error) func(common.Event) (bool, error) {

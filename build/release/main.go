@@ -171,7 +171,7 @@ exec "$(dirname "$0")/myapp-bin" gui "$@"
 const macLauncher = `#!/bin/sh
 set -eu
 directory="$(dirname "$0")"
-"$directory/../Resources/myapp-bin" gui "$@" >/tmp/myapp-gui.log 2>&1 &
+"$directory/../Resources/myapp-bin" gui-web "$@" >/tmp/myapp-gui.log 2>&1 &
 pid=$!
 open http://127.0.0.1:24880
 wait "$pid"

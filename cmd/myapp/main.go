@@ -31,8 +31,7 @@ func main() {
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		usage(stderr)
-		return 2
+		return runWithoutArgs(stdin, stdout, stderr)
 	}
 	var err error
 	switch args[0] {
@@ -126,7 +125,7 @@ func runPair(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(stdout, "配对完成: %s，设备 ID %s\n", record.DeviceName, match.RemoteDeviceID)
+	_, err = fmt.Fprintf(stdout, "配对完成: %s，设备 ID %s，地址 %s\n", record.DeviceName, match.RemoteDeviceID, connection.RemoteAddr())
 	return err
 }
 

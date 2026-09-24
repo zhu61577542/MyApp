@@ -151,3 +151,23 @@ func SaveNew(path string, cfg Config) error {
 	writeErr := encoder.Encode(cfg)
 	return errors.Join(writeErr, file.Close())
 }
+
+// Save overwrites an existing configuration after validation.
+func Save(path string, cfg Config) error {
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("配置无效: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	if err := file.Chmod(0600); err != nil {
+		return errors.Join(err, file.Close())
+	}
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	return errors.Join(encoder.Encode(cfg), file.Close())
+}

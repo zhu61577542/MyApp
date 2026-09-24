@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     libxrandr-dev \
     libxinerama-dev \
     libxi-dev \
-    libxxf86vm-dev
+    libxxf86vm-dev \
+    docker-cli
 
 WORKDIR /src
 ENTRYPOINT ["go"]

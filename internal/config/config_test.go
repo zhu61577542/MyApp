@@ -34,6 +34,24 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSaveOverwritesExistingConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := SaveNew(path, Default("旧名称", RoleAgent)); err != nil {
+		t.Fatal(err)
+	}
+	want := Default("新名称", RoleController)
+	if err := Save(path, want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("配置不一致: got=%+v want=%+v", got, want)
+	}
+}
+
 func TestPeerConfigurationConstraints(t *testing.T) {
 	for name, peers := range map[string][]Peer{
 		"duplicate": {{ID: "a", Address: "host:24800"}, {ID: "a", Address: "host:24801"}},

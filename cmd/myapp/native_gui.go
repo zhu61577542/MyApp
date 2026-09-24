@@ -1,3 +1,5 @@
+//go:build gui
+
 package main
 
 import (
@@ -12,6 +14,14 @@ import (
 	"myapp/internal/nativegui"
 )
 
+func runWithoutArgs(stdin io.Reader, stdout, stderr io.Writer) int {
+	if err := runNativeGUI(nil, stdout, stderr); err != nil {
+		fmt.Fprintln(stderr, "错误:", err)
+		return 1
+	}
+	return 0
+}
+
 func runNativeGUI(args []string, stdout, stderr io.Writer) error {
 	set := flag.NewFlagSet("gui", flag.ContinueOnError)
 	set.SetOutput(stderr)
@@ -23,5 +33,5 @@ func runNativeGUI(args []string, stdout, stderr io.Writer) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	fmt.Fprintln(stdout, "MyApp 原生 GUI 正在启动")
-	return nativegui.Run(ctx, nativegui.Options{ConfigPath: *configPath, IdentityDirectory: *identityDirectory, DefaultDeviceName: hostname()})
+	return nativegui.Run(ctx, nativegui.Options{ConfigPath: *configPath, IdentityDirectory: *identityDirectory, TrustDirectory: defaultTrustDir(), DefaultDeviceName: hostname()})
 }
