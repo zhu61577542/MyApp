@@ -1,0 +1,8 @@
+FROM fyneio/fyne-cross-images:darwin
+
+COPY --from=macos-sdk . /sdk
+
+# Zig's Darwin linker looks for framework stubs under /System when the
+# fyne-cross wrapper does not propagate -isysroot to the final link step.
+# Keep the SDK isolated while providing that expected lookup path.
+RUN ln -s /sdk/System /System
