@@ -59,6 +59,20 @@ func TestReceiverResumeVerifyAndCommit(t *testing.T) {
 	if err != nil || !bytes.Equal(got, content) {
 		t.Fatalf("提交内容错误: %q, %v", got, err)
 	}
+	fileInfo, err := os.Stat(filepath.Join(final, filepath.FromSlash(entry.Path)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fileInfo.Mode().Perm() != 0o640 || !fileInfo.ModTime().Equal(now) {
+		t.Fatalf("文件元数据未恢复: mode=%o mtime=%s", fileInfo.Mode().Perm(), fileInfo.ModTime())
+	}
+	directoryInfo, err := os.Stat(filepath.Join(final, "目录"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if directoryInfo.Mode().Perm() != 0o750 || !directoryInfo.ModTime().Equal(now) {
+		t.Fatalf("目录元数据未恢复: mode=%o mtime=%s", directoryInfo.Mode().Perm(), directoryInfo.ModTime())
+	}
 }
 
 func TestManifestSupportsSizesAboveFourGiB(t *testing.T) {

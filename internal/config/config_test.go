@@ -86,6 +86,21 @@ func TestLoadRejectsUnknownAndTrailingData(t *testing.T) {
 	}
 }
 
+func TestLoadLegacyConfigUsesDefaultLogging(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	body := `{"schema_version":1,"device_name":"pc","role":"agent","listen_address":":24800","max_devices":3,"switch":{"mode":"edge","edge_delay_ms":0},"clipboard":{"text_enabled":true},"files":{"enabled":true,"cache_directory":"cache"}}`
+	if err := os.WriteFile(path, []byte(body), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Logging.Enabled || cfg.Logging.Level != LogLevelInfo {
+		t.Fatalf("旧配置日志默认值错误: %+v", cfg.Logging)
+	}
+}
+
 func TestValidateReportsMultipleProblems(t *testing.T) {
 	cfg := Default(" pc ", Role("root"))
 	cfg.MaxDevices = 4

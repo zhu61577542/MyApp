@@ -16,6 +16,7 @@ import (
 
 	"myapp/internal/config"
 	"myapp/internal/identity"
+	"myapp/internal/logging"
 	"myapp/internal/pairing"
 	"myapp/internal/trust"
 )
@@ -30,6 +31,18 @@ func main() {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	logger := openProcessLogger()
+	if logger != nil {
+		defer logger.Close()
+		stdout = io.MultiWriter(stdout, logger.Stream(logging.Info))
+		stderr = io.MultiWriter(stderr, logger.Stream(logging.Error))
+		command := "默认 GUI"
+		if len(args) > 0 {
+			command = args[0]
+		}
+		logger.Log(logging.Info, "启动命令: "+command)
+		logger.Log(logging.Debug, fmt.Sprintf("参数数量: %d，配置路径: %s", len(args), defaultConfigPath()))
+	}
 	if len(args) == 0 {
 		return runWithoutArgs(stdin, stdout, stderr)
 	}
@@ -61,6 +74,21 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+func openProcessLogger() *logging.Logger {
+	settings := logging.DefaultSettings()
+	if cfg, err := config.Load(defaultConfigPath()); err == nil {
+		level, parseErr := logging.ParseLevel(string(cfg.Logging.Level))
+		if parseErr == nil {
+			settings = logging.Settings{Enabled: cfg.Logging.Enabled, Level: level}
+		}
+	}
+	logger, err := logging.Open(logging.DefaultPath(), settings)
+	if err != nil {
+		return nil
+	}
+	return logger
 }
 
 func runPair(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
@@ -113,6 +141,9 @@ func runPair(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 	case "connect":
 		initiator = true
+		if err := pairing.ValidateConnectAddress(*address); err != nil {
+			return err
+		}
 		connection, err = (&net.Dialer{}).DialContext(ctx, "tcp", *address)
 		if err != nil {
 			return err

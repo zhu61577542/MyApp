@@ -19,6 +19,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"myapp/internal/config"
 	"myapp/internal/identity"
+	"myapp/internal/logging"
 )
 
 //go:embed assets/myapp-app.svg
@@ -133,7 +134,7 @@ func buildContent(application fyne.App, options Options, services *serviceManage
 		status.SetText("运行状态：配置已就绪")
 		device.SetText(fmt.Sprintf("设备：%s\n设备 ID：%s", state.DeviceName, state.DeviceID))
 		role.SetText("角色：" + string(state.Role))
-		listen.SetText(fmt.Sprintf("监听地址：%s\n文字剪贴板：%s    文件复制：%s", state.Listen, enabledText(state.Clipboard), enabledText(state.Files)))
+		listen.SetText(fmt.Sprintf("监听地址：%s\n文字剪贴板：%s    文件复制：%s\n日志：%s（级别：%s）", state.Listen, enabledText(state.Clipboard), enabledText(state.Files), enabledText(state.Logging), state.LoggingLevel))
 		peers.Objects = make([]fyne.CanvasObject, 0, len(state.Peers))
 		for _, peer := range state.Peers {
 			peerID := peer.ID
@@ -223,7 +224,7 @@ func removePeer(options Options, peerID string) error {
 func openSettings(application fyne.App, options Options, refresh func()) {
 	cfg, err := config.Load(options.ConfigPath)
 	window := application.NewWindow("MyApp 设置")
-	window.Resize(fyne.NewSize(520, 460))
+	window.Resize(fyne.NewSize(560, 600))
 	if err != nil {
 		window.SetContent(container.NewPadded(container.NewVBox(widget.NewLabel("无法读取配置：" + err.Error()))))
 		window.Show()
@@ -240,7 +241,27 @@ func openSettings(application fyne.App, options Options, refresh func()) {
 	clipboard.SetChecked(cfg.Clipboard.TextEnabled)
 	files := widget.NewCheck("启用文件复制", nil)
 	files.SetChecked(cfg.Files.Enabled)
+	loggingEnabled := widget.NewCheck("启用日志记录", nil)
+	loggingEnabled.SetChecked(cfg.Logging.Enabled)
+	loggingLevel := widget.NewSelect([]string{string(config.LogLevelDebug), string(config.LogLevelInfo), string(config.LogLevelWarn), string(config.LogLevelError)}, nil)
+	loggingLevel.SetSelected(string(cfg.Logging.Level))
+	loggingEnabled.OnChanged = func(enabled bool) {
+		if enabled {
+			loggingLevel.Enable()
+		} else {
+			loggingLevel.Disable()
+		}
+	}
+	loggingEnabled.OnChanged(loggingEnabled.Checked)
 	result := widget.NewLabel("")
+	exportButton := widget.NewButton("导出日志", func() {
+		path, exportErr := exportLogs()
+		if exportErr != nil {
+			result.SetText("导出日志失败：" + exportErr.Error())
+			return
+		}
+		result.SetText("日志已导出：" + path)
+	})
 	save := widget.NewButton("保存设置", func() {
 		updated := cfg
 		updated.DeviceName = strings.TrimSpace(name.Text)
@@ -248,6 +269,8 @@ func openSettings(application fyne.App, options Options, refresh func()) {
 		updated.ListenAddress = strings.TrimSpace(listen.Text)
 		updated.Clipboard.TextEnabled = clipboard.Checked
 		updated.Files.Enabled = files.Checked
+		updated.Logging.Enabled = loggingEnabled.Checked
+		updated.Logging.Level = config.LogLevel(loggingLevel.Selected)
 		if err := config.Save(options.ConfigPath, updated); err != nil {
 			result.SetText("保存失败：" + err.Error())
 			return
@@ -264,23 +287,28 @@ func openSettings(application fyne.App, options Options, refresh func()) {
 		widget.NewLabel("设备角色"), role,
 		widget.NewLabel("监听地址"), listen,
 		clipboard, files,
+		widget.NewLabel("日志文件："+logging.DefaultPath()),
+		loggingEnabled,
+		widget.NewLabel("最低输出级别"), loggingLevel,
 		result,
-		buttons,
+		container.NewHBox(exportButton, buttons),
 	)
 	window.SetContent(container.NewPadded(content))
 	window.Show()
 }
 
 type state struct {
-	Ready       bool          `json:"ready"`
-	DeviceID    string        `json:"device_id"`
-	DeviceName  string        `json:"device_name"`
-	Role        config.Role   `json:"role"`
-	Listen      string        `json:"listen_address"`
-	Peers       []config.Peer `json:"peers"`
-	Clipboard   bool          `json:"clipboard_enabled"`
-	Files       bool          `json:"files_enabled"`
-	SetupReason string        `json:"setup_reason"`
+	Ready        bool          `json:"ready"`
+	DeviceID     string        `json:"device_id"`
+	DeviceName   string        `json:"device_name"`
+	Role         config.Role   `json:"role"`
+	Listen       string        `json:"listen_address"`
+	Peers        []config.Peer `json:"peers"`
+	Clipboard    bool          `json:"clipboard_enabled"`
+	Files        bool          `json:"files_enabled"`
+	Logging      bool          `json:"logging_enabled"`
+	LoggingLevel string        `json:"logging_level"`
+	SetupReason  string        `json:"setup_reason"`
 }
 
 func loadState(options Options) (state, error) {
@@ -289,7 +317,7 @@ func loadState(options Options) (state, error) {
 	if cfgErr != nil || identityErr != nil {
 		return state{SetupReason: setupReason(cfgErr, identityErr)}, nil
 	}
-	return state{Ready: true, DeviceID: identityValue.DeviceID, DeviceName: cfg.DeviceName, Role: cfg.Role, Listen: cfg.ListenAddress, Peers: cfg.Peers, Clipboard: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled}, nil
+	return state{Ready: true, DeviceID: identityValue.DeviceID, DeviceName: cfg.DeviceName, Role: cfg.Role, Listen: cfg.ListenAddress, Peers: cfg.Peers, Clipboard: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Logging: cfg.Logging.Enabled, LoggingLevel: string(cfg.Logging.Level)}, nil
 }
 
 func setupReason(cfgErr, identityErr error) string {

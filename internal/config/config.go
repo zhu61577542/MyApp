@@ -31,6 +31,7 @@ type Config struct {
 	Switch        SwitchConfig    `json:"switch"`
 	Clipboard     ClipboardConfig `json:"clipboard"`
 	Files         FileConfig      `json:"files"`
+	Logging       LoggingConfig   `json:"logging"`
 }
 
 type Peer struct {
@@ -52,6 +53,20 @@ type FileConfig struct {
 	Cache   string `json:"cache_directory"`
 }
 
+type LogLevel string
+
+const (
+	LogLevelDebug LogLevel = "debug"
+	LogLevelInfo  LogLevel = "info"
+	LogLevelWarn  LogLevel = "warn"
+	LogLevelError LogLevel = "error"
+)
+
+type LoggingConfig struct {
+	Enabled bool     `json:"enabled"`
+	Level   LogLevel `json:"level"`
+}
+
 func Default(deviceName string, role Role) Config {
 	return Config{
 		SchemaVersion: SchemaVersion,
@@ -65,6 +80,7 @@ func Default(deviceName string, role Role) Config {
 		},
 		Clipboard: ClipboardConfig{TextEnabled: true},
 		Files:     FileConfig{Enabled: true, Cache: "cache/files"},
+		Logging:   LoggingConfig{Enabled: true, Level: LogLevelInfo},
 	}
 }
 
@@ -107,6 +123,9 @@ func (c Config) Validate() error {
 	if c.Files.Enabled && strings.TrimSpace(c.Files.Cache) == "" {
 		problems = append(problems, errors.New("启用文件复制时 cache_directory 不能为空"))
 	}
+	if c.Logging.Level != LogLevelDebug && c.Logging.Level != LogLevelInfo && c.Logging.Level != LogLevelWarn && c.Logging.Level != LogLevelError {
+		problems = append(problems, errors.New("logging.level 必须是 debug、info、warn 或 error"))
+	}
 	return errors.Join(problems...)
 }
 
@@ -121,6 +140,9 @@ func Load(path string) (Config, error) {
 	var cfg Config
 	if err := decoder.Decode(&cfg); err != nil {
 		return Config{}, fmt.Errorf("解析配置: %w", err)
+	}
+	if cfg.Logging.Level == "" {
+		cfg.Logging = LoggingConfig{Enabled: true, Level: LogLevelInfo}
 	}
 	var extra any
 	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {

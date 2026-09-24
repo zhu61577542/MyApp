@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -228,9 +229,6 @@ func (r *Receiver) CompleteFile(relative string) error {
 	if hash != entry.SHA256 {
 		return fmt.Errorf("文件哈希不匹配: %s", relative)
 	}
-	if err := file.Chmod(os.FileMode(entry.Mode) & 0777); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -270,6 +268,9 @@ func (r *Receiver) Commit() (string, error) {
 			return "", fmt.Errorf("文件校验失败: %s", entry.Path)
 		}
 	}
+	if err := r.applyMetadata(dataRoot); err != nil {
+		return "", err
+	}
 	cache, err := os.OpenRoot(r.root)
 	if err != nil {
 		return "", err
@@ -286,6 +287,30 @@ func (r *Receiver) Commit() (string, error) {
 	}
 	_ = cache.Remove(".state-" + r.manifest.TransferID + ".json")
 	return r.final, nil
+}
+
+func (r *Receiver) applyMetadata(dataRoot *os.Root) error {
+	entries := append([]Entry(nil), r.manifest.Entries...)
+	sort.SliceStable(entries, func(i, j int) bool {
+		return pathDepth(entries[i].Path) > pathDepth(entries[j].Path)
+	})
+	for _, entry := range entries {
+		if err := rejectLinks(dataRoot, entry.Path); err != nil {
+			return err
+		}
+		mode := os.FileMode(entry.Mode) & 0777
+		if err := dataRoot.Chmod(entry.Path, mode); err != nil {
+			return fmt.Errorf("恢复权限失败 %s: %w", entry.Path, err)
+		}
+		if err := dataRoot.Chtimes(entry.Path, entry.ModifiedAt, entry.ModifiedAt); err != nil {
+			return fmt.Errorf("恢复修改时间失败 %s: %w", entry.Path, err)
+		}
+	}
+	return nil
+}
+
+func pathDepth(value string) int {
+	return strings.Count(value, "/")
 }
 
 func (r *Receiver) Cancel() error {
