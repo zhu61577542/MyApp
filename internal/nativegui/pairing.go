@@ -19,7 +19,7 @@ import (
 	"myapp/internal/pairing"
 )
 
-func openPairing(application fyne.App, options Options, refresh func()) {
+func openPairingLegacy(application fyne.App, options Options, refresh func()) {
 	window := application.NewWindow("MyApp 配对设备")
 	window.Resize(fyne.NewSize(600, 500))
 	mode := widget.NewRadioGroup([]string{"监听模式（listen）", "连接模式（connect）"}, nil)
@@ -269,6 +269,8 @@ func pairingFailureMessage(output string) string {
 	}
 }
 
+var configMu sync.Mutex
+
 func savePairResult(options Options, text string) error {
 	parts := strings.SplitN(text, "设备 ID ", 2)
 	if len(parts) != 2 {
@@ -280,6 +282,8 @@ func savePairResult(options Options, text string) error {
 	}
 	id := strings.TrimSpace(parts[0])
 	address := strings.TrimSpace(parts[1])
+	configMu.Lock()
+	defer configMu.Unlock()
 	cfg, err := config.Load(options.ConfigPath)
 	if err != nil {
 		return err

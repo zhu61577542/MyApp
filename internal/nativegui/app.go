@@ -44,7 +44,9 @@ func Run(ctx context.Context, options Options) error {
 
 	services := &serviceManager{status: "未启动"}
 	defer services.stop()
-	content, refresh := buildContent(application, options, services)
+	pairings := &pairingManager{}
+	defer pairings.stop()
+	content, refresh := buildContent(application, options, services, pairings)
 	window.SetContent(content)
 	go func() {
 		ticker := time.NewTicker(time.Second)
@@ -81,7 +83,7 @@ func Run(ctx context.Context, options Options) error {
 	return nil
 }
 
-func buildContent(application fyne.App, options Options, services *serviceManager) (fyne.CanvasObject, func()) {
+func buildContent(application fyne.App, options Options, services *serviceManager, pairings *pairingManager) (fyne.CanvasObject, func()) {
 	status := widget.NewLabel("")
 	status.Wrapping = fyne.TextWrapWord
 	device := widget.NewLabel("")
@@ -154,7 +156,7 @@ func buildContent(application fyne.App, options Options, services *serviceManage
 		peers.Refresh()
 		settingsButton.Enable()
 	}
-	pairButton.OnTapped = func() { openPairing(application, options, refresh) }
+	pairButton.OnTapped = func() { openPairing(application, options, pairings) }
 	serviceButton.OnTapped = func() {
 		running, _ := services.snapshot()
 		if running {
@@ -204,6 +206,8 @@ func buildContent(application fyne.App, options Options, services *serviceManage
 }
 
 func removePeer(options Options, peerID string) error {
+	configMu.Lock()
+	defer configMu.Unlock()
 	cfg, err := config.Load(options.ConfigPath)
 	if err != nil {
 		return err
@@ -263,7 +267,13 @@ func openSettings(application fyne.App, options Options, refresh func()) {
 		result.SetText("日志已导出：" + path)
 	})
 	save := widget.NewButton("保存设置", func() {
-		updated := cfg
+		configMu.Lock()
+		defer configMu.Unlock()
+		updated, err := config.Load(options.ConfigPath)
+		if err != nil {
+			result.SetText("保存失败：" + err.Error())
+			return
+		}
 		updated.DeviceName = strings.TrimSpace(name.Text)
 		updated.Role = config.Role(role.Selected)
 		updated.ListenAddress = strings.TrimSpace(listen.Text)
@@ -275,7 +285,6 @@ func openSettings(application fyne.App, options Options, refresh func()) {
 			result.SetText("保存失败：" + err.Error())
 			return
 		}
-		cfg = updated
 		result.SetText("保存成功。重启 MyApp 服务后生效。")
 		refresh()
 	})
