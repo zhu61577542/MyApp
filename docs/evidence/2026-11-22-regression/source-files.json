@@ -1,0 +1,46 @@
+[
+  {
+    "name": "internal/platform/darwin/clipboard/files_darwin.go",
+    "sha256": "6e78940749d664412e15b3a12d235cd59a697b229bc7e1bf080d62b775f5eae1"
+  },
+  {
+    "name": "internal/platform/darwin/clipboard/files_darwin_test.go",
+    "sha256": "0aec0c260a445a2b378b649e13f05ed515536e66ceac37186df529cfb1927615"
+  },
+  {
+    "name": "internal/platform/windows/clipboard/backend_windows.go",
+    "sha256": "9fd7cf9be4dc55d66e6f14df9c45c4f3486c3f59a81fb49d605d7d5105f3acbf"
+  },
+  {
+    "name": "internal/platform/windows/clipboard/files_windows.go",
+    "sha256": "5044423d3f35e5c6b5649b140c69f07315c3bd7e768e2dcda23bdbad6a0c0116"
+  },
+  {
+    "name": "internal/platform/windows/clipboard/backend_windows_test.go",
+    "sha256": "4a8a150ab02840850b7e557cb88b5a330ae7e8897a69033c6d686c40e164b9dc"
+  },
+  {
+    "name": "internal/platform/windows/input/capturer_windows_test.go",
+    "sha256": "44dca4467c3faf8dbe317fea6bf9d2e0b91a8f052f3137ef92120776e237ae8e"
+  },
+  {
+    "name": "internal/transfer/receiver.go",
+    "sha256": "220b3bea1b893c34fa4cee8c42ccd7dd35a6e175b5bc1221313cd1b51cddac0e"
+  },
+  {
+    "name": "internal/transfer/requirements_test.go",
+    "sha256": "1af054f51732c6c4028f1a24ebf936b3450cfbd088ec2730e2ca62b743f2931b"
+  },
+  {
+    "name": "internal/transfer/transfer_test.go",
+    "sha256": "c41168e478c9f7b98cac269b98624cf105762f413b382e8707d337c3c34456f3"
+  },
+  {
+    "name": "internal/transfer/receiver_windows_test.go",
+    "sha256": "e4d002d8badf1c71341202c5f2773f0bc4c5a42e105c3ffd6455826995ef1313"
+  },
+  {
+    "name": "tests/inputcaptureprobe/main.go",
+    "sha256": "de7a0ce1d9d85d81cf6c8d0e8a1ed04ae54099f34fb693d26fde68755963293a"
+  }
+]

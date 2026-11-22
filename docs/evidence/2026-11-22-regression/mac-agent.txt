@@ -1,0 +1,5 @@
+MyApp agent 正在监听 192.168.1.6:24950
+已连接控制端 fq2byhs5j4qpsftvpnzw6vspv3jtzoxi5a65cdloag5febbwcz6q
+会话结束: read tcp 192.168.1.6:24950->192.168.1.2:14217: read: connection reset by peer
+已连接控制端 fq2byhs5j4qpsftvpnzw6vspv3jtzoxi5a65cdloag5febbwcz6q
+会话结束: read tcp 192.168.1.6:24950->192.168.1.2:2525: read: connection reset by peer

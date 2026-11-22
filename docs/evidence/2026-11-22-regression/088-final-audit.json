@@ -1,0 +1,7 @@
+{
+  "stdout": "{\r\n    \"controllerLog\":  \"已连接 1 台子电脑；Ctrl+Alt+1/2 切换目标，Ctrl+Alt+Esc 退出控制\\n\",\r\n    \"controllerError\":  \"\",\r\n    \"reverseAgentLog\":  \"MyApp agent 正在监听 192.168.1.2:24960\\n已连接控制端 gvperyt7n2zyhebqchdz6hlq5goyp45vanz3u2tduchuwwcps3lq\\n\",\r\n    \"reverseAgentError\":  \"会话结束: EOF\\n\",\r\n    \"runningTestProcesses\":  [\r\n\r\n                             ]\r\n}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "088-final-audit",
+  "timedOut": false
+}

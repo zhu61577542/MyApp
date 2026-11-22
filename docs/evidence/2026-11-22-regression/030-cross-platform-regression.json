@@ -1,0 +1,7 @@
+{
+  "stdout": "E:\\test\\MyApp-regression-20261122\\profile\\AppData\\Roaming\\MyApp\\config.json\nfq2byhs5j4qpsftvpnzw6vspv3jtzoxi5a65cdloag5febbwcz6q\n远端设备: linux-regression\n配对码: [已脱敏]\n请在两台电脑核对配对码。确认请输入 yes: 配对完成: linux-regression，设备 ID 6b7bqoau52mb4uub3prutcc3pmrfnpwqbasr5tkpaadm4m6wbehq，地址 192.168.1.6:24851\n{\r\n    \"authenticatedSession\":  true,\r\n    \"bidirectionalText\":  true,\r\n    \"receivedDirectory\":  \"E:\\\\test\\\\MyApp-regression-20261122\\\\cache\\\\peer-1\\\\c63ac580ee2cfa406114f45b57b93032\\\\linux-source\",\r\n    \"fileContent\":  true,\r\n    \"emptyFile\":  true,\r\n    \"emptyDirectory\":  true,\r\n    \"controllerPID\":  25572,\r\n    \"textRoundTrips\":  100\r\n}\r\nMYAPP_TEST_EXITCODE=0\r\nCONTROLLER_NO_RECONNECT=true\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "030-cross-platform-regression",
+  "timedOut": false
+}

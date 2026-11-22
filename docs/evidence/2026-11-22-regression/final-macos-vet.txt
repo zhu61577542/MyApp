@@ -1,0 +1,1 @@
+internal/platform/darwin/input/capturer_darwin.go:82:37: possible misuse of unsafe.Pointer

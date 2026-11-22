@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -26,53 +27,84 @@ func TestManifestRejectsTransferIDTraversal(t *testing.T) {
 }
 
 func TestReceiverResumeVerifyAndCommit(t *testing.T) {
-	content := []byte("跨平台文件内容")
-	now := time.Now().UTC().Truncate(time.Second)
-	entry := Entry{Path: "目录/文件.txt", Type: File, Size: int64(len(content)), Mode: 0o640, ModifiedAt: now, SHA256: digest(content)}
-	manifest := Manifest{TransferID: "transfer-1", Entries: []Entry{{Path: "目录", Type: Directory, Mode: 0o750, ModifiedAt: now}, entry}, CreatedAt: now}
-	cache := t.TempDir()
-	receiver, err := NewReceiver(cache, manifest)
-	if err != nil {
-		t.Fatal(err)
+	for _, mode := range []struct {
+		name            string
+		file, directory uint32
+	}{{"normal", 0640, 0750}, {"readonly", 0440, 0550}} {
+		t.Run(mode.name, func(t *testing.T) {
+			content := []byte("跨平台文件内容")
+			now := time.Now().UTC().Truncate(time.Second)
+			entry := Entry{Path: "目录/嵌套/文件.txt", Type: File, Size: int64(len(content)), Mode: mode.file, ModifiedAt: now, SHA256: digest(content)}
+			manifest := Manifest{TransferID: "transfer-1", Entries: []Entry{{Path: "目录", Type: Directory, Mode: mode.directory, ModifiedAt: now}, {Path: "目录/嵌套", Type: Directory, Mode: mode.directory, ModifiedAt: now}, entry}, CreatedAt: now}
+			cache := t.TempDir()
+			t.Cleanup(func() {
+				for _, directory := range []string{"transfer-1", ".partial-transfer-1"} {
+					base := filepath.Join(cache, directory)
+					_ = os.Chmod(filepath.Join(base, "目录"), 0700)
+					_ = os.Chmod(filepath.Join(base, "目录", "嵌套"), 0700)
+					_ = os.Chmod(filepath.Join(base, filepath.FromSlash(entry.Path)), 0600)
+				}
+			})
+			receiver, err := NewReceiver(cache, manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if written, err := receiver.Write(entry.Path, 0, bytes.NewReader(content[:5])); err != nil || written != 5 {
+				t.Fatalf("第一次 Write() = %d, %v", written, err)
+			}
+			receiver, err = LoadReceiver(cache, manifest.TransferID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if offset, err := receiver.ResumeOffset(entry.Path); err != nil || offset != 5 {
+				t.Fatalf("ResumeOffset() = %d, %v", offset, err)
+			}
+			if _, err := receiver.Write(entry.Path, 5, bytes.NewReader(content[5:])); err != nil {
+				t.Fatal(err)
+			}
+			if err := receiver.CompleteFile(entry.Path); err != nil {
+				t.Fatal(err)
+			}
+			final, err := receiver.Commit()
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(filepath.Join(final, filepath.FromSlash(entry.Path)))
+			if err != nil || !bytes.Equal(got, content) {
+				t.Fatalf("提交内容错误: %q, %v", got, err)
+			}
+			fileInfo, err := os.Stat(filepath.Join(final, filepath.FromSlash(entry.Path)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if fileInfo.Mode().Perm() != platformPermissions(mode.file, false) || !fileInfo.ModTime().Equal(now) {
+				t.Fatalf("文件元数据未恢复: mode=%o mtime=%s", fileInfo.Mode().Perm(), fileInfo.ModTime())
+			}
+			for _, directory := range []string{"目录", "目录/嵌套"} {
+				directoryInfo, err := os.Stat(filepath.Join(final, filepath.FromSlash(directory)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if directoryInfo.Mode().Perm() != platformPermissions(mode.directory, true) || !directoryInfo.ModTime().Equal(now) {
+					t.Fatalf("目录元数据未恢复: mode=%o mtime=%s", directoryInfo.Mode().Perm(), directoryInfo.ModTime())
+				}
+			}
+		})
 	}
-	if written, err := receiver.Write(entry.Path, 0, bytes.NewReader(content[:5])); err != nil || written != 5 {
-		t.Fatalf("第一次 Write() = %d, %v", written, err)
+}
+
+func platformPermissions(mode uint32, directory bool) os.FileMode {
+	if runtime.GOOS != "windows" {
+		return os.FileMode(mode) & 0777
 	}
-	receiver, err = LoadReceiver(cache, manifest.TransferID)
-	if err != nil {
-		t.Fatal(err)
+	result := os.FileMode(0444)
+	if mode&0200 != 0 {
+		result = 0666
 	}
-	if offset, err := receiver.ResumeOffset(entry.Path); err != nil || offset != 5 {
-		t.Fatalf("ResumeOffset() = %d, %v", offset, err)
+	if directory {
+		result |= 0111
 	}
-	if _, err := receiver.Write(entry.Path, 5, bytes.NewReader(content[5:])); err != nil {
-		t.Fatal(err)
-	}
-	if err := receiver.CompleteFile(entry.Path); err != nil {
-		t.Fatal(err)
-	}
-	final, err := receiver.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(filepath.Join(final, filepath.FromSlash(entry.Path)))
-	if err != nil || !bytes.Equal(got, content) {
-		t.Fatalf("提交内容错误: %q, %v", got, err)
-	}
-	fileInfo, err := os.Stat(filepath.Join(final, filepath.FromSlash(entry.Path)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if fileInfo.Mode().Perm() != 0o640 || !fileInfo.ModTime().Equal(now) {
-		t.Fatalf("文件元数据未恢复: mode=%o mtime=%s", fileInfo.Mode().Perm(), fileInfo.ModTime())
-	}
-	directoryInfo, err := os.Stat(filepath.Join(final, "目录"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if directoryInfo.Mode().Perm() != 0o750 || !directoryInfo.ModTime().Equal(now) {
-		t.Fatalf("目录元数据未恢复: mode=%o mtime=%s", directoryInfo.Mode().Perm(), directoryInfo.ModTime())
-	}
+	return result
 }
 
 func TestManifestSupportsSizesAboveFourGiB(t *testing.T) {

@@ -1,0 +1,61 @@
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.18s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.18s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.18s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.18s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+=== RUN   TestFileClipboardRoundTrip
+--- PASS: TestFileClipboardRoundTrip (0.17s)
+PASS

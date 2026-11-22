@@ -1,0 +1,27 @@
+?   	myapp/build/icon	[no test files]
+?   	myapp/build/release	[no test files]
+ok  	myapp/cmd/myapp	1.151s
+ok  	myapp/internal/app	2.779s
+ok  	myapp/internal/clipboard	1.082s
+ok  	myapp/internal/config	1.008s
+ok  	myapp/internal/device	1.017s
+ok  	myapp/internal/discovery	1.041s
+ok  	myapp/internal/fileclipboard	1.150s
+ok  	myapp/internal/gui	1.051s
+ok  	myapp/internal/identity	1.033s
+ok  	myapp/internal/input	1.010s
+ok  	myapp/internal/layout	1.008s
+ok  	myapp/internal/logging	1.013s
+ok  	myapp/internal/nativegui	14.400s
+ok  	myapp/internal/pairing	1.047s
+?   	myapp/internal/platform	[no test files]
+?   	myapp/internal/platform/linux/clipboard	[no test files]
+?   	myapp/internal/platform/linux/input	[no test files]
+ok  	myapp/internal/protocol	1.057s
+ok  	myapp/internal/transfer	1.021s
+ok  	myapp/internal/transport	6.074s
+ok  	myapp/internal/trust	1.024s
+?   	myapp/tests/inputcaptureprobe	[no test files]
+ok  	myapp/tests/integration	1.041s
+?   	myapp/tests/x11probe	[no test files]
+?   	myapp/work/windows-regression-20261122/clipprobe	[no test files]

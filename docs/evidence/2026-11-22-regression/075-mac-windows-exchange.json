@@ -1,0 +1,7 @@
+{
+  "stdout": "{\r\n    \"authenticatedSession\":  true,\r\n    \"bidirectionalText\":  true,\r\n    \"receivedDirectory\":  \"E:\\\\test\\\\MyApp-regression-20261122\\\\mac-cache\\\\peer-1\\\\ef8ac30ca4de6b96c2755ea0015ebbf2\\\\mac-source\",\r\n    \"fileContent\":  true,\r\n    \"emptyFile\":  true,\r\n    \"emptyDirectory\":  true,\r\n    \"controllerPID\":  19720,\r\n    \"textRoundTrips\":  50\r\n}\r\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": 1,
+  "stderr": "Unexpected reconnect during clipboard regression\r\n所在位置 E:\\test\\MyApp-regression-20261122\\jobs\\075-mac-windows-exchange.ps1:60 字符: 87\r\n+ ... d open')) { throw 'Unexpected reconnect during clipboard regression'  ...\r\n+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : OperationStopped: (Unexpected reco...oard regression:String) [], RuntimeException\r\n    + FullyQualifiedErrorId : Unexpected reconnect during clipboard regression\r\n \r\n",
+  "id": "075-mac-windows-exchange",
+  "timedOut": false
+}

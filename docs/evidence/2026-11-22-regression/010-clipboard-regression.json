@@ -1,0 +1,7 @@
+{
+  "stdout": "=== RUN   TestClipboardKeepsOneSystemThread\n--- PASS: TestClipboardKeepsOneSystemThread (0.01s)\n=== RUN   TestClipboardTextAndFileRoundtrip\n--- PASS: TestClipboardTextAndFileRoundtrip (0.01s)\n=== RUN   TestClipboardConcurrentBackends\n--- PASS: TestClipboardConcurrentBackends (0.34s)\n=== RUN   TestClipboardRetriesBusyAndHonorsCancellation\n=== RUN   TestClipboardRetriesBusyAndHonorsCancellation/false\n=== RUN   TestClipboardRetriesBusyAndHonorsCancellation/true\n--- PASS: TestClipboardRetriesBusyAndHonorsCancellation (0.13s)\n    --- PASS: TestClipboardRetriesBusyAndHonorsCancellation/false (0.05s)\n    --- PASS: TestClipboardRetriesBusyAndHonorsCancellation/true (0.04s)\nPASS\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "010-clipboard-regression",
+  "timedOut": false
+}

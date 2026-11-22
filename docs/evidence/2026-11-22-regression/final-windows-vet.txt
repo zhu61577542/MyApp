@@ -1,0 +1,10 @@
+internal/platform/windows/clipboard/backend_windows.go:140:34: possible misuse of unsafe.Pointer
+internal/platform/windows/clipboard/backend_windows.go:168:30: possible misuse of unsafe.Pointer
+internal/platform/windows/clipboard/files_windows.go:50:33: possible misuse of unsafe.Pointer
+internal/platform/windows/clipboard/files_windows.go:56:34: possible misuse of unsafe.Pointer
+internal/platform/windows/clipboard/files_windows.go:103:33: possible misuse of unsafe.Pointer
+internal/platform/windows/clipboard/files_windows.go:106:30: possible misuse of unsafe.Pointer
+internal/platform/windows/input/capturer_windows.go:202:29: possible misuse of unsafe.Pointer
+internal/platform/windows/input/capturer_windows.go:266:32: possible misuse of unsafe.Pointer
+internal/platform/windows/input/capturer_windows_test.go:35:43: possible misuse of unsafe.Pointer
+internal/platform/windows/input/capturer_windows_test.go:86:27: possible misuse of unsafe.Pointer

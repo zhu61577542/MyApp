@@ -1,0 +1,29 @@
+=== RUN   TestReceiverSymlinkCannotResumeCompleteOrCommit
+--- PASS: TestReceiverSymlinkCannotResumeCompleteOrCommit (0.01s)
+=== RUN   TestReceiverCommitConflictPreservesRecovery
+--- PASS: TestReceiverCommitConflictPreservesRecovery (0.01s)
+=== RUN   TestRequirementCorruptFileCannotCommit
+--- PASS: TestRequirementCorruptFileCannotCommit (0.01s)
+=== RUN   TestRequirementTruncatedFileCannotCommit
+--- PASS: TestRequirementTruncatedFileCannotCommit (0.01s)
+=== RUN   TestRequirementUnlistedPathCannotBeWritten
+--- PASS: TestRequirementUnlistedPathCannotBeWritten (0.00s)
+=== RUN   TestRequirementReceiverRejectsSymlinkEscape
+--- PASS: TestRequirementReceiverRejectsSymlinkEscape (0.00s)
+=== RUN   TestReceiverRestoresInterruptedMetadata
+--- PASS: TestReceiverRestoresInterruptedMetadata (0.01s)
+=== RUN   TestRequirementUserFileCannotCollideWithResumeMetadata
+--- PASS: TestRequirementUserFileCannotCollideWithResumeMetadata (0.01s)
+=== RUN   TestValidateRelativePathRejectsTraversal
+--- PASS: TestValidateRelativePathRejectsTraversal (0.00s)
+=== RUN   TestManifestRejectsTransferIDTraversal
+--- PASS: TestManifestRejectsTransferIDTraversal (0.00s)
+=== RUN   TestReceiverResumeVerifyAndCommit
+=== RUN   TestReceiverResumeVerifyAndCommit/normal
+=== RUN   TestReceiverResumeVerifyAndCommit/readonly
+--- PASS: TestReceiverResumeVerifyAndCommit (0.03s)
+    --- PASS: TestReceiverResumeVerifyAndCommit/normal (0.01s)
+    --- PASS: TestReceiverResumeVerifyAndCommit/readonly (0.01s)
+=== RUN   TestManifestSupportsSizesAboveFourGiB
+--- PASS: TestManifestSupportsSizesAboveFourGiB (0.00s)
+PASS

@@ -1,0 +1,76 @@
+{
+  "parentCommit": "e9538cbb",
+  "buildLabel": "0.1.5-alpha-validation",
+  "artifacts": [
+    {
+      "name": "payload/myapp-core.exe",
+      "bytes": 7314432,
+      "sha256": "8428939baf1426b8729da2925caad01e88db1c00bf40360546c2b7b564fbb0c3"
+    },
+    {
+      "name": "payload/myapp.exe",
+      "bytes": 25381376,
+      "sha256": "cad100c5c28a3f995b98e46d33d6c847fa9c19ca6dc0bbf6f13e9afeb02f7506"
+    },
+    {
+      "name": "myapp-macos",
+      "bytes": 10132994,
+      "sha256": "74083d85168885cb8cdce761f663d0a37222aa11135c864e89cf5d0eb109bbfc"
+    },
+    {
+      "name": "myapp-linux-amd64",
+      "bytes": 10482670,
+      "sha256": "220cd758a022242d8a7b97be3e1283b62412df4bac89db59e8b0df82d2873110"
+    },
+    {
+      "name": "myapp-linux-arm64",
+      "bytes": 9703798,
+      "sha256": "9429006a1055e3816501bfcfaccad035150838aad9b475dc8c1f661618348268"
+    },
+    {
+      "name": "payload/clipboard.test.exe",
+      "bytes": 4574208,
+      "sha256": "dd68ec07ddf53524895d8f543c6fe747cf001823c86daaa0237268f3c3faee88"
+    },
+    {
+      "name": "payload/transfer.test.exe",
+      "bytes": 5364224,
+      "sha256": "a981c429e9e8c567ecb3f0da4eec945a36f4d6231583c80598b0a6cd40bd9545"
+    },
+    {
+      "name": "payload/input.test.exe",
+      "bytes": 4518400,
+      "sha256": "ec44951f3bb40e1d1e250e610982e66277e156c28627f0675171de135cb2a258"
+    },
+    {
+      "name": "mac-clipboard.test",
+      "bytes": 4698850,
+      "sha256": "e85ee7d2e7cc7c919c9a69d7939aa064585c5f80dd74e12463c2222fa979a1dc"
+    },
+    {
+      "name": "mac-transfer.test",
+      "bytes": 4801474,
+      "sha256": "69da2021c91da33c4dfc83912188865381265e1ef5249ab5b816aca3b4bce175"
+    },
+    {
+      "name": "inputcaptureprobe",
+      "bytes": 3405522,
+      "sha256": "e67aca852c10bbf7b542b635adab5b3311a1d21ba1f700bae5a5d7a2175f9b24"
+    },
+    {
+      "name": "payload/inputcaptureprobe.exe",
+      "bytes": 3299840,
+      "sha256": "149684fc1225613f3c46c548768dbd64748d3db46db5bbfd8e570b4dec963225"
+    },
+    {
+      "name": "MyApp-windows-test.zip",
+      "bytes": 14884762,
+      "sha256": "3f222a51c7a5a329a334416946440d1a036a6ab4a791d8f594100a867b27f887"
+    },
+    {
+      "name": "MyApp-native-gui.zip",
+      "bytes": 11965054,
+      "sha256": "20e9c6db4f215c15c3bd697835444d261ba781ee1263f4da679d34b93454e7bd"
+    }
+  ]
+}

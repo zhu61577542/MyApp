@@ -1,0 +1,7 @@
+已连接 1 台子电脑；Ctrl+Alt+1/2 切换目标，Ctrl+Alt+Esc 退出控制
+连接中断，第 1 次重连：read tcp 192.168.1.6:62892->192.168.1.2:24960: read: connection reset by peer
+连接中断，第 2 次重连：连接目标 1: dial tcp 192.168.1.2:24960: i/o timeout
+连接中断，第 3 次重连：连接目标 1: dial tcp 192.168.1.2:24960: i/o timeout
+连接中断，第 4 次重连：连接目标 1: dial tcp 192.168.1.2:24960: i/o timeout
+连接中断，第 5 次重连：连接目标 1: dial tcp 192.168.1.2:24960: i/o timeout
+连接中断，第 6 次重连：连接目标 1: dial tcp 192.168.1.2:24960: i/o timeout

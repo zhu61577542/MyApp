@@ -1,0 +1,7 @@
+{
+  "stdout": "{\r\n    \"authenticatedSession\":  true,\r\n    \"bidirectionalText\":  true,\r\n    \"receivedDirectory\":  \"E:\\\\test\\\\MyApp-regression-20261122\\\\mac-cache\\\\peer-1\\\\5a3e608e537e42643f1b280481168830\\\\mac-source\",\r\n    \"fileContent\":  true,\r\n    \"emptyFile\":  true,\r\n    \"emptyDirectory\":  true,\r\n    \"controllerPID\":  23068,\r\n    \"textRoundTrips\":  150,\r\n    \"elapsedSeconds\":  53.1588309\r\n}\r\nMYAPP_TEST_EXITCODE=0\r\nCONTROLLER_NO_RECONNECT=true\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "086-long-mac-windows-exchange",
+  "timedOut": false
+}

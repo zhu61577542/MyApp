@@ -24,18 +24,16 @@ func NewFiles() (*FileBackend, error) {
 }
 
 func (b *FileBackend) ReadFiles(ctx context.Context) ([]string, uint64, bool, error) {
-	if err := ctx.Err(); err != nil {
+	release, err := b.base.openClipboard(ctx, false)
+	if err != nil {
 		return nil, 0, false, err
 	}
+	defer release()
 	revision, _, _ := b.base.sequence.Call()
 	available, _, _ := b.base.available.Call(fileDrop)
 	if available == 0 {
 		return nil, uint64(revision), false, nil
 	}
-	if opened, _, callErr := b.base.open.Call(0); opened == 0 {
-		return nil, 0, false, clipboardError(callErr, "无法打开 Windows 剪贴板")
-	}
-	defer b.base.close.Call()
 	handle, _, callErr := b.base.getData.Call(fileDrop)
 	if handle == 0 {
 		return nil, 0, false, clipboardError(callErr, "无法读取 Windows 文件剪贴板")
@@ -107,10 +105,11 @@ func (b *FileBackend) WriteFiles(ctx context.Context, paths []string) error {
 	*(*uint32)(unsafe.Pointer(&header[16])) = 1
 	copy(unsafe.Slice((*uint16)(unsafe.Pointer(pointer+20)), len(units)), units)
 	b.base.globalUnlock.Call(handle)
-	if opened, _, callErr := b.base.open.Call(0); opened == 0 {
-		return clipboardError(callErr, "无法打开 Windows 剪贴板")
+	release, err := b.base.openClipboard(ctx, true)
+	if err != nil {
+		return err
 	}
-	defer b.base.close.Call()
+	defer release()
 	if emptied, _, callErr := b.base.empty.Call(); emptied == 0 {
 		return clipboardError(callErr, "无法清空 Windows 剪贴板")
 	}

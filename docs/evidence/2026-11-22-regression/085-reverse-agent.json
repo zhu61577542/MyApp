@@ -1,0 +1,7 @@
+{
+  "stdout": "{\r\n    \"authenticatedSession\":  true,\r\n    \"bidirectionalText\":  true,\r\n    \"receivedDirectory\":  \"E:\\\\test\\\\MyApp-regression-20261122\\\\reverse-cache\\\\74c1f77105fc64a9975b6770b5d86942\\\\mac-source\",\r\n    \"fileContent\":  true,\r\n    \"emptyFile\":  true,\r\n    \"emptyDirectory\":  true,\r\n    \"controllerPID\":  1012,\r\n    \"textRoundTrips\":  50\r\n}\r\nMYAPP_TEST_EXITCODE=0\r\nCONTROLLER_NO_RECONNECT=true\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "085-reverse-agent",
+  "timedOut": false
+}

@@ -1,0 +1,7 @@
+{
+  "stdout": "=== RUN   TestPhysicalCapture\n    capturer_windows_test.go:110: mouse_messages=map[512:456 513:1 514:1 516:1 517:1] mouse_flags=map[0:460] a=true left_button=true emergency=true capture_error=context canceled\n--- PASS: TestPhysicalCapture (20.07s)\nPASS\n\r\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "084-windows-physical-input",
+  "timedOut": false
+}

@@ -104,7 +104,11 @@ func LoadReceiver(cacheRoot, transferID string) (*Receiver, error) {
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return nil, errors.New("传输临时目录无效")
 	}
-	return newReceiverState(root, partial, filepath.Join(root, transferID), envelope.Manifest), nil
+	receiver := newReceiverState(root, partial, filepath.Join(root, transferID), envelope.Manifest)
+	if err := receiver.restoreWritable(); err != nil {
+		return nil, err
+	}
+	return receiver, nil
 }
 
 func newReceiverState(root, partial, final string, manifest Manifest) *Receiver {
@@ -232,7 +236,7 @@ func (r *Receiver) CompleteFile(relative string) error {
 	return nil
 }
 
-func (r *Receiver) Commit() (string, error) {
+func (r *Receiver) Commit() (final string, resultErr error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	dataRoot, err := r.openData()
@@ -268,9 +272,6 @@ func (r *Receiver) Commit() (string, error) {
 			return "", fmt.Errorf("文件校验失败: %s", entry.Path)
 		}
 	}
-	if err := r.applyMetadata(dataRoot); err != nil {
-		return "", err
-	}
 	cache, err := os.OpenRoot(r.root)
 	if err != nil {
 		return "", err
@@ -281,12 +282,66 @@ func (r *Receiver) Commit() (string, error) {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
+	committed := false
+	defer func() {
+		if resultErr != nil && !committed {
+			resultErr = errors.Join(resultErr, r.restoreWritable())
+		}
+	}()
+	if err := r.applyMetadata(dataRoot); err != nil {
+		return "", err
+	}
+	if _, err := cache.Lstat(filepath.Base(r.final)); err == nil {
+		return "", errors.New("目标传输缓存已存在")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
 	dataRoot.Close()
 	if err := cache.Rename(filepath.Base(r.partial), filepath.Base(r.final)); err != nil {
 		return "", err
 	}
+	committed = true
 	_ = cache.Remove(".state-" + r.manifest.TransferID + ".json")
 	return r.final, nil
+}
+
+func (r *Receiver) restoreWritable() error {
+	root, err := r.openData()
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+	entries := append([]Entry(nil), r.manifest.Entries...)
+	sort.SliceStable(entries, func(i, j int) bool {
+		return pathDepth(entries[i].Path) < pathDepth(entries[j].Path)
+	})
+	var result error
+	for _, entry := range entries {
+		if err := rejectLinks(root, entry.Path); err != nil {
+			result = errors.Join(result, err)
+			continue
+		}
+		info, err := root.Lstat(filepath.FromSlash(entry.Path))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			result = errors.Join(result, err)
+			continue
+		}
+		if entry.Type == Directory && !info.IsDir() || entry.Type == File && !info.Mode().IsRegular() {
+			result = errors.Join(result, fmt.Errorf("临时条目类型不匹配: %s", entry.Path))
+			continue
+		}
+		mode := os.FileMode(0600)
+		if entry.Type == Directory {
+			mode = 0700
+		}
+		if err := root.Chmod(filepath.FromSlash(entry.Path), mode); err != nil {
+			result = errors.Join(result, fmt.Errorf("恢复临时权限失败 %s: %w", entry.Path, err))
+		}
+	}
+	return result
 }
 
 func (r *Receiver) applyMetadata(dataRoot *os.Root) error {

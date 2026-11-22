@@ -1,0 +1,7 @@
+{
+  "stdout": "远端设备: mac-validation\n配对码: [已脱敏]\n请在两台电脑核对配对码。确认请输入 yes: 配对完成: mac-validation，设备 ID gvperyt7n2zyhebqchdz6hlq5goyp45vanz3u2tduchuwwcps3lq，地址 192.168.1.6:24951\n",
+  "exitCode": 1,
+  "stderr": "Mac directory transfer timed out\r\n所在位置 E:\\test\\MyApp-regression-20261122\\jobs\\060-mac-windows-exchange.ps1:50 字符: 30\r\n+ ...   if (-not $destination) { throw 'Mac directory transfer timed out' }\r\n+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : OperationStopped: (Mac directory transfer timed out:String) [], RuntimeException\r\n    + FullyQualifiedErrorId : Mac directory transfer timed out\r\n \r\n",
+  "id": "060-mac-windows-exchange",
+  "timedOut": false
+}

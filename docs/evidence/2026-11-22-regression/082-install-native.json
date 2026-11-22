@@ -1,0 +1,7 @@
+{
+  "stdout": "GUI_INSTALLED_NO_GUI_TEST=true\r\nMyApp 0.1.5-alpha-validation commit=e9538cbb+working protocol=1.0\n{\r\n    \"Algorithm\":  \"SHA256\",\r\n    \"Hash\":  \"CAD100C5C28A3F995B98E46D33D6C847FA9C19CA6DC0BBF6F13E9AFEB02F7506\",\r\n    \"Path\":  \"E:\\\\test\\\\MyApp-regression-20261122\\\\app\\\\myapp.exe\"\r\n}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "082-install-native",
+  "timedOut": false
+}

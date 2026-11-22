@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -20,7 +22,7 @@ func TestReceiverSymlinkCannotResumeCompleteOrCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(outside, filepath.Join(r.partial, "a")); err != nil {
-		t.Fatal(err)
+		requireSymlinkPrivilege(t, err)
 	}
 	if _, err := r.ResumeOffset("a"); err == nil {
 		t.Error("允许从外部文件恢复")
@@ -30,6 +32,9 @@ func TestReceiverSymlinkCannotResumeCompleteOrCommit(t *testing.T) {
 	}
 	if _, err := r.Commit(); err == nil {
 		t.Error("允许提交外部文件")
+	}
+	if _, err := LoadReceiver(r.root, "audit"); err == nil {
+		t.Error("允许恢复含符号链接的临时树")
 	}
 	if err := r.Cancel(); err != nil {
 		t.Fatal(err)
@@ -52,7 +57,7 @@ func TestReceiverCommitConflictPreservesRecovery(t *testing.T) {
 	if _, err := r.Write("a", 0, bytes.NewReader(content)); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(filepath.Join(t.TempDir(), "missing"), r.final); err != nil {
+	if err := os.WriteFile(r.final, []byte("existing destination"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.Commit(); err == nil {
@@ -64,6 +69,12 @@ func TestReceiverCommitConflictPreservesRecovery(t *testing.T) {
 	}
 	if offset, err := restored.ResumeOffset("a"); err != nil || offset != int64(len(content)) {
 		t.Fatalf("冲突后丢失进度: %d %v", offset, err)
+	}
+	if err := os.Remove(r.final); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := restored.Commit(); err != nil {
+		t.Fatalf("解除冲突后不能重试提交: %v", err)
 	}
 }
 
@@ -116,7 +127,7 @@ func TestRequirementReceiverRejectsSymlinkEscape(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(outside, filepath.Join(r.partial, "dir")); err != nil {
-		t.Fatal(err)
+		requireSymlinkPrivilege(t, err)
 	}
 	_, writeErr := r.Write("dir/a", 0, bytes.NewBufferString("data"))
 	if writeErr == nil {
@@ -124,6 +135,51 @@ func TestRequirementReceiverRejectsSymlinkEscape(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(outside, "a")); err == nil {
 		t.Error("缓存外文件已被创建")
+	}
+}
+
+func requireSymlinkPrivilege(t *testing.T, err error) {
+	t.Helper()
+	if runtime.GOOS == "windows" && errors.Is(err, syscall.Errno(1314)) {
+		t.Skipf("当前 Windows 账户缺少创建符号链接权限: %v", err)
+	}
+	t.Fatal(err)
+}
+
+func TestReceiverRestoresInterruptedMetadata(t *testing.T) {
+	content := []byte("recoverable data")
+	manifest := requirementManifest("dir/sub/a", content)
+	manifest.Entries = append([]Entry{
+		{Path: "dir", Type: Directory, Mode: 0550, ModifiedAt: manifest.CreatedAt},
+		{Path: "dir/sub", Type: Directory, Mode: 0550, ModifiedAt: manifest.CreatedAt},
+	}, manifest.Entries...)
+	receiver, err := NewReceiver(t.TempDir(), manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := receiver.Write("dir/sub/a", 0, bytes.NewReader(content)); err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range []struct {
+		path string
+		mode os.FileMode
+	}{{"dir/sub/a", 0400}, {"dir/sub", 0000}, {"dir", 0000}} {
+		if err := os.Chmod(filepath.Join(receiver.partial, filepath.FromSlash(entry.path)), entry.mode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	restored, err := LoadReceiver(receiver.root, manifest.TransferID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if offset, err := restored.ResumeOffset("dir/sub/a"); err != nil || offset != int64(len(content)) {
+		t.Fatalf("恢复偏移错误: %d %v", offset, err)
+	}
+	if _, err := restored.Write("dir/sub/a", int64(len(content)), bytes.NewReader(nil)); err != nil {
+		t.Fatalf("恢复后仍不可写: %v", err)
+	}
+	if err := restored.Cancel(); err != nil {
+		t.Fatalf("恢复后不能取消: %v", err)
 	}
 }
 

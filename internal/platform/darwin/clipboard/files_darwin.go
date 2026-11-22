@@ -9,8 +9,24 @@ import (
 	"os/exec"
 )
 
-const readFilesScript = `ObjC.import('AppKit'); const p=$.NSPasteboard.generalPasteboard; const xs=p.readObjectsForClassesOptions([$.NSURL],{}).js || []; JSON.stringify({revision:Number(p.changeCount),paths:xs.map(x=>ObjC.unwrap(x.path))});`
-const writeFilesScript = `ObjC.import('AppKit'); function run(argv){ const xs=JSON.parse(argv[0]); const p=$.NSPasteboard.generalPasteboard; p.clearContents; if(!p.writeObjects(xs.map(x=>$.NSURL.fileURLWithPath(x)))) throw Error('writeObjects failed'); }`
+const readFilesScript = `ObjC.import('AppKit');
+const p=$.NSPasteboard.generalPasteboard;
+const legacy=p.propertyListForType('NSFilenamesPboardType');
+const paths=legacy.isNil()?[]:ObjC.deepUnwrap(legacy);
+if(paths.length===0){
+ const classes=$.NSMutableArray.alloc.init;
+ classes.addObject($.NSURL.class);
+ const xs=p.readObjectsForClassesOptions(classes,$.NSDictionary.dictionary);
+ for(let i=0;i<Number(xs.count);i++){ const url=xs.objectAtIndex(i); if(url.isFileURL) paths.push(ObjC.unwrap(url.path)); }
+}
+JSON.stringify({revision:Number(p.changeCount),paths:paths});`
+const writeFilesScript = `ObjC.import('AppKit');
+function run(argv){
+ const paths=JSON.parse(argv[0]);
+ const p=$.NSPasteboard.generalPasteboard;
+ p.declareTypesOwner(['NSFilenamesPboardType'],null);
+ if(!p.setPropertyListForType(paths,'NSFilenamesPboardType')) throw Error('file pasteboard publication failed');
+}`
 
 type FileBackend struct{}
 
