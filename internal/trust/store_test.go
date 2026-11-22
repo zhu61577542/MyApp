@@ -38,6 +38,31 @@ func TestTrustVerifyAndRevoke(t *testing.T) {
 	}
 }
 
+func TestRevokedPeerRequiresExplicitConfirmationToPairAgain(t *testing.T) {
+	now := time.Now()
+	peer, _ := identity.Generate("子电脑", now)
+	store := New(t.TempDir())
+	if _, err := store.AddNew(peer.CertDER, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Revoke(peer.DeviceID, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AddNew(peer.CertDER, now); !errors.Is(err, ErrRevoked) {
+		t.Fatal("隐式重加信任绕过撤销")
+	}
+	if _, err := store.AddAfterConfirmation(peer.CertDER, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.VerifyCertificate(peer.CertDER, now); err != nil {
+		t.Fatal(err)
+	}
+	records, err := store.List()
+	if err != nil || len(records) != 1 {
+		t.Fatalf("重配后信任列表错误: %v %+v", err, records)
+	}
+}
+
 func TestTrustRejectsDifferentCertificate(t *testing.T) {
 	now := time.Now()
 	first, err := identity.Generate("同名设备", now)

@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -42,6 +43,10 @@ type Source struct {
 }
 
 func BuildManifest(transferID string, sources []Source, now time.Time) (Manifest, error) {
+	return BuildManifestContext(context.Background(), transferID, sources, now)
+}
+
+func BuildManifestContext(ctx context.Context, transferID string, sources []Source, now time.Time) (Manifest, error) {
 	if transferID == "" || len(sources) == 0 {
 		return Manifest{}, errors.New("传输 ID 和源文件不能为空")
 	}
@@ -60,6 +65,9 @@ func BuildManifest(transferID string, sources []Source, now time.Time) (Manifest
 			return Manifest{}, err
 		}
 		err = filepath.WalkDir(source.Path, func(current string, item fs.DirEntry, walkErr error) error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			if walkErr != nil {
 				return walkErr
 			}
@@ -90,7 +98,7 @@ func BuildManifest(transferID string, sources []Source, now time.Time) (Manifest
 				entry.Type, entry.Size = Directory, 0
 			} else {
 				entry.Type = File
-				hash, err := hashFile(current)
+				hash, err := hashFileContext(ctx, current)
 				if err != nil {
 					return err
 				}
@@ -176,14 +184,29 @@ func ValidateRelativePath(value string) error {
 }
 
 func hashFile(filename string) (string, error) {
+	return hashFileContext(context.Background(), filename)
+}
+func hashFileContext(ctx context.Context, filename string) (string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 	hash := sha256.New()
-	if _, err := io.Copy(hash, file); err != nil {
+	if _, err := io.Copy(hash, contextReader{ctx, file}); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+type contextReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r contextReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.reader.Read(p)
 }

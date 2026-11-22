@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,7 +35,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := openProcessLogger()
 	if logger != nil {
 		defer logger.Close()
-		stdout = io.MultiWriter(stdout, logger.Stream(logging.Info))
+		if len(args) == 0 || args[0] != "desktop-service" {
+			stdout = io.MultiWriter(stdout, logger.Stream(logging.Info))
+		}
 		stderr = io.MultiWriter(stderr, logger.Stream(logging.Error))
 		command := "默认 GUI"
 		if len(args) > 0 {
@@ -60,6 +63,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		err = runServe(args[1:], stdout, stderr)
 	case "control":
 		err = runControl(args[1:], stdout, stderr)
+	case "desktop-service":
+		err = runDesktopService(args[1:], stdin, stdout, stderr)
 	case "gui":
 		err = runNativeGUI(args[1:], stdout, stderr)
 	case "gui-web":
@@ -99,6 +104,8 @@ func runPair(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	set.SetOutput(stderr)
 	identityDirectory := set.String("identity-dir", defaultIdentityDir(), "身份目录")
 	trustDirectory := set.String("trust-dir", defaultTrustDir(), "信任目录")
+	desktopMode := set.Bool("desktop", false, "使用桌面配对确认与共享端口交换")
+	servicePort := set.Int("service-port", 24800, "本机共享服务端口")
 	addressDefault := ":24800"
 	if args[0] == "connect" {
 		addressDefault = ""
@@ -118,9 +125,35 @@ func runPair(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	ctx, cancel := context.WithTimeout(context.Background(), pairing.OfferLifetime)
 	defer cancel()
 	approve := func(match pairing.Match) bool {
+		if *desktopMode {
+			records, err := store.List()
+			if err != nil {
+				fmt.Fprintln(stderr, "无法读取信任列表:", err)
+				return false
+			}
+			exists := false
+			for _, record := range records {
+				if record.DeviceID == match.RemoteDeviceID {
+					exists = true
+				}
+			}
+			if !exists && len(records) >= 2 {
+				fmt.Fprintln(stderr, "已达到最多三台电脑，请先撤销不再使用的设备")
+				return false
+			}
+		}
 		fmt.Fprintf(stdout, "远端设备: %s\n配对码: %s\n请在两台电脑核对配对码。确认请输入 yes: ", match.RemoteDeviceName, match.Code)
-		scanner := bufio.NewScanner(stdin)
-		return scanner.Scan() && strings.EqualFold(strings.TrimSpace(scanner.Text()), "yes")
+		approved := make(chan bool, 1)
+		go func() {
+			scanner := bufio.NewScanner(stdin)
+			approved <- scanner.Scan() && strings.EqualFold(strings.TrimSpace(scanner.Text()), "yes")
+		}()
+		select {
+		case result := <-approved:
+			return result
+		case <-ctx.Done():
+			return false
+		}
 	}
 	var connection net.Conn
 	var initiator bool
@@ -155,6 +188,17 @@ func runPair(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	match, record, err := pairing.Run(ctx, connection, localIdentity, store, initiator, approve)
 	if err != nil {
 		return err
+	}
+	if *desktopMode {
+		port, err := pairing.ExchangeService(ctx, connection, localIdentity, store, match.RemoteDeviceID, *servicePort, initiator)
+		if err != nil {
+			return fmt.Errorf("信任已确认，但交换共享地址失败，请检查两端版本：%w", err)
+		}
+		host, _, err := net.SplitHostPort(connection.RemoteAddr().String())
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(stdout, "共享服务地址:", net.JoinHostPort(host, strconv.Itoa(port)))
 	}
 	_, err = fmt.Fprintf(stdout, "配对完成: %s，设备 ID %s，地址 %s\n", record.DeviceName, match.RemoteDeviceID, connection.RemoteAddr())
 	return err

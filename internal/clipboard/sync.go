@@ -37,11 +37,13 @@ func (b TextOnlyBackend) ReadText(ctx context.Context) (string, uint64, error) {
 }
 
 type Synchronizer struct {
-	engine  *Engine
-	backend Backend
-	publish Publisher
-	period  time.Duration
-	writeMu sync.Mutex
+	engine        *Engine
+	backend       Backend
+	publish       Publisher
+	period        time.Duration
+	writeMu       sync.Mutex
+	publishMu     sync.Mutex
+	publishCancel context.CancelFunc
 }
 
 func NewSynchronizer(engine *Engine, backend Backend, publish Publisher, period time.Duration) (*Synchronizer, error) {
@@ -63,10 +65,11 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
+			s.writeMu.Lock()
 			if s.engine.Paused() {
+				s.writeMu.Unlock()
 				continue
 			}
-			s.writeMu.Lock()
 			text, current, err := s.backend.ReadText(ctx)
 			if errors.Is(err, ErrNoText) {
 				s.writeMu.Unlock()
@@ -82,17 +85,53 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 			}
 			revision = current
 			entry, decision, err := s.engine.Local(text, time.Now())
-			s.writeMu.Unlock()
 			if err != nil {
+				s.writeMu.Unlock()
 				return err
 			}
 			if decision == Accepted {
-				if err := s.publish(ctx, entry); err != nil {
+				s.writeMu.Unlock()
+				if err := s.publishEntry(ctx, entry); err != nil {
 					return err
 				}
+				continue
 			}
+			s.writeMu.Unlock()
 		}
 	}
+}
+
+func (s *Synchronizer) SetPaused(paused bool) {
+	s.writeMu.Lock()
+	s.engine.SetPaused(paused)
+	if paused && s.publishCancel != nil {
+		s.publishCancel()
+	}
+	s.writeMu.Unlock()
+	s.publishMu.Lock()
+	s.publishMu.Unlock()
+}
+
+func (s *Synchronizer) publishEntry(ctx context.Context, entry Entry) error {
+	s.publishMu.Lock()
+	defer s.publishMu.Unlock()
+	s.writeMu.Lock()
+	if s.engine.Paused() {
+		s.writeMu.Unlock()
+		return nil
+	}
+	publishCtx, cancel := context.WithCancel(ctx)
+	s.publishCancel = cancel
+	s.writeMu.Unlock()
+	err := s.publish(publishCtx, entry)
+	cancel()
+	s.writeMu.Lock()
+	s.publishCancel = nil
+	s.writeMu.Unlock()
+	if errors.Is(err, context.Canceled) && ctx.Err() == nil {
+		return nil
+	}
+	return err
 }
 
 func (s *Synchronizer) Apply(ctx context.Context, entry Entry) (Decision, error) {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -101,6 +102,73 @@ func (s Store) Get(deviceID string) (Record, error) {
 	sum := sha256.Sum256(record.Certificate)
 	if record.Fingerprint != hex.EncodeToString(sum[:]) {
 		return Record{}, errors.New("信任记录指纹不一致")
+	}
+	return record, nil
+}
+
+func (s Store) List() ([]Record, error) {
+	files, err := os.ReadDir(s.trustedDirectory())
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var records []Record
+	for _, file := range files {
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".json") {
+			continue
+		}
+		id := strings.TrimSuffix(file.Name(), ".json")
+		record, err := s.Get(id)
+		if errors.Is(err, ErrRevoked) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+	sort.Slice(records, func(i, j int) bool { return records[i].DeviceName < records[j].DeviceName })
+	return records, nil
+}
+
+// 仅在新一轮双方确认成功后调用。
+func (s Store) AddAfterConfirmation(certificateDER []byte, now time.Time) (Record, error) {
+	id, cert, err := identity.ValidateCertificate(certificateDER, now)
+	if err != nil {
+		return Record{}, err
+	}
+	if err := validateDeviceID(id); err != nil {
+		return Record{}, err
+	}
+	if old, err := s.VerifyCertificate(certificateDER, now); err == nil {
+		return old, nil
+	}
+	sum := sha256.Sum256(certificateDER)
+	record := Record{DeviceID: id, DeviceName: cert.Subject.OrganizationalUnit[0], Certificate: append([]byte(nil), certificateDER...), Fingerprint: hex.EncodeToString(sum[:]), PairedAt: now.UTC()}
+	if err := os.MkdirAll(s.trustedDirectory(), 0700); err != nil {
+		return Record{}, err
+	}
+	file, err := os.CreateTemp(s.trustedDirectory(), ".paired-*")
+	if err != nil {
+		return Record{}, err
+	}
+	defer os.Remove(file.Name())
+	data, err := json.MarshalIndent(record, "", "  ")
+	if err != nil {
+		file.Close()
+		return Record{}, err
+	}
+	_, writeErr := file.Write(append(data, '\n'))
+	if err := errors.Join(writeErr, file.Sync(), file.Close()); err != nil {
+		return Record{}, err
+	}
+	if err := os.Rename(file.Name(), s.trustedPath(id)); err != nil {
+		return Record{}, err
+	}
+	if err := os.Remove(s.revokedPath(id)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return Record{}, err
 	}
 	return record, nil
 }

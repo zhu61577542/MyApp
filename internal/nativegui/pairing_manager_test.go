@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 	"myapp/internal/config"
@@ -175,6 +176,14 @@ func TestSavingSettingsKeepsBackgroundPairedPeer(t *testing.T) {
 			for _, child := range object.Objects {
 				visit(child)
 			}
+		case *container.Scroll:
+			visit(object.Content)
+		case *surfaceGroup:
+			visit(object.content)
+		case *widget.Form:
+			for _, item := range object.Items {
+				visit(item.Widget)
+			}
 		case *widget.Entry:
 			if object.Text == "local" {
 				name = object
@@ -191,6 +200,14 @@ func TestSavingSettingsKeepsBackgroundPairedPeer(t *testing.T) {
 	}
 	name.SetText("renamed")
 	test.Tap(save)
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		current, err := config.Load(options.ConfigPath)
+		if err == nil && current.DeviceName == "renamed" {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 	current, err := config.Load(options.ConfigPath)
 	if err != nil {
 		t.Fatal(err)

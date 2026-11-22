@@ -30,6 +30,8 @@ type Link struct {
 	filesReady   func(context.Context, []string) error
 	textReceived func(context.Context, clipboard.Entry) error
 	disconnected func(error)
+	desktop      *linkDesktop
+	tasks        *linkTransfers
 }
 
 // 仅在启动 Run 前设置。
@@ -105,11 +107,21 @@ func (l *Link) PublishClipboard(ctx context.Context, entry clipboard.Entry) erro
 }
 
 func (l *Link) SendFiles(ctx context.Context, transferID string, sources []transfer.Source) error {
+	if l.tasks != nil {
+		return l.sendTrackedFiles(ctx, transferID, sources)
+	}
+	return l.sendBasicFiles(ctx, transferID, sources)
+}
+
+func (l *Link) sendBasicFiles(ctx context.Context, transferID string, sources []transfer.Source) error {
 	manifest, err := transfer.BuildManifest(transferID, sources, time.Now())
 	if err != nil {
 		return err
 	}
-	streamID := l.nextStreamID()
+	return l.sendManifest(ctx, manifest, sources, l.nextStreamID())
+}
+
+func (l *Link) sendManifest(ctx context.Context, manifest transfer.Manifest, sources []transfer.Source, streamID uint64) error {
 	start, err := json.Marshal(struct {
 		TransferID string    `json:"transfer_id"`
 		CreatedAt  time.Time `json:"created_at"`
@@ -192,9 +204,13 @@ func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) err
 	if err != nil {
 		return err
 	}
-	errorsChannel := make(chan error, 3)
+	errorsChannel := make(chan error, 4)
 	bulkErrors := make(chan error, 2)
 	realtimeRemaining, bulkRemaining := 3, 0
+	if l.tasks != nil {
+		realtimeRemaining++
+		go func() { errorsChannel <- l.runFileResults(ctx) }()
+	}
 	channel := transport.Channel("")
 	if bulk != nil {
 		channel = transport.ChannelRealtime
@@ -203,6 +219,9 @@ func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) err
 		go func() { bulkErrors <- l.readChannel(ctx, bulk, monitor, transport.ChannelBulk) }()
 	}
 	go func() { errorsChannel <- l.writer.Run(ctx, connection) }()
+	if l.desktop != nil {
+		go l.sendCapabilities(ctx)
+	}
 	go func() { errorsChannel <- l.readChannel(ctx, connection, monitor, channel) }()
 	go func() {
 		errorsChannel <- transport.RunHeartbeat(ctx, monitor, 100*time.Millisecond, func(frame protocol.Frame) error {
@@ -250,11 +269,15 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 		if err != nil {
 			return err
 		}
-		realtime := frame.Type == protocol.TypeInput || frame.Type == protocol.TypeReleaseAll || frame.Type == protocol.TypeHeartbeat
+		realtime := frame.Type == protocol.TypeInput || frame.Type == protocol.TypeReleaseAll || frame.Type == protocol.TypeHeartbeat || frame.Type == protocol.TypeCapabilities || frame.Type == protocol.TypeControlRequest || frame.Type == protocol.TypeControlResult
 		if channel == transport.ChannelRealtime && !realtime || channel == transport.ChannelBulk && realtime {
 			return errors.New("消息类型与会话通道不匹配")
 		}
 		switch frame.Type {
+		case protocol.TypeCapabilities, protocol.TypeControlRequest, protocol.TypeControlResult:
+			if err := l.handleDesktopFrame(ctx, frame); err != nil {
+				return err
+			}
 		case protocol.TypeHeartbeat:
 			if _, err := transport.ParseHeartbeat(frame); err != nil {
 				return err
@@ -311,6 +334,10 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 					return err
 				}
 			}
+		case protocol.TypeFileResult:
+			if err := l.handleTransferResult(ctx, frame); err != nil {
+				return err
+			}
 		case protocol.TypeFileManifest, protocol.TypeFileManifestEnd, protocol.TypeFileChunk, protocol.TypeFileComplete, protocol.TypeFileCommit, protocol.TypeFileCancel:
 			if err := l.handleFileFrame(ctx, frame); err != nil {
 				return err
@@ -343,6 +370,9 @@ func (l *Link) enqueueStream(ctx context.Context, priority transport.Priority, m
 }
 
 func (l *Link) handleFileFrame(ctx context.Context, frame protocol.Frame) error {
+	if l.tasks != nil {
+		return l.handleTrackedFileFrame(ctx, frame)
+	}
 	l.transferMu.Lock()
 	defer l.transferMu.Unlock()
 	if l.transferRoot == "" {

@@ -91,6 +91,10 @@ func (c *Capturer) CanCapture() bool {
 }
 
 func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error) error {
+	return c.CaptureWithReady(ctx, handler, nil)
+}
+
+func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Event) error, ready func()) error {
 	if handler == nil {
 		return errors.New("输入处理函数不能为空")
 	}
@@ -131,6 +135,9 @@ func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error
 	c.addSource(runLoop, source, c.commonModes)
 	defer c.removeSource(runLoop, source, c.commonModes)
 	c.enableTap(tap, true)
+	if ready != nil {
+		ready()
+	}
 	stopped := make(chan struct{})
 	go func() {
 		select {

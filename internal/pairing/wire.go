@@ -61,7 +61,7 @@ func Run(ctx context.Context, connection net.Conn, localIdentity identity.Identi
 	if !approved || !remoteConfirmation.Approved || remoteConfirmation.Version != Version || !hmac.Equal(match.Confirmation, remoteConfirmation.Token) {
 		return Match{}, trust.Record{}, ErrRejected
 	}
-	record, err := store.AddNew(match.RemoteCertDER, time.Now())
+	record, err := store.AddAfterConfirmation(match.RemoteCertDER, time.Now())
 	if err != nil {
 		return Match{}, trust.Record{}, fmt.Errorf("保存配对信任: %w", err)
 	}

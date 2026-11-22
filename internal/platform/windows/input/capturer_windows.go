@@ -93,6 +93,7 @@ type Capturer struct {
 	unhook           *syscall.LazyProc
 	callNext         *syscall.LazyProc
 	getMessage       *syscall.LazyProc
+	peekMessage      *syscall.LazyProc
 	postThread       *syscall.LazyProc
 	getCurrentThread *syscall.LazyProc
 	threadID         uint32
@@ -111,10 +112,11 @@ func NewCapturer() (*Capturer, error) {
 		unhook:           user32.NewProc("UnhookWindowsHookEx"),
 		callNext:         user32.NewProc("CallNextHookEx"),
 		getMessage:       user32.NewProc("GetMessageW"),
+		peekMessage:      user32.NewProc("PeekMessageW"),
 		postThread:       user32.NewProc("PostThreadMessageW"),
 		getCurrentThread: kernel32.NewProc("GetCurrentThreadId"),
 	}
-	for _, procedure := range []*syscall.LazyProc{capturer.setHook, capturer.unhook, capturer.callNext, capturer.getMessage, capturer.postThread, capturer.getCurrentThread} {
+	for _, procedure := range []*syscall.LazyProc{capturer.setHook, capturer.unhook, capturer.callNext, capturer.getMessage, capturer.peekMessage, capturer.postThread, capturer.getCurrentThread} {
 		if err := procedure.Find(); err != nil {
 			return nil, err
 		}
@@ -123,6 +125,10 @@ func NewCapturer() (*Capturer, error) {
 }
 
 func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error) error {
+	return c.CaptureWithReady(ctx, handler, nil)
+}
+
+func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Event) error, ready func()) error {
 	if handler == nil {
 		return errors.New("输入处理函数不能为空")
 	}
@@ -133,6 +139,8 @@ func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	threadID, _, _ := c.getCurrentThread.Call()
+	var message nativeMessage
+	c.peekMessage.Call(uintptr(unsafe.Pointer(&message)), 0, 0, 0, 0)
 	c.mu.Lock()
 	c.threadID = uint32(threadID)
 	c.handler, c.callbackErr, c.sequence, c.hasLastPoint = handler, nil, 1, false
@@ -160,7 +168,9 @@ func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error
 		case <-stopped:
 		}
 	}()
-	var message nativeMessage
+	if ready != nil {
+		ready()
+	}
 	for {
 		result, _, callErr := c.getMessage.Call(uintptr(unsafe.Pointer(&message)), 0, 0, 0)
 		if int32(result) == -1 {

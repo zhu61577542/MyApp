@@ -15,6 +15,7 @@ import (
 	"myapp/internal/app"
 	"myapp/internal/clipboard"
 	"myapp/internal/config"
+	"myapp/internal/desktop"
 	"myapp/internal/device"
 	"myapp/internal/fileclipboard"
 	"myapp/internal/identity"
@@ -37,6 +38,9 @@ func runController(ctx context.Context, cfg config.Config, local identity.Identi
 		return err
 	}
 	for attempt := 1; ; attempt++ {
+		if state := desktop.From(ctx); state != nil {
+			state.Update(func(s *desktop.Snapshot) { s.Phase = "connecting"; s.Attempt = attempt; s.Target = "" })
+		}
 		err := runControllerOnce(ctx, cfg, local, store, stdout)
 		if err == nil || errors.Is(err, errEmergencyStop) || ctx.Err() != nil {
 			return nil
@@ -46,6 +50,9 @@ func runController(ctx context.Context, cfg config.Config, local identity.Identi
 			return err
 		}
 		fmt.Fprintf(stdout, "连接中断，第 %d 次重连：%v\n", attempt, retryable.err)
+		if state := desktop.From(ctx); state != nil {
+			state.Disconnected(retryable.err.Error())
+		}
 		if err := backoff.Wait(ctx); err != nil {
 			return nil
 		}
@@ -66,7 +73,7 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 	var textSync *clipboard.Synchronizer
 	var fileSync *fileclipboard.Synchronizer
 	var workers []func(context.Context) error
-	if cfg.Clipboard.TextEnabled {
+	if cfg.Clipboard.TextEnabled || desktop.From(ctx) != nil {
 		backend, err := platform.NewClipboard()
 		if err != nil {
 			return err
@@ -83,7 +90,7 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 		}
 		workers = append(workers, textSync.Run)
 	}
-	if cfg.Files.Enabled {
+	if cfg.Files.Enabled || desktop.From(ctx) != nil {
 		fileSync, err = fileclipboard.NewSynchronizer(filesBackend, func(ctx context.Context, id string, paths []string) error {
 			return hub.PublishFiles(ctx, "", id, paths)
 		}, 250*time.Millisecond)
@@ -94,6 +101,7 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 	}
 	var receiveMu sync.Mutex
 	var connections []*tls.Conn
+	var desktopLinks []*app.Link
 	for index, peer := range cfg.Peers {
 		dialer := tls.Dialer{NetDialer: &net.Dialer{Timeout: 5 * time.Second}, Config: transport.ClientTLS(local, peer.ID, store)}
 		raw, err := dialer.DialContext(ctx, "tcp", peer.Address)
@@ -129,6 +137,8 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 			return err
 		}
 		link.SetDisconnectHandler(cancel)
+		enableDesktopLink(ctx, link, cfg, peerView(store, peer.ID, peer.Address), nil)
+		desktopLinks = append(desktopLinks, link)
 		if textSync != nil {
 			link.SetTextReceiver(func(ctx context.Context, entry clipboard.Entry) error {
 				receiveMu.Lock()
@@ -161,14 +171,11 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 			func(ctx context.Context) error { return link.RunChannels(ctx, connection, bulk) },
 			func(ctx context.Context) error { return hub.RunRelay(ctx, peer.ID) })
 	}
-	if err := hub.Activate(ctx, 0); err != nil {
-		return err
+	if desktop.From(ctx) == nil {
+		if err := hub.Activate(ctx, 0); err != nil {
+			return err
+		}
 	}
-	capturer, err := platform.NewCapturer()
-	if err != nil {
-		return err
-	}
-	defer capturer.Close()
 	for _, connection := range connections {
 		if err := withHandshakeDeadline(ctx, connection, 5*time.Second, func() error {
 			return transport.NewHeartbeat(0, time.Now()).Encode(connection, 8)
@@ -176,19 +183,36 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 			return retryableControllerError{err}
 		}
 	}
-	emergency := newEmergencyKeys(func() { cancel(errEmergencyStop) })
-	workers = append(workers, func(ctx context.Context) error {
-		choose := newTargetKeys(len(cfg.Peers), func(index int) error { return hub.Activate(ctx, index) })
-		return capturer.Capture(ctx, func(event common.Event) error {
-			if emergency(event) {
-				return nil
-			}
-			if consumed, err := choose(event); consumed || err != nil {
-				return err
-			}
-			return hub.SendInput(ctx, event)
+	if state := desktop.From(ctx); state != nil {
+		capture := newDesktopCapture(ctx, hub, desktopLinks, cfg.Peers, state)
+		for index, link := range desktopLinks {
+			peerID := cfg.Peers[index].ID
+			link.SetControlEndedHandler(func() { capture.remoteStopped(peerID) })
+		}
+		defer finishDesktopCapture(capture)
+		unbind := bindDesktop(ctx, textSync, fileSync, capture, nil)
+		defer unbind()
+		state.Update(func(s *desktop.Snapshot) { s.Phase = "connected"; s.Error = "" })
+	} else {
+		capturer, err := platform.NewCapturer()
+		if err != nil {
+			return err
+		}
+		defer capturer.Close()
+		emergency := newEmergencyKeys(func() { cancel(errEmergencyStop) })
+		workers = append(workers, func(ctx context.Context) error {
+			choose := newTargetKeys(len(cfg.Peers), func(index int) error { return hub.Activate(ctx, index) })
+			return capturer.Capture(ctx, func(event common.Event) error {
+				if emergency(event) {
+					return nil
+				}
+				if consumed, err := choose(event); consumed || err != nil {
+					return err
+				}
+				return hub.SendInput(ctx, event)
+			})
 		})
-	})
+	}
 	fmt.Fprintf(stdout, "已连接 %d 台子电脑；Ctrl+Alt+1/2 切换目标，Ctrl+Alt+Esc 退出控制\n", len(cfg.Peers))
 	err = runSession(ctx, workers...)
 	if cause := context.Cause(ctx); cause != nil && !errors.Is(cause, context.Canceled) {

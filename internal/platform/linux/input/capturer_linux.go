@@ -97,6 +97,10 @@ func NewCapturer(displayName string) (*Capturer, error) {
 }
 
 func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error) error {
+	return c.CaptureWithReady(ctx, handler, nil)
+}
+
+func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Event) error, ready func()) error {
 	if handler == nil {
 		return errors.New("输入处理函数不能为空")
 	}
@@ -117,6 +121,9 @@ func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error
 	centerX, centerY := c.width/2, c.height/2
 	c.warpPointer(c.display, 0, c.root, 0, 0, 0, 0, centerX, centerY)
 	c.flush(c.display)
+	if ready != nil {
+		ready()
+	}
 	sequence := uint64(1)
 	for {
 		if err := ctx.Err(); err != nil {

@@ -8,18 +8,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/dialog"
+	fynedesktop "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"myapp/internal/config"
-	"myapp/internal/identity"
-	"myapp/internal/logging"
+	"myapp/internal/desktop"
+	"myapp/internal/trust"
 )
 
 //go:embed assets/myapp-app.svg
@@ -33,181 +35,394 @@ type Options struct {
 	IdentityDirectory string
 	TrustDirectory    string
 	DefaultDeviceName string
+	Background        bool
+	Version           string
+	Commit            string
+}
+
+type desktopView struct {
+	application    fyne.App
+	window         fyne.Window
+	options        Options
+	notified       map[string]bool
+	reconnectSince time.Time
+	services       *serviceManager
+	pairings       *pairingManager
+	prefs          preferences
+	root           *fyne.Container
+	main           *fyne.Container
+	nav            *widget.List
+	settingsButton *widget.Button
+	notice         *widget.Label
+	footer         *widget.Label
+	page           string
+	ready          bool
+	state          state
+	cfg            config.Config
+	view           desktop.Snapshot
+	records        []trust.Record
+	permissions    []permission
+	permissionTime time.Time
+	signature      string
+	wantConnect    bool
+	autoAttempted  bool
+	busy           bool
+	closing        bool
+	setupStep      int
+	setupName      string
+	setupRole      config.Role
+	layoutEditing  bool
+	layoutDraft    map[string]string
+	settingsWindow fyne.Window
+	tray           *fyne.Menu
 }
 
 func Run(ctx context.Context, options Options) error {
 	application := app.NewWithID("local.myapp.client")
 	application.SetIcon(fyne.NewStaticResource("myapp-app.svg", appIcon))
-	window := application.NewWindow("MyApp 控制中心")
-	window.Resize(fyne.NewSize(820, 560))
-	window.SetCloseIntercept(func() { window.Hide() })
-
-	services := &serviceManager{status: "未启动"}
-	defer services.stop()
+	window := application.NewWindow("MyApp")
+	window.Resize(fyne.NewSize(1000, 700))
+	services := &serviceManager{status: "已停止"}
 	pairings := &pairingManager{}
-	defer pairings.stop()
-	content, refresh := buildContent(application, options, services, pairings)
-	window.SetContent(content)
+	view := newDesktopView(application, window, options, services, pairings)
+	window.SetContent(view.root)
+	window.SetCloseIntercept(func() {
+		window.Hide()
+		if !view.prefs.CloseHintShown {
+			view.prefs.CloseHintShown = true
+			_ = savePreferences(options, view.prefs)
+			location := "系统托盘"
+			if runtime.GOOS == "darwin" {
+				location = "菜单栏"
+			}
+			application.SendNotification(fyne.NewNotification("MyApp 仍在后台运行", "从"+location+"图标重新打开。要停止全部共享，请选择“退出 MyApp”。"))
+		}
+	})
+	view.installMenus()
+	application.Settings().AddListener(func(fyne.Settings) { fyne.Do(func() { view.refresh(false) }) })
+	view.refresh(true)
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
+				services.stop()
+				pairings.stop()
+				fyne.Do(application.Quit)
 				return
 			case <-ticker.C:
-				fyne.Do(refresh)
+				fyne.Do(func() {
+					if !view.closing {
+						view.refresh(false)
+					}
+				})
 			}
 		}
 	}()
-
-	if desktopApp, ok := application.(desktop.App); ok {
-		quitItem := fyne.NewMenuItem("退出 MyApp", application.Quit)
-		quitItem.IsQuit = true
-		desktopApp.SetSystemTrayMenu(fyne.NewMenu("MyApp",
-			fyne.NewMenuItem("打开控制中心", window.Show),
-			fyne.NewMenuItem("刷新状态", refresh),
-			fyne.NewMenuItemSeparator(),
-			quitItem,
-		))
-		desktopApp.SetSystemTrayIcon(fyne.NewStaticResource("myapp-tray.svg", trayIcon))
+	if !options.Background || !view.ready {
+		window.Show()
 	}
-
-	go func() {
-		<-ctx.Done()
-		services.stop()
-		application.Quit()
-	}()
-	window.Show()
 	application.Run()
+	services.stop()
+	pairings.stop()
 	return nil
 }
 
+func newDesktopView(application fyne.App, window fyne.Window, options Options, services *serviceManager, pairings *pairingManager) *desktopView {
+	prefs, err := loadPreferences(options)
+	if err != nil {
+		prefs = preferences{Appearance: "system", ConnectAutomatically: true}
+	}
+	view := &desktopView{application: application, window: window, options: options, services: services, pairings: pairings, prefs: prefs, page: "devices", wantConnect: prefs.ConnectAutomatically, setupStep: 1, setupName: options.DefaultDeviceName, layoutDraft: make(map[string]string)}
+	if current, _ := loadState(options); current.Ready {
+		if _, err := os.Stat(preferencesPath(options)); errors.Is(err, os.ErrNotExist) {
+			view.prefs.OnboardingDone = true
+			_ = savePreferences(options, view.prefs)
+		}
+	}
+	application.Settings().SetTheme(desktopTheme{appearance: view.prefs.Appearance})
+	view.main = container.NewStack()
+	view.notice = paragraph("")
+	view.notice.Importance = widget.LowImportance
+	view.footer = secondary("")
+	view.root = container.NewStack()
+	return view
+}
+
 func buildContent(application fyne.App, options Options, services *serviceManager, pairings *pairingManager) (fyne.CanvasObject, func()) {
-	status := widget.NewLabel("")
-	status.Wrapping = fyne.TextWrapWord
-	device := widget.NewLabel("")
-	device.Wrapping = fyne.TextWrapWord
-	role := widget.NewLabel("")
-	listen := widget.NewLabel("")
-	peers := container.NewVBox()
-	deviceName := widget.NewEntry()
-	deviceName.SetText(options.DefaultDeviceName)
-	roleSelect := widget.NewSelect([]string{string(config.RoleAgent), string(config.RoleController)}, nil)
-	roleSelect.SetSelected(string(config.RoleAgent))
-	setupStatus := widget.NewLabel("")
-	setupButton := widget.NewButton("初始化设备", nil)
-	setupBox := container.NewVBox(widget.NewLabelWithStyle("首次启动", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), widget.NewLabel("设备名称"), deviceName, widget.NewLabel("设备角色"), roleSelect, setupButton, setupStatus)
-	settingsButton := widget.NewButton("设置", nil)
-	pairButton := widget.NewButton("配对", nil)
-	serviceStatus := widget.NewLabel("")
-	serviceButton := widget.NewButton("启动服务", nil)
-	var refresh func()
-	refresh = func() {
-		state, err := loadState(options)
-		if err != nil {
-			status.SetText("状态读取失败：" + err.Error())
-			return
+	window := application.NewWindow("MyApp")
+	view := newDesktopView(application, window, options, services, pairings)
+	view.refresh(true)
+	return view.root, func() { view.refresh(false) }
+}
+
+func (v *desktopView) refresh(force bool) {
+	current, err := loadState(v.options)
+	if err != nil {
+		v.showError(err)
+		return
+	}
+	v.state = current
+	v.ready = current.Ready
+	if current.Ready {
+		if cfg, err := config.Load(v.options.ConfigPath); err == nil {
+			if len(cfg.Peers) > len(v.cfg.Peers) {
+				v.autoAttempted = false
+			}
+			v.cfg = cfg
 		}
-		if !state.Ready {
-			settingsButton.Disable()
-			pairButton.Disable()
-			serviceButton.Disable()
-			serviceStatus.SetText("服务未启动")
-			status.SetText(state.SetupReason)
-			device.SetText("尚未初始化")
-			role.SetText("请先使用 CLI 初始化身份和配置")
-			listen.SetText("")
-			peers.Objects = nil
-			peers.Refresh()
-			setupBox.Show()
-			return
-		}
-		setupBox.Hide()
-		pairButton.Enable()
-		serviceButton.Enable()
-		running, serviceState := services.snapshot()
-		if running {
-			serviceButton.SetText("停止服务")
+		records, err := trust.New(v.options.TrustDirectory).List()
+		if err == nil {
+			v.records = records
 		} else {
-			serviceButton.SetText("启动服务")
+			v.notice.SetText("无法读取信任列表：" + err.Error())
 		}
-		serviceStatus.SetText("服务状态：" + serviceState)
-		status.SetText("运行状态：配置已就绪")
-		device.SetText(fmt.Sprintf("设备：%s\n设备 ID：%s", state.DeviceName, state.DeviceID))
-		role.SetText("角色：" + string(state.Role))
-		listen.SetText(fmt.Sprintf("监听地址：%s\n文字剪贴板：%s    文件复制：%s\n日志：%s（级别：%s）", state.Listen, enabledText(state.Clipboard), enabledText(state.Files), enabledText(state.Logging), state.LoggingLevel))
-		peers.Objects = make([]fyne.CanvasObject, 0, len(state.Peers))
-		for _, peer := range state.Peers {
-			peerID := peer.ID
-			remove := widget.NewButton("删除", func() {
-				if err := removePeer(options, peerID); err != nil {
-					status.SetText("删除设备失败：" + err.Error())
-					return
+	}
+	view, serviceError := v.services.snapshotState()
+	v.view = view
+	running, status := v.services.snapshot()
+	if time.Since(v.permissionTime) > 3*time.Second || force {
+		v.permissions = checkPermissions(v.cfg.Role)
+		v.permissionTime = time.Now()
+	}
+	v.notifyProblems(running)
+	if v.ready && v.prefs.OnboardingDone && v.wantConnect && !running && !v.autoAttempted && !v.busy {
+		v.autoAttempted = true
+		if v.cfg.Role == config.RoleAgent || len(v.cfg.Peers) > 0 {
+			if err := v.services.start(v.options, v.cfg); err != nil {
+				v.notice.SetText(err.Error())
+			}
+		}
+	}
+	stat, _ := os.Stat(v.options.ConfigPath)
+	stamp := ""
+	if stat != nil {
+		stamp = stat.ModTime().String()
+	}
+	pair := v.pairings.snapshot()
+	key := fmt.Sprintf("%t/%d/%s/%s/%s/%t/%s/%t/%s/%v/%v", current.Ready, view.Revision, view.Phase, serviceError, stamp, running, status, pair.Running, pair.Status, v.application.Settings().ThemeVariant(), v.permissions)
+	if !force && key == v.signature {
+		return
+	}
+	v.signature = key
+	if !force && (v.page == "settings" || v.layoutEditing) {
+		v.refreshTray()
+		return
+	}
+	if !v.ready || !v.prefs.OnboardingDone {
+		v.renderSetup()
+		v.refreshTray()
+		return
+	}
+	v.renderShell()
+	v.refreshTray()
+}
+
+func (v *desktopView) renderShell() {
+	names := []string{"设备", "传输", "权限与安全"}
+	pages := []string{"devices", "transfers", "permissions"}
+	icons := []fyne.Resource{theme.ComputerIcon(), theme.FolderIcon(), theme.ConfirmIcon()}
+	v.nav = widget.NewList(func() int { return len(names) }, func() fyne.CanvasObject {
+		return container.NewHBox(widget.NewIcon(theme.ComputerIcon()), widget.NewLabel("权限与安全"))
+	}, func(id widget.ListItemID, item fyne.CanvasObject) {
+		box := item.(*fyne.Container)
+		box.Objects[0].(*widget.Icon).SetResource(icons[id])
+		box.Objects[1].(*widget.Label).SetText(names[id])
+	})
+	v.nav.OnSelected = func(id widget.ListItemID) { v.navigate(pages[id]) }
+	for i, page := range pages {
+		if page == v.page {
+			v.nav.OnSelected = nil
+			v.nav.Select(i)
+			v.nav.OnSelected = func(id widget.ListItemID) { v.navigate(pages[id]) }
+		}
+	}
+	brand := container.NewHBox(widget.NewIcon(fyne.NewStaticResource("myapp-app.svg", appIcon)), sectionTitle("MyApp"))
+	v.settingsButton = quiet("设置", v.openSettings)
+	if v.page == "settings" {
+		v.settingsButton.Importance = widget.HighImportance
+	}
+	bottom := container.NewVBox(v.settingsButton, widget.NewSeparator(), secondary(fmt.Sprintf("已连接 %d 台电脑", connectionCount(v.view))), secondary("仅局域网 · 双向加密"))
+	sidebar := container.NewBorder(container.NewPadded(brand), bottom, nil, nil, v.nav)
+	sidebar = container.New(&minimumLayout{minimum: fyne.NewSize(172, 0)}, sidebar)
+	var page fyne.CanvasObject
+	switch v.page {
+	case "transfers":
+		page = v.transfersPage()
+	case "permissions":
+		page = v.permissionsPage()
+	case "settings":
+		page = v.settingsPage()
+	default:
+		page = v.devicesPage()
+	}
+	v.main.Objects = []fyne.CanvasObject{page}
+	v.main.Refresh()
+	v.footer.SetText(roleName(v.cfg.Role) + " · " + v.cfg.DeviceName + "     结束控制：" + emergencyShortcut())
+	center := container.NewBorder(nil, container.NewVBox(v.notice, v.footer), nil, nil, container.NewVScroll(v.main))
+	content := container.NewBorder(nil, nil, container.NewPadded(surface(sidebar)), nil, container.NewPadded(center))
+	v.root.Objects = []fyne.CanvasObject{container.New(&minimumLayout{minimum: fyne.NewSize(760, 560)}, content)}
+	v.root.Refresh()
+}
+
+type minimumLayout struct{ minimum fyne.Size }
+
+func (l *minimumLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	for _, object := range objects {
+		object.Move(fyne.NewPos(0, 0))
+		object.Resize(size)
+	}
+}
+func (l *minimumLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	size := l.minimum
+	for _, object := range objects {
+		size = size.Max(object.MinSize())
+	}
+	return size
+}
+
+func (v *desktopView) navigate(page string) {
+	if v.layoutEditing {
+		v.notice.SetText("请先保存或取消电脑位置调整")
+		return
+	}
+	v.page = page
+	v.refresh(true)
+}
+func (v *desktopView) showError(err error) {
+	if err != nil {
+		v.notice.SetText(err.Error())
+	}
+}
+func (v *desktopView) perform(message string, action func(context.Context) error, success func(), failure ...func(error)) {
+	if v.busy {
+		return
+	}
+	v.busy = true
+	v.notice.SetText(message)
+	v.refresh(true)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+		err := action(ctx)
+		fyne.Do(func() {
+			v.busy = false
+			if err != nil {
+				v.showError(err)
+				if len(failure) > 0 {
+					failure[0](err)
 				}
-				status.SetText("设备已删除，重启服务后生效")
-				refresh()
-			})
-			peers.Add(container.NewBorder(nil, nil, nil, remove, widget.NewLabel(peer.ID+"  ·  "+peer.Address)))
-		}
-		if len(state.Peers) == 0 {
-			peers.Add(widget.NewLabel("暂无已配置设备"))
-		}
-		peers.Refresh()
-		settingsButton.Enable()
+			} else {
+				v.notice.SetText("操作已应用")
+				if success != nil {
+					success()
+				}
+			}
+			v.refresh(true)
+		})
+	}()
+}
+func (v *desktopView) send(command desktop.Command, message string) {
+	v.perform(message, func(ctx context.Context) error { return v.services.command(ctx, command) }, nil)
+}
+
+func (v *desktopView) installMenus() {
+	settings := fyne.NewMenuItem("设置…", v.openSettings)
+	modifier := fyne.KeyModifierControl
+	if runtime.GOOS == "darwin" {
+		modifier = fyne.KeyModifierSuper
 	}
-	pairButton.OnTapped = func() { openPairing(application, options, pairings) }
-	serviceButton.OnTapped = func() {
-		running, _ := services.snapshot()
-		if running {
-			services.stop()
-			serviceStatus.SetText("服务状态：正在停止")
-			serviceButton.SetText("启动服务")
-			return
-		}
-		cfg, err := config.Load(options.ConfigPath)
-		if err != nil {
-			serviceStatus.SetText("启动失败：" + err.Error())
-			return
-		}
-		if err := services.start(options, cfg); err != nil {
-			serviceStatus.SetText("启动失败：" + err.Error())
-			return
-		}
-		serviceButton.SetText("停止服务")
-		serviceStatus.SetText("服务状态：运行中")
+	shortcut := &fynedesktop.CustomShortcut{KeyName: fyne.KeyComma, Modifier: modifier}
+	settings.Shortcut = shortcut
+	v.window.Canvas().AddShortcut(shortcut, func(fyne.Shortcut) { v.openSettings() })
+	quit := fyne.NewMenuItem("退出 MyApp", v.requestQuit)
+	quit.IsQuit = true
+	if runtime.GOOS == "darwin" {
+		v.window.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("MyApp", settings, fyne.NewMenuItemSeparator(), quit)))
 	}
-	showSettings := func() { openSettings(application, options, refresh) }
-	settingsButton.OnTapped = showSettings
-	setupButton.OnTapped = func() {
-		name := strings.TrimSpace(deviceName.Text)
-		role := config.Role(roleSelect.Selected)
-		generated, err := identity.Generate(name, time.Now())
-		if err == nil {
-			err = identity.SaveNew(options.IdentityDirectory, generated)
+	if desktopApp, ok := v.application.(fynedesktop.App); ok {
+		desktopApp.SetSystemTrayIcon(fyne.NewStaticResource("myapp-tray.svg", trayIcon))
+	}
+	v.refreshTray()
+}
+
+func (v *desktopView) refreshTray() {
+	app, ok := v.application.(fynedesktop.App)
+	if !ok {
+		return
+	}
+	status := fmt.Sprintf("已连接 %d 台电脑", connectionCount(v.view))
+	if v.view.Target != "" {
+		status = "控制目标：" + peerName(v.view.Target, v.view.Peers, v.records)
+	}
+	if v.view.Paused {
+		status = "全部共享已暂停"
+	}
+	summary := fyne.NewMenuItem(status, nil)
+	summary.Disabled = true
+	pauseText := "暂停全部共享"
+	if v.view.Paused {
+		pauseText = "恢复全部共享"
+	}
+	pause := fyne.NewMenuItem(pauseText, func() {
+		v.send(desktop.Command{Action: "pause", Enabled: !v.view.Paused}, "正在应用共享状态…")
+	})
+	running, _ := v.services.snapshot()
+	pause.Disabled = !running || v.busy
+	quit := fyne.NewMenuItem("退出 MyApp", v.requestQuit)
+	quit.IsQuit = true
+	menu := fyne.NewMenu("MyApp", summary, fyne.NewMenuItem("打开 MyApp", func() { v.window.Show(); v.window.RequestFocus() }), pause, fyne.NewMenuItem("传输任务", func() { v.window.Show(); v.navigate("transfers") }), fyne.NewMenuItem("权限与安全", func() { v.window.Show(); v.navigate("permissions") }), fyne.NewMenuItem("设置…", v.openSettings), fyne.NewMenuItemSeparator(), quit)
+	pair := v.pairings.snapshot()
+	if pair.Running {
+		menu.Items = append([]*fyne.MenuItem{fyne.NewMenuItem("配对正在后台进行", func() { openPairing(v.application, v.options, v.pairings) })}, menu.Items...)
+	}
+	v.tray = menu
+	app.SetSystemTrayMenu(menu)
+}
+
+func (v *desktopView) requestQuit() {
+	active := false
+	for _, task := range v.view.Tasks {
+		if task.Active() {
+			active = true
 		}
-		if err == nil {
-			err = config.SaveNew(options.ConfigPath, config.Default(name, role))
-		}
-		if err != nil {
-			setupStatus.SetText("初始化失败：" + err.Error())
+	}
+	stop := func() {
+		if v.closing {
 			return
 		}
-		setupStatus.SetText("初始化完成")
-		refresh()
+		finish := func() { v.closing = true; v.pairings.stop(); v.application.Quit() }
+		v.perform("正在停止共享并释放键鼠…", func(ctx context.Context) error { return v.services.stopGracefully(ctx) }, finish, func(err error) {
+			confirm := dialog.NewConfirm("服务仍在停止", err.Error()+"。强制结束可能无法确认对端的最后一次释放；对端会按断线保护恢复。", func(force bool) {
+				if force {
+					v.services.forceStop()
+					v.perform("正在结束服务…", v.services.waitStopped, finish)
+				}
+			}, v.window)
+			confirm.SetConfirmText("强制结束并退出")
+			confirm.SetDismissText("继续等待")
+			confirm.Show()
+		})
 	}
-	refreshButton := widget.NewButtonWithIcon("刷新", theme.ViewRefreshIcon(), refresh)
-	actions := container.NewHBox(pairButton, settingsButton, refreshButton)
-	header := container.NewBorder(nil, nil, nil, actions, widget.NewLabelWithStyle("设备状态", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
-	serviceBox := container.NewHBox(serviceButton, serviceStatus)
-	main := container.NewVBox(header, status, setupBox, serviceBox, widget.NewSeparator(), device, role, listen, widget.NewSeparator(), widget.NewLabelWithStyle("已配对设备", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), peers)
-	refresh()
-	return container.NewPadded(main), refresh
+	if active {
+		dialog.ShowConfirm("有文件任务正在进行", "退出会停止共享并取消未完成的任务。你也可以暂不退出，等待任务完成。", func(confirmed bool) {
+			if confirmed {
+				stop()
+			}
+		}, v.window)
+		return
+	}
+	stop()
 }
 
 func removePeer(options Options, peerID string) error {
 	configMu.Lock()
 	defer configMu.Unlock()
+	store := trust.New(options.TrustDirectory)
+	if err := store.Revoke(peerID, time.Now()); err != nil && !errors.Is(err, trust.ErrRevoked) {
+		return err
+	}
 	cfg, err := config.Load(options.ConfigPath)
 	if err != nil {
 		return err
@@ -218,133 +433,51 @@ func removePeer(options Options, peerID string) error {
 			filtered = append(filtered, peer)
 		}
 	}
-	if len(filtered) == len(cfg.Peers) {
-		return errors.New("设备不存在")
-	}
 	cfg.Peers = filtered
 	return config.Save(options.ConfigPath, cfg)
 }
 
-func openSettings(application fyne.App, options Options, refresh func()) {
-	cfg, err := config.Load(options.ConfigPath)
-	window := application.NewWindow("MyApp 设置")
-	window.Resize(fyne.NewSize(560, 600))
-	if err != nil {
-		window.SetContent(container.NewPadded(container.NewVBox(widget.NewLabel("无法读取配置：" + err.Error()))))
-		window.Show()
+func (v *desktopView) revokePeer(id string) {
+	name := peerName(id, v.view.Peers, v.records)
+	dialog.ShowConfirm("撤销对“"+name+"”的信任？", "控制、共享连接及未完成的配对将停止。再次连接需在两端重新核对配对码。已保存的文件不会被删除。", func(confirmed bool) {
+		if !confirmed {
+			return
+		}
+		v.perform("正在停止连接并撤销信任…", func(ctx context.Context) error {
+			if err := v.pairings.stopAndWait(ctx); err != nil {
+				return err
+			}
+			if err := v.services.stopGracefully(ctx); err != nil {
+				return err
+			}
+			return removePeer(v.options, id)
+		}, func() { v.autoAttempted = false; v.signature = "" })
+	}, v.window)
+}
+
+func (v *desktopView) openSettings() {
+	if runtime.GOOS != "darwin" {
+		v.page = "settings"
+		v.refresh(true)
 		return
 	}
-
-	name := widget.NewEntry()
-	name.SetText(cfg.DeviceName)
-	role := widget.NewSelect([]string{string(config.RoleAgent), string(config.RoleController)}, nil)
-	role.SetSelected(string(cfg.Role))
-	listen := widget.NewEntry()
-	listen.SetText(cfg.ListenAddress)
-	clipboard := widget.NewCheck("启用文字剪贴板同步", nil)
-	clipboard.SetChecked(cfg.Clipboard.TextEnabled)
-	files := widget.NewCheck("启用文件复制", nil)
-	files.SetChecked(cfg.Files.Enabled)
-	loggingEnabled := widget.NewCheck("启用日志记录", nil)
-	loggingEnabled.SetChecked(cfg.Logging.Enabled)
-	loggingLevel := widget.NewSelect([]string{string(config.LogLevelDebug), string(config.LogLevelInfo), string(config.LogLevelWarn), string(config.LogLevelError)}, nil)
-	loggingLevel.SetSelected(string(cfg.Logging.Level))
-	loggingEnabled.OnChanged = func(enabled bool) {
-		if enabled {
-			loggingLevel.Enable()
-		} else {
-			loggingLevel.Disable()
-		}
+	if v.settingsWindow != nil {
+		v.settingsWindow.Show()
+		v.settingsWindow.RequestFocus()
+		return
 	}
-	loggingEnabled.OnChanged(loggingEnabled.Checked)
-	result := widget.NewLabel("")
-	exportButton := widget.NewButton("导出日志", func() {
-		path, exportErr := exportLogs()
-		if exportErr != nil {
-			result.SetText("导出日志失败：" + exportErr.Error())
-			return
-		}
-		result.SetText("日志已导出：" + path)
-	})
-	save := widget.NewButton("保存设置", func() {
-		configMu.Lock()
-		defer configMu.Unlock()
-		updated, err := config.Load(options.ConfigPath)
-		if err != nil {
-			result.SetText("保存失败：" + err.Error())
-			return
-		}
-		updated.DeviceName = strings.TrimSpace(name.Text)
-		updated.Role = config.Role(role.Selected)
-		updated.ListenAddress = strings.TrimSpace(listen.Text)
-		updated.Clipboard.TextEnabled = clipboard.Checked
-		updated.Files.Enabled = files.Checked
-		updated.Logging.Enabled = loggingEnabled.Checked
-		updated.Logging.Level = config.LogLevel(loggingLevel.Selected)
-		if err := config.Save(options.ConfigPath, updated); err != nil {
-			result.SetText("保存失败：" + err.Error())
-			return
-		}
-		result.SetText("保存成功。重启 MyApp 服务后生效。")
-		refresh()
-	})
-	closeButton := widget.NewButton("关闭", window.Close)
-	buttons := container.NewHBox(save, closeButton)
-	content := container.NewVBox(
-		widget.NewLabelWithStyle("设备设置", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		widget.NewLabel("设备名称"), name,
-		widget.NewLabel("设备角色"), role,
-		widget.NewLabel("监听地址"), listen,
-		clipboard, files,
-		widget.NewLabel("日志文件："+logging.DefaultPath()),
-		loggingEnabled,
-		widget.NewLabel("最低输出级别"), loggingLevel,
-		result,
-		container.NewHBox(exportButton, buttons),
-	)
-	window.SetContent(container.NewPadded(content))
+	window := v.application.NewWindow("MyApp 设置")
+	v.settingsWindow = window
+	window.Resize(fyne.NewSize(610, 680))
+	window.SetContent(container.NewPadded(container.NewVScroll(v.settingsPage())))
+	window.SetOnClosed(func() { v.settingsWindow = nil })
 	window.Show()
 }
 
-type state struct {
-	Ready        bool          `json:"ready"`
-	DeviceID     string        `json:"device_id"`
-	DeviceName   string        `json:"device_name"`
-	Role         config.Role   `json:"role"`
-	Listen       string        `json:"listen_address"`
-	Peers        []config.Peer `json:"peers"`
-	Clipboard    bool          `json:"clipboard_enabled"`
-	Files        bool          `json:"files_enabled"`
-	Logging      bool          `json:"logging_enabled"`
-	LoggingLevel string        `json:"logging_level"`
-	SetupReason  string        `json:"setup_reason"`
-}
-
-func loadState(options Options) (state, error) {
-	cfg, cfgErr := config.Load(options.ConfigPath)
-	identityValue, identityErr := identity.Load(options.IdentityDirectory)
-	if cfgErr != nil || identityErr != nil {
-		return state{SetupReason: setupReason(cfgErr, identityErr)}, nil
+func shortError(text string) string {
+	lines := strings.Split(strings.TrimSpace(text), "\n")
+	if len(lines) > 0 {
+		return lines[0]
 	}
-	return state{Ready: true, DeviceID: identityValue.DeviceID, DeviceName: cfg.DeviceName, Role: cfg.Role, Listen: cfg.ListenAddress, Peers: cfg.Peers, Clipboard: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Logging: cfg.Logging.Enabled, LoggingLevel: string(cfg.Logging.Level)}, nil
-}
-
-func setupReason(cfgErr, identityErr error) string {
-	if errors.Is(cfgErr, os.ErrNotExist) && errors.Is(identityErr, os.ErrNotExist) {
-		return "尚未初始化设备身份和配置"
-	}
-	if errors.Is(cfgErr, os.ErrNotExist) {
-		return "尚未初始化配置"
-	}
-	if errors.Is(identityErr, os.ErrNotExist) {
-		return "尚未初始化设备身份"
-	}
-	return "配置或身份文件无效，请先通过 CLI 修复"
-}
-
-func enabledText(enabled bool) string {
-	if enabled {
-		return "已启用"
-	}
-	return "已暂停"
+	return text
 }

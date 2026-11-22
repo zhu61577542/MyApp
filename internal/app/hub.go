@@ -96,6 +96,21 @@ func (h *Hub) SendInput(ctx context.Context, event common.Event) error {
 	return device.ErrUnknownDevice
 }
 
+func (h *Hub) RecoverLocal(ctx context.Context) error {
+	h.inputMu.Lock()
+	defer h.inputMu.Unlock()
+	active, exists := h.manager.Active()
+	h.manager.RecoverLocal()
+	if exists {
+		for _, peer := range h.snapshot() {
+			if peer.id == active.ID {
+				return peer.link.SendReleaseAll(ctx)
+			}
+		}
+	}
+	return nil
+}
+
 func (h *Hub) PublishText(ctx context.Context, source string, entry clipboard.Entry) error {
 	if err := entry.Validate(); err != nil {
 		return err
@@ -145,9 +160,13 @@ func (h *Hub) RunRelay(ctx context.Context, peerID string) error {
 				for i, path := range item.paths {
 					sources[i] = transfer.Source{Path: path}
 				}
-				err = target.link.SendFiles(ctx, item.transferID, sources)
+				if target.link.tasks != nil {
+					err = target.link.QueueFiles(ctx, item.transferID, sources)
+				} else {
+					err = target.link.SendFiles(ctx, item.transferID, sources)
+				}
 			}
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrTransferTask) {
 				return err
 			}
 		}

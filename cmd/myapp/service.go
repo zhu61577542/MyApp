@@ -17,6 +17,7 @@ import (
 	"myapp/internal/app"
 	"myapp/internal/clipboard"
 	"myapp/internal/config"
+	"myapp/internal/desktop"
 	"myapp/internal/fileclipboard"
 	"myapp/internal/identity"
 	common "myapp/internal/input"
@@ -43,6 +44,12 @@ func runServe(args []string, stdout, stderr io.Writer) error {
 	if cfg.Role != config.RoleAgent {
 		return errors.New("serve 第一版必须在 agent 配置上运行")
 	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	return runAgent(ctx, cfg, localIdentity, store, stdout, stderr)
+}
+
+func runAgent(ctx context.Context, cfg config.Config, localIdentity identity.Identity, store trust.Store, stdout, stderr io.Writer) error {
 	address, err := net.ResolveTCPAddr("tcp", cfg.ListenAddress)
 	if err != nil {
 		return err
@@ -52,13 +59,14 @@ func runServe(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	defer listener.Close()
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	go func() {
 		<-ctx.Done()
 		_ = listener.Close()
 	}()
 	fmt.Fprintln(stdout, "MyApp agent 正在监听", listener.Addr())
+	if state := desktop.From(ctx); state != nil {
+		state.Update(func(s *desktop.Snapshot) { s.Phase = "listening" })
+	}
 	for {
 		connection, err := listener.Accept()
 		if err != nil {
@@ -113,12 +121,21 @@ func serveConnection(ctx context.Context, connection *tls.Conn, listener *net.TC
 	if err := negotiateBulk(ctx, bulk, hello, remote, false); err != nil {
 		return err
 	}
-	injector, err := platform.NewInjector()
-	if err != nil {
-		return err
+	var injector common.Injector
+	if state := desktop.From(ctx); state != nil {
+		injector = &desktopInjector{state: state, peer: peerID, create: platform.NewInjector}
+	} else {
+		injector, err = platform.NewInjector()
+		if err != nil {
+			return err
+		}
 	}
 	defer injector.Close()
 	fmt.Fprintln(stdout, "已连接控制端", peerID)
+	if state := desktop.From(ctx); state != nil {
+		state.Peer(peerView(store, peerID, connection.RemoteAddr().String()))
+		defer state.Disconnected("连接已结束")
+	}
 	return runConnected(ctx, connection, bulk, localIdentity.DeviceID, injector, cfg)
 }
 
@@ -158,9 +175,25 @@ func runControl(args []string, stdout, stderr io.Writer) error {
 }
 
 func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteCloser, deviceID string, injector common.Injector, cfg config.Config) error {
-	link, clipboardSync, fileSync, err := buildLink(deviceID, injector, cfg)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	link, clipboardSync, fileSync, err := buildLink(deviceID, injector, cfg, desktop.From(ctx) != nil)
 	if err != nil {
 		return err
+	}
+	if state := desktop.From(ctx); state != nil {
+		gate := injector.(*desktopInjector)
+		current := state.Snapshot()
+		var peer desktop.Peer
+		for _, p := range current.Peers {
+			if p.ID == gate.peer {
+				peer = p
+				break
+			}
+		}
+		enableDesktopLink(ctx, link, cfg, peer, gate)
+		unbind := bindDesktop(ctx, clipboardSync, fileSync, nil, gate)
+		defer unbind()
 	}
 	if err := withHandshakeDeadline(ctx, connection, 20*time.Second, func() error {
 		frame, err := (protocol.Decoder{MaxPayload: 8}).Decode(connection)
@@ -173,6 +206,9 @@ func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteClo
 		return err
 	}
 	workers := []func(context.Context) error{func(ctx context.Context) error { return link.RunChannels(ctx, connection, bulk) }}
+	if state := desktop.From(ctx); state != nil {
+		state.Update(func(s *desktop.Snapshot) { s.Phase = "connected"; s.Error = "" })
+	}
 	if clipboardSync != nil {
 		workers = append(workers, clipboardSync.Run)
 	}
@@ -182,14 +218,14 @@ func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteClo
 	return runSession(ctx, workers...)
 }
 
-func buildLink(deviceID string, injector common.Injector, cfg config.Config) (*app.Link, *clipboard.Synchronizer, *fileclipboard.Synchronizer, error) {
+func buildLink(deviceID string, injector common.Injector, cfg config.Config, managed ...bool) (*app.Link, *clipboard.Synchronizer, *fileclipboard.Synchronizer, error) {
 	var link *app.Link
 	var syncer *clipboard.Synchronizer
 	fileBackend, err := platform.NewFileClipboard()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if cfg.Clipboard.TextEnabled {
+	if cfg.Clipboard.TextEnabled || len(managed) > 0 && managed[0] {
 		backend, err := platform.NewClipboard()
 		if err != nil {
 			return nil, nil, nil, err
@@ -210,13 +246,22 @@ func buildLink(deviceID string, injector common.Injector, cfg config.Config) (*a
 		return nil, nil, nil, err
 	}
 	var fileSync *fileclipboard.Synchronizer
-	if cfg.Files.Enabled {
+	if cfg.Files.Enabled || len(managed) > 0 && managed[0] {
 		fileSync, err = fileclipboard.NewSynchronizer(fileBackend, func(ctx context.Context, transferID string, paths []string) error {
 			sources := make([]transfer.Source, len(paths))
 			for index, path := range paths {
 				sources[index] = transfer.Source{Path: path}
 			}
-			return link.SendFiles(ctx, transferID, sources)
+			var err error
+			if len(managed) > 0 && managed[0] {
+				err = link.QueueFiles(ctx, transferID, sources)
+			} else {
+				err = link.SendFiles(ctx, transferID, sources)
+			}
+			if errors.Is(err, app.ErrTransferTask) {
+				return nil
+			}
+			return err
 		}, 250*time.Millisecond)
 		if err != nil {
 			return nil, nil, nil, err
@@ -237,7 +282,7 @@ func loadRuntime(configPath, identityDirectory, trustDirectory string) (config.C
 	if err != nil {
 		return config.Config{}, identity.Identity{}, trust.Store{}, err
 	}
-	if cfg.Files.Enabled && !filepath.IsAbs(cfg.Files.Cache) {
+	if cfg.Files.Cache != "" && !filepath.IsAbs(cfg.Files.Cache) {
 		cfg.Files.Cache = filepath.Join(filepath.Dir(configPath), cfg.Files.Cache)
 	}
 	return cfg, localIdentity, trust.New(trustDirectory), nil

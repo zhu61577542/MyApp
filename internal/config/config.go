@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -35,8 +36,9 @@ type Config struct {
 }
 
 type Peer struct {
-	ID      string `json:"id"`
-	Address string `json:"address"`
+	ID       string `json:"id"`
+	Address  string `json:"address"`
+	Position string `json:"position,omitempty"`
 }
 
 type SwitchConfig struct {
@@ -97,7 +99,7 @@ func (c Config) Validate() error {
 		problems = append(problems, errors.New("role 必须是 controller 或 agent"))
 	}
 	_, port, err := net.SplitHostPort(c.ListenAddress)
-	if err != nil || port == "" || port == "0" {
+	if err != nil || !validPort(port) {
 		problems = append(problems, errors.New("listen_address 必须包含有效的非零端口"))
 	}
 	if c.MaxDevices < 2 || c.MaxDevices > 3 {
@@ -108,8 +110,11 @@ func (c Config) Validate() error {
 	}
 	seen := make(map[string]bool)
 	for _, peer := range c.Peers {
+		if peer.Position != "" && peer.Position != "left" && peer.Position != "right" && peer.Position != "up" && peer.Position != "down" {
+			problems = append(problems, errors.New("电脑位置必须为 left、right、up 或 down"))
+		}
 		host, port, err := net.SplitHostPort(peer.Address)
-		if peer.ID == "" || seen[peer.ID] || err != nil || host == "" || port == "" || port == "0" {
+		if peer.ID == "" || seen[peer.ID] || err != nil || host == "" || !validPort(port) {
 			problems = append(problems, errors.New("peers 必须包含不重复的设备 ID 和有效地址"))
 		}
 		seen[peer.ID] = true
@@ -127,6 +132,11 @@ func (c Config) Validate() error {
 		problems = append(problems, errors.New("logging.level 必须是 debug、info、warn 或 error"))
 	}
 	return errors.Join(problems...)
+}
+
+func validPort(value string) bool {
+	port, err := strconv.Atoi(value)
+	return err == nil && port >= 1 && port <= 65535
 }
 
 func Load(path string) (Config, error) {
@@ -182,14 +192,18 @@ func Save(path string, cfg Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	file, err := os.CreateTemp(filepath.Dir(path), ".myapp-config-*")
 	if err != nil {
 		return err
 	}
+	defer os.Remove(file.Name())
 	if err := file.Chmod(0600); err != nil {
 		return errors.Join(err, file.Close())
 	}
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	return errors.Join(encoder.Encode(cfg), file.Close())
+	if err := errors.Join(encoder.Encode(cfg), file.Sync(), file.Close()); err != nil {
+		return err
+	}
+	return os.Rename(file.Name(), path)
 }

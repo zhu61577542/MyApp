@@ -84,6 +84,11 @@ type Capturer interface {
 	Close() error
 }
 
+type ReadyCapturer interface {
+	Capturer
+	CaptureWithReady(context.Context, func(Event) error, func()) error
+}
+
 func (e Event) Encode(writer io.Writer) error {
 	if err := e.Validate(); err != nil {
 		return err

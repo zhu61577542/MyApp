@@ -34,6 +34,21 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 }
 
+func TestRejectInvalidNumericServicePorts(t *testing.T) {
+	for _, address := range []string{":65536", ":-1", ":http", ":0"} {
+		cfg := Default("local", RoleAgent)
+		cfg.ListenAddress = address
+		if err := cfg.Validate(); err == nil {
+			t.Fatalf("接受了无效监听端口 %s", address)
+		}
+		cfg = Default("local", RoleController)
+		cfg.Peers = []Peer{{ID: "peer", Address: "host" + address}}
+		if err := cfg.Validate(); err == nil {
+			t.Fatalf("接受了无效目标端口 %s", address)
+		}
+	}
+}
+
 func TestSaveOverwritesExistingConfig(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	if err := SaveNew(path, Default("旧名称", RoleAgent)); err != nil {

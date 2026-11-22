@@ -17,12 +17,14 @@ type Backend interface {
 type Sender func(context.Context, string, []string) error
 
 type Synchronizer struct {
-	backend  Backend
-	send     Sender
-	period   time.Duration
-	mu       sync.Mutex
-	lastSeen uint64
-	suppress uint64
+	backend   Backend
+	send      Sender
+	period    time.Duration
+	mu        sync.Mutex
+	admission sync.Mutex
+	lastSeen  uint64
+	suppress  uint64
+	paused    bool
 }
 
 func NewSynchronizer(backend Backend, send Sender, period time.Duration) (*Synchronizer, error) {
@@ -41,6 +43,10 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			s.mu.Lock()
+			if s.paused {
+				s.mu.Unlock()
+				continue
+			}
 			paths, revision, available, err := s.backend.ReadFiles(ctx)
 			if err != nil {
 				s.mu.Unlock()
@@ -60,11 +66,29 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			if err := s.send(ctx, transferID, paths); err != nil {
+			s.admission.Lock()
+			s.mu.Lock()
+			paused := s.paused
+			s.mu.Unlock()
+			if paused {
+				s.admission.Unlock()
+				continue
+			}
+			err = s.send(ctx, transferID, paths)
+			s.admission.Unlock()
+			if err != nil {
 				return err
 			}
 		}
 	}
+}
+
+func (s *Synchronizer) SetPaused(paused bool) {
+	s.admission.Lock()
+	defer s.admission.Unlock()
+	s.mu.Lock()
+	s.paused = paused
+	s.mu.Unlock()
 }
 
 func (s *Synchronizer) Publish(ctx context.Context, paths []string) error {
