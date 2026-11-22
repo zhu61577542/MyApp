@@ -1,0 +1,7 @@
+{
+  "stdout": "MyApp 0.1.4-alpha commit=0098240129aa826cdd73ef8323687375e9506780 protocol=1.0\n\r\n{\r\n    \"binary\":  \"E:\\\\test\\\\MyApp-00982401\\\\app\\\\myapp.exe\",\r\n    \"launcher\":  \"E:\\\\test\\\\MyApp-00982401\\\\Start-MyApp.cmd\",\r\n    \"sha256\":  \"5766C891FF86E054730D56F92E0D4F089C73EE45FD5A1B5A0505B5FFD901D0DF\",\r\n    \"workingRoot\":  \"E:\\\\test\\\\MyApp-00982401\",\r\n    \"versionCheck\":  true\r\n}\r\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": null,
+  "stderr": "",
+  "id": "070-install-native-gui",
+  "timedOut": false
+}

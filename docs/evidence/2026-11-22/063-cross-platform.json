@@ -1,0 +1,7 @@
+{
+  "stdout": "{\r\n    \"authenticatedSession\":  true,\r\n    \"bidirectionalText\":  true,\r\n    \"receivedDirectory\":  \"E:\\\\test\\\\MyApp-00982401\\\\cache\\\\peer-1\\\\6cfc4d6e70b8d434c79dc51a2a24f770\\\\linux-source\",\r\n    \"fileContent\":  true,\r\n    \"emptyFile\":  true,\r\n    \"emptyDirectory\":  true,\r\n    \"controllerPID\":  16072\r\n}\r\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": null,
+  "stderr": "",
+  "id": "063-cross-platform",
+  "timedOut": false
+}

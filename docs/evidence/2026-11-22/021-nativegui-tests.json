@@ -1,0 +1,7 @@
+{
+  "stdout": "=== RUN   TestPairingProcessHelper\n--- PASS: TestPairingProcessHelper (0.00s)\n=== RUN   TestPairingProcessExitDuringSnapshot\n--- PASS: TestPairingProcessExitDuringSnapshot (0.44s)\n=== RUN   TestBackgroundPairingPersistsPeerAfterWindowClosed\n--- PASS: TestBackgroundPairingPersistsPeerAfterWindowClosed (0.46s)\n=== RUN   TestPairingSaveFailureRemainsVisible\n--- PASS: TestPairingSaveFailureRemainsVisible (0.06s)\n=== RUN   TestSavingSettingsKeepsBackgroundPairedPeer\n--- PASS: TestSavingSettingsKeepsBackgroundPairedPeer (0.08s)\n=== RUN   TestStoppedPairingDoesNotSavePeer\n--- PASS: TestStoppedPairingDoesNotSavePeer (0.02s)\n=== RUN   TestPairingFailureMessageExplainsConnectionRefused\n--- PASS: TestPairingFailureMessageExplainsConnectionRefused (0.00s)\nPASS\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": null,
+  "stderr": "",
+  "id": "021-nativegui-tests",
+  "timedOut": false
+}

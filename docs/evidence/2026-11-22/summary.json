@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-22",
+  "sourceCommit": "0098240129aa826cdd73ef8323687375e9506780",
+  "machine": "192.168.1.2",
+  "os": "Windows 10 19045 x64",
+  "root": "E:\\test\\MyApp-00982401",
+  "launcher": "E:\\test\\MyApp-00982401\\Start-MyApp.cmd",
+  "passed": [
+    "Native Windows executable deployment and version check",
+    "Configuration and identity initialization",
+    "Pairing lifecycle regression suite",
+    "Discovery, pairing, trust and mutual TLS integration",
+    "Unicode text clipboard read/write",
+    "CF_HDROP file clipboard read/write",
+    "Keyboard, pointer, mouse button, scroll injection and release",
+    "Windows input Hook install/cancel",
+    "Windows/Linux bidirectional Unicode text and directory transfer",
+    "Chinese names, empty files, empty directories and received content verification"
+  ],
+  "issues": [
+    {
+      "status": "observed",
+      "detail": "Windows controller logged Thread does not have a clipboard open., cancelled its group and reconnected once during cross-platform transfer.",
+      "evidence": "080-final-audit.json"
+    },
+    {
+      "status": "failed",
+      "detail": "File metadata preservation test expected POSIX mode 0640 and observed Windows mode 0666.",
+      "evidence": "041-transfer-tests.json"
+    }
+  ],
+  "unverified": [
+    {
+      "detail": "Three symlink safety tests require a Windows privilege not available to this account. No system setting or account privilege was changed.",
+      "evidence": "041-transfer-tests.json"
+    },
+    "Physical keyboard event capture with user input",
+    "Three physical computers and one-hour stability matrix",
+    "Manual native GUI interaction"
+  ],
+  "cleanup": {
+    "testApplicationsRunning": 0,
+    "temporaryBridge": "stopped and acknowledged"
+  },
+  "productSourceChanged": false
+}

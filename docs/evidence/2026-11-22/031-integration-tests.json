@@ -1,0 +1,7 @@
+{
+  "stdout": "=== RUN   TestDiscoverPairTrustAndExchangeFrame\n--- PASS: TestDiscoverPairTrustAndExchangeFrame (0.09s)\nPASS\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": null,
+  "stderr": "",
+  "id": "031-integration-tests",
+  "timedOut": false
+}

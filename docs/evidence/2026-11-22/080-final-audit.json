@@ -1,0 +1,7 @@
+{
+  "stdout": "{\r\n    \"runningTestApplications\":  0,\r\n    \"launcherExists\":  true,\r\n    \"workingRoot\":  \"E:\\\\test\\\\MyApp-00982401\",\r\n    \"manifest\":  \"E:\\\\test\\\\MyApp-00982401\\\\results\\\\file-manifest.json\",\r\n    \"controllerLog\":  \"已连接 1 台子电脑；Ctrl+Alt+1/2 切换目标，Ctrl+Alt+Esc 退出控制\\n连接中断，第 1 次重连：Thread does not have a clipboard open.\\n已连接 1 台子电脑；Ctrl+Alt+1/2 切换目标，Ctrl+Alt+Esc 退出控制\\n\",\r\n    \"appData\":  \"E:\\\\test\\\\MyApp-00982401\\\\profile\\\\AppData\\\\Roaming\",\r\n    \"temp\":  \"E:\\\\test\\\\MyApp-00982401\\\\temp\"\r\n}\r\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": null,
+  "stderr": "",
+  "id": "080-final-audit",
+  "timedOut": false
+}

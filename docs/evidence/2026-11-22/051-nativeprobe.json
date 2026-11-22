@@ -1,0 +1,7 @@
+{
+  "stdout": "[{\"name\":\"unicode_clipboard\",\"pass\":true},{\"name\":\"file_clipboard\",\"pass\":true},{\"name\":\"keyboard_mouse_injection\",\"pass\":true},{\"name\":\"hook_install_and_cancel\",\"pass\":true}]\nMYAPP_TEST_EXITCODE=0\r\n",
+  "exitCode": null,
+  "stderr": "",
+  "id": "051-nativeprobe",
+  "timedOut": false
+}

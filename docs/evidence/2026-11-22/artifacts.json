@@ -1,0 +1,25 @@
+{
+  "commit": "0098240129aa826cdd73ef8323687375e9506780",
+  "artifacts": [
+    {
+      "file": "payload/myapp-core.exe",
+      "bytes": 7304704,
+      "sha256": "56f8bd4e0af7fef75948a91626439fac694ad1ab5fd48a61edf5df7b218e211f"
+    },
+    {
+      "file": "payload/myapp.exe",
+      "bytes": 25372160,
+      "sha256": "5766c891ff86e054730d56f92e0d4f089c73ee45fd5a1b5a0505b5ffd901d0df"
+    },
+    {
+      "file": "MyApp-native-gui.zip",
+      "bytes": 11911880,
+      "sha256": "94ca4d0dd8c3c596bc001668edfba0ffce6425bcf3df6486fbb4b18b2c5120bb"
+    },
+    {
+      "file": "MyApp-windows-test.zip",
+      "bytes": 26774579,
+      "sha256": "6c01a9331869d7471652d005fe7d3293e3a280f3aeb02467116e90c7d52ad048"
+    }
+  ]
+}
