@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime"
 	"syscall"
 	"unsafe"
 
@@ -62,22 +63,35 @@ type Injector struct {
 	sendInput        *syscall.LazyProc
 	getSystemMetrics *syscall.LazyProc
 	tracker          *common.Tracker
+	dpi              *syscall.LazyProc
 }
 
 func New() (*Injector, error) {
 	user32 := syscall.NewLazyDLL("user32.dll")
 	sendInput := user32.NewProc("SendInput")
 	getSystemMetrics := user32.NewProc("GetSystemMetrics")
+	dpi := user32.NewProc("SetThreadDpiAwarenessContext")
+	if err := dpi.Find(); err != nil {
+		return nil, err
+	}
 	if err := sendInput.Find(); err != nil {
 		return nil, err
 	}
 	if err := getSystemMetrics.Find(); err != nil {
 		return nil, err
 	}
-	return &Injector{sendInput: sendInput, getSystemMetrics: getSystemMetrics, tracker: common.NewTracker()}, nil
+	return &Injector{sendInput: sendInput, getSystemMetrics: getSystemMetrics, tracker: common.NewTracker(), dpi: dpi}, nil
 }
 
 func (i *Injector) Inject(event common.Event) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	if i.dpi != nil {
+		previous, _, _ := i.dpi.Call(^uintptr(3))
+		if previous != 0 {
+			defer i.dpi.Call(previous)
+		}
+	}
 	if err := event.Validate(); err != nil {
 		return err
 	}

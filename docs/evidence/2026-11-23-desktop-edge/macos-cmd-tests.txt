@@ -1,0 +1,43 @@
+=== RUN   TestBulkBindingRejectsDifferentSession
+=== RUN   TestBulkBindingRejectsDifferentSession/valid
+=== RUN   TestBulkBindingRejectsDifferentSession/wrong-session
+--- PASS: TestBulkBindingRejectsDifferentSession (0.04s)
+    --- PASS: TestBulkBindingRejectsDifferentSession/valid (0.02s)
+    --- PASS: TestBulkBindingRejectsDifferentSession/wrong-session (0.02s)
+=== RUN   TestTargetShortcutConsumesDigitAndRepeat
+--- PASS: TestTargetShortcutConsumesDigitAndRepeat (0.00s)
+=== RUN   TestCursorRestoresBeforeRemoteAcknowledgement
+--- PASS: TestCursorRestoresBeforeRemoteAcknowledgement (0.00s)
+=== RUN   TestCursorHideFailureDoesNotCapture
+--- PASS: TestCursorHideFailureDoesNotCapture (0.00s)
+=== RUN   TestQueuedEdgeStartHonorsDisabledState
+--- PASS: TestQueuedEdgeStartHonorsDisabledState (0.00s)
+=== RUN   TestCaptureCanRestartAfterStartupFailure
+--- PASS: TestCaptureCanRestartAfterStartupFailure (0.00s)
+=== RUN   TestDesktopInjectorStartsLazilyAndPauseReleases
+--- PASS: TestDesktopInjectorStartsLazilyAndPauseReleases (0.00s)
+=== RUN   TestDesktopServiceEOFStopsWithoutGUI
+--- PASS: TestDesktopServiceEOFStopsWithoutGUI (0.01s)
+=== RUN   TestDesktopServiceAcknowledgesPauseBeforeStop
+--- PASS: TestDesktopServiceAcknowledgesPauseBeforeStop (0.11s)
+=== RUN   TestRemoteStopDuringStartPreventsCapture
+--- PASS: TestRemoteStopDuringStartPreventsCapture (0.00s)
+=== RUN   TestCaptureQueueOverflowCancelsAndJoinsWorker
+--- PASS: TestCaptureQueueOverflowCancelsAndJoinsWorker (0.00s)
+=== RUN   TestCaptureQueuePreservesWorkerFailure
+--- PASS: TestCaptureQueuePreservesWorkerFailure (0.00s)
+=== RUN   TestConfigAndIdentityCommands
+--- PASS: TestConfigAndIdentityCommands (0.01s)
+=== RUN   TestUnknownCommand
+--- PASS: TestUnknownCommand (0.00s)
+=== RUN   TestHandshakeTimeoutAndCancellation
+=== RUN   TestHandshakeTimeoutAndCancellation/timeout
+=== RUN   TestHandshakeTimeoutAndCancellation/cancel
+--- PASS: TestHandshakeTimeoutAndCancellation (0.05s)
+    --- PASS: TestHandshakeTimeoutAndCancellation/timeout (0.05s)
+    --- PASS: TestHandshakeTimeoutAndCancellation/cancel (0.00s)
+=== RUN   TestSessionWaitsForCleanup
+--- PASS: TestSessionWaitsForCleanup (0.00s)
+=== RUN   TestSessionParentCancellation
+--- PASS: TestSessionParentCancellation (0.00s)
+PASS

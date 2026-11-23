@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"captured_a\":true,\"captured_mouse_button\":true,\"captured_mouse_motion\":true,\"emergency_exit\":true,\"diagnostics\":{\"keyboard_injected\":0,\"keyboard_messages\":23,\"keyboard_unknown\":0,\"mouse_injected\":0,\"mouse_messages\":3789,\"raw_mouse_messages\":3789}}\n\r\n\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "106-physical-diagnostic-20261123",
+  "timedOut": false
+}

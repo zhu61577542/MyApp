@@ -1,0 +1,46 @@
+=== RUN   TestControlLifecycleAndStaleMessages
+--- PASS: TestControlLifecycleAndStaleMessages (0.00s)
+=== RUN   TestAgentCannotControl
+--- PASS: TestAgentCannotControl (0.00s)
+=== RUN   TestDesktopControlRejectsWithoutEndingConnection
+--- PASS: TestDesktopControlRejectsWithoutEndingConnection (0.00s)
+=== RUN   TestRemoteStopNotificationKeepsConnectionUsable
+--- PASS: TestRemoteStopNotificationKeepsConnectionUsable (0.00s)
+=== RUN   TestTransferSuccessWaitsForPublication
+--- PASS: TestTransferSuccessWaitsForPublication (0.02s)
+=== RUN   TestTransferPublicationFailureIsNotSuccess
+--- PASS: TestTransferPublicationFailureIsNotSuccess (0.02s)
+=== RUN   TestIncomingCancelIsAcknowledged
+--- PASS: TestIncomingCancelIsAcknowledged (0.02s)
+=== RUN   TestBidirectionalTransfersDoNotBlockResults
+    desktop_test.go:253: 双向各 4 MiB 完成，用时 1.447s
+--- PASS: TestBidirectionalTransfersDoNotBlockResults (1.45s)
+=== RUN   TestHubInputOperationsHonorCancellationWhileContended
+=== RUN   TestHubInputOperationsHonorCancellationWhileContended/activate
+=== RUN   TestHubInputOperationsHonorCancellationWhileContended/input
+=== RUN   TestHubInputOperationsHonorCancellationWhileContended/recover
+--- PASS: TestHubInputOperationsHonorCancellationWhileContended (0.00s)
+    --- PASS: TestHubInputOperationsHonorCancellationWhileContended/activate (0.00s)
+    --- PASS: TestHubInputOperationsHonorCancellationWhileContended/input (0.00s)
+    --- PASS: TestHubInputOperationsHonorCancellationWhileContended/recover (0.00s)
+=== RUN   TestHubThreeNodesRelayAndSwitch
+--- PASS: TestHubThreeNodesRelayAndSwitch (0.02s)
+=== RUN   TestLinkTransfersDirectoryAndPublishesTopLevelPath
+--- PASS: TestLinkTransfersDirectoryAndPublishesTopLevelPath (0.01s)
+=== RUN   TestLinkCancellationClosesBlockedConnection
+--- PASS: TestLinkCancellationClosesBlockedConnection (0.00s)
+=== RUN   TestLinkDeliversInputAndReleasesOnDisconnect
+--- PASS: TestLinkDeliversInputAndReleasesOnDisconnect (0.00s)
+=== RUN   TestRequirementReplayedInputIsNotInjectedTwice
+--- PASS: TestRequirementReplayedInputIsNotInjectedTwice (0.00s)
+=== RUN   TestScreenHandshakeBeforeEdgeControl
+--- PASS: TestScreenHandshakeBeforeEdgeControl (0.00s)
+=== RUN   TestPeerWithoutScreenCapabilityKeepsManualControl
+--- PASS: TestPeerWithoutScreenCapabilityKeepsManualControl (0.00s)
+=== RUN   TestSplitHeartbeatReleasesWithinOneSecond
+--- PASS: TestSplitHeartbeatReleasesWithinOneSecond (0.80s)
+=== RUN   TestSplitChannelKeepsInputAliveDuringBlockedFileWork
+--- PASS: TestSplitChannelKeepsInputAliveDuringBlockedFileWork (0.92s)
+=== RUN   TestBulkChannelRejectsInput
+--- PASS: TestBulkChannelRejectsInput (0.00s)
+PASS

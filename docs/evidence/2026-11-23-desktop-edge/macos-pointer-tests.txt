@@ -1,0 +1,7 @@
+=== RUN   TestFourDirectionsAndReturnWithNegativeOrigin
+--- PASS: TestFourDirectionsAndReturnWithNegativeOrigin (0.00s)
+=== RUN   TestEdgeDelayAndReentryHysteresis
+--- PASS: TestEdgeDelayAndReentryHysteresis (0.00s)
+=== RUN   TestInvalidGeometryAndEntryRejected
+--- PASS: TestInvalidGeometryAndEntryRejected (0.00s)
+PASS

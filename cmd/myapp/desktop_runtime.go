@@ -12,6 +12,7 @@ import (
 	"myapp/internal/config"
 	"myapp/internal/desktop"
 	"myapp/internal/fileclipboard"
+	"myapp/internal/pointer"
 	"myapp/internal/transfer"
 	"myapp/internal/trust"
 )
@@ -61,16 +62,33 @@ func enableDesktopLink(ctx context.Context, link *app.Link, cfg config.Config, p
 		gate.onBlocked = func() error { return link.NotifyControlEnded(ctx) }
 	}
 	link.EnableDesktop(app.Capabilities{Name: cfg.DeviceName, OS: runtime.GOOS, SoftwareVersion: version, Control: gate != nil, FileResults: true}, func(caps app.Capabilities) {
-		update := peer
-		update.OS = caps.OS
-		update.Version = caps.SoftwareVersion
-		update.Control = caps.Control
-		update.FileResults = caps.FileResults
-		if caps.Name != "" {
-			update.Name = caps.Name
-		}
-		state.Peer(update)
+		state.UpdatePeer(peer.ID, func(update *desktop.Peer) {
+			update.OS = caps.OS
+			update.Version = caps.SoftwareVersion
+			update.Control = caps.Control
+			update.FileResults = caps.FileResults
+			if caps.Name != "" {
+				update.Name = caps.Name
+			}
+		})
 	}, control)
+	geometry, geometryErr := pointer.New()
+	if gate != nil {
+		gate.geometry = geometry
+		link.SetEdgeControlHandler(gate.controlEdge)
+	}
+	link.EnableScreen(func() (pointer.Screen, error) {
+		if geometryErr != nil {
+			return pointer.Screen{}, geometryErr
+		}
+		return geometry.Screen()
+	}, func(info app.ScreenInfo) {
+		state.UpdatePeer(peer.ID, func(update *desktop.Peer) {
+			update.Edge = info.Screen.Valid()
+			update.ScreenWidth = info.Screen.Width
+			update.ScreenHeight = info.Screen.Height
+		})
+	})
 }
 
 func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *fileclipboard.Synchronizer, capture *desktopCapture, gate *desktopInjector) func() {
@@ -102,6 +120,7 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 			return capture.start(commandCtx, command.Target)
 		case "stop_control":
 			if capture != nil {
+				state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = false })
 				return capture.stop(commandCtx)
 			}
 			if gate != nil {
@@ -109,6 +128,9 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 			}
 			return nil
 		case "pause":
+			if command.Enabled {
+				state.Update(func(s *desktop.Snapshot) { s.Paused = true })
+			}
 			if command.Enabled && capture != nil {
 				if err := capture.stop(commandCtx); err != nil {
 					return err
@@ -118,6 +140,32 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 				return err
 			}
 			state.Update(func(s *desktop.Snapshot) { s.Paused = command.Enabled })
+		case "edge":
+			if capture == nil {
+				return errors.New("只有主电脑可以启用跨屏切换")
+			}
+			if command.Enabled && capture.geometry == nil {
+				return errors.New("当前系统无法读取主屏幕或管理光标，不能启用跨屏切换")
+			}
+			if command.Enabled && current.Paused {
+				return errors.New("请先恢复共享")
+			}
+			if !command.Enabled {
+				state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = false })
+				if err := capture.stop(commandCtx); err != nil {
+					return err
+				}
+			}
+			state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = command.Enabled })
+		case "layout":
+			if capture == nil {
+				return errors.New("只有主电脑可以设置位置")
+			}
+			state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = false })
+			if err := capture.stop(commandCtx); err != nil {
+				return err
+			}
+			return capture.updateLayout(command.Layout)
 		case "text":
 			if text == nil {
 				return errors.New("文字剪贴板后端不可用，请查看诊断")

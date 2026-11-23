@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"captured_a\":false,\"captured_mouse_button\":false,\"captured_mouse_motion\":false,\"emergency_exit\":false,\"error\":\"context deadline exceeded\"}\n\r\n\r\n",
+  "exitCode": 1,
+  "stderr": "Physical capture did not meet all checks\r\n����λ�� E:\\test\\MyApp-regression-20261122\\jobs\\099-physical-capture-20261123.ps1:19 �ַ�: 23\r\n+ ... ($p.ExitCode -ne 0){throw 'Physical capture did not meet all checks'}\r\n+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : OperationStopped: (Physical capture did not meet all checks:String) [], RuntimeException\r\n    + FullyQualifiedErrorId : Physical capture did not meet all checks\r\n \r\n",
+  "id": "099-physical-capture-20261123",
+  "timedOut": false
+}

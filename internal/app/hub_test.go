@@ -16,6 +16,39 @@ import (
 	"myapp/internal/transfer"
 )
 
+func TestHubInputOperationsHonorCancellationWhileContended(t *testing.T) {
+	hub, err := NewHub(device.Device{ID: "main", Name: "main", Role: config.RoleController}, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := hub.lockInput(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { <-hub.inputGate }()
+	for name, operation := range map[string]func(context.Context) error{
+		"activate": func(ctx context.Context) error { return hub.Activate(ctx, 0) },
+		"input": func(ctx context.Context) error {
+			return hub.SendInput(ctx, common.Event{Kind: common.KeyUp, Code: 4, Sequence: 1})
+		},
+		"recover": hub.RecoverLocal,
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			ended := make(chan error, 1)
+			go func() { ended <- operation(ctx) }()
+			select {
+			case err := <-ended:
+				if !errors.Is(err, context.Canceled) {
+					t.Fatal(err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("取消无法中断输入操作等待")
+			}
+		})
+	}
+}
+
 func TestHubThreeNodesRelayAndSwitch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

@@ -1,0 +1,7 @@
+{
+  "stdout": "=== RUN   TestBidirectionalTransfersDoNotBlockResults\n    desktop_test.go:253: 双向各 4 MiB 完成，用时 12.241s\n--- PASS: TestBidirectionalTransfersDoNotBlockResults (12.26s)\nPASS\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "111-transfer-completion-20261123",
+  "timedOut": false
+}

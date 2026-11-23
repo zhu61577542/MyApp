@@ -185,9 +185,18 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 	}
 	if state := desktop.From(ctx); state != nil {
 		capture := newDesktopCapture(ctx, hub, desktopLinks, cfg.Peers, state)
+		capture.edgeDelay = time.Duration(cfg.Switch.EdgeDelayMS) * time.Millisecond
+		workers = append(workers, capture.runEdges)
 		for index, link := range desktopLinks {
 			peerID := cfg.Peers[index].ID
 			link.SetControlEndedHandler(func() { capture.remoteStopped(peerID) })
+			link.SetScreenChangeHandler(func() {
+				current := state.Sharing()
+				if current.Target == peerID || current.EdgeEnabled {
+					capture.remoteStopped(peerID)
+					state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = false; s.Error = "对端主屏幕变化，已停止控制" })
+				}
+			})
 		}
 		defer finishDesktopCapture(capture)
 		unbind := bindDesktop(ctx, textSync, fileSync, capture, nil)
@@ -201,16 +210,18 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 		defer capturer.Close()
 		emergency := newEmergencyKeys(func() { cancel(errEmergencyStop) })
 		workers = append(workers, func(ctx context.Context) error {
-			choose := newTargetKeys(len(cfg.Peers), func(index int) error { return hub.Activate(ctx, index) })
-			return capturer.Capture(ctx, func(event common.Event) error {
+			var eventCtx context.Context
+			choose := newTargetKeys(len(cfg.Peers), func(index int) error { return hub.Activate(eventCtx, index) })
+			return captureQueued(ctx, capturer, func(delivery context.Context, event common.Event) error {
+				eventCtx = delivery
 				if emergency(event) {
 					return nil
 				}
 				if consumed, err := choose(event); consumed || err != nil {
 					return err
 				}
-				return hub.SendInput(ctx, event)
-			})
+				return hub.SendInput(delivery, event)
+			}, nil)
 		})
 	}
 	fmt.Fprintf(stdout, "已连接 %d 台子电脑；Ctrl+Alt+1/2 切换目标，Ctrl+Alt+Esc 退出控制\n", len(cfg.Peers))

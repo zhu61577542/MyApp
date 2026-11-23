@@ -24,10 +24,10 @@ type hubPeer struct {
 }
 
 type Hub struct {
-	mu      sync.Mutex
-	inputMu sync.Mutex
-	manager *device.Manager
-	peers   []*hubPeer
+	mu        sync.Mutex
+	inputGate chan struct{}
+	manager   *device.Manager
+	peers     []*hubPeer
 }
 
 func NewHub(local device.Device, maxDevices int) (*Hub, error) {
@@ -35,7 +35,20 @@ func NewHub(local device.Device, maxDevices int) (*Hub, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Hub{manager: manager}, nil
+	return &Hub{manager: manager, inputGate: make(chan struct{}, 1)}, nil
+}
+
+func (h *Hub) lockInput(ctx context.Context) error {
+	select {
+	case h.inputGate <- struct{}{}:
+		if err := ctx.Err(); err != nil {
+			<-h.inputGate
+			return err
+		}
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (h *Hub) AddPeer(peer device.Device, link *Link) error {
@@ -58,8 +71,10 @@ func (h *Hub) snapshot() []*hubPeer {
 }
 
 func (h *Hub) Activate(ctx context.Context, index int) error {
-	h.inputMu.Lock()
-	defer h.inputMu.Unlock()
+	if err := h.lockInput(ctx); err != nil {
+		return err
+	}
+	defer func() { <-h.inputGate }()
 	peers := h.snapshot()
 	if index < 0 || index >= len(peers) {
 		return device.ErrUnknownDevice
@@ -82,8 +97,10 @@ func (h *Hub) Activate(ctx context.Context, index int) error {
 }
 
 func (h *Hub) SendInput(ctx context.Context, event common.Event) error {
-	h.inputMu.Lock()
-	defer h.inputMu.Unlock()
+	if err := h.lockInput(ctx); err != nil {
+		return err
+	}
+	defer func() { <-h.inputGate }()
 	active, exists := h.manager.Active()
 	if !exists {
 		return device.ErrTargetOffline
@@ -97,8 +114,10 @@ func (h *Hub) SendInput(ctx context.Context, event common.Event) error {
 }
 
 func (h *Hub) RecoverLocal(ctx context.Context) error {
-	h.inputMu.Lock()
-	defer h.inputMu.Unlock()
+	if err := h.lockInput(ctx); err != nil {
+		return err
+	}
+	defer func() { <-h.inputGate }()
 	active, exists := h.manager.Active()
 	h.manager.RecoverLocal()
 	if exists {

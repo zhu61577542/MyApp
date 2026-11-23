@@ -1,0 +1,7 @@
+{
+  "stdout": "=== RUN   TestBidirectionalTransfersDoNotBlockResults\n    desktop_test.go:245: 双向传输超时: map[0-receive:transferring 3538944/4194304 error= 0-send:transferring 3325952/4194304 error= 1-receive:transferring 3522560/4194304 error= 1-send:transferring 3325952/4194304 error=]\n--- FAIL: TestBidirectionalTransfersDoNotBlockResults (10.04s)\nFAIL\n",
+  "exitCode": 1,
+  "stderr": "Transfer progress diagnostic failed\r\n����λ�� E:\\test\\MyApp-regression-20261122\\jobs\\110-transfer-progress-20261123.ps1:9 �ַ�: 25\r\n+ if($LASTEXITCODE -ne 0){throw 'Transfer progress diagnostic failed'}\r\n+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : OperationStopped: (Transfer progress diagnostic failed:String) [], RuntimeException\r\n    + FullyQualifiedErrorId : Transfer progress diagnostic failed\r\n \r\n",
+  "id": "110-transfer-progress-20261123",
+  "timedOut": false
+}

@@ -44,6 +44,7 @@ type Peer struct {
 type SwitchConfig struct {
 	Mode        string `json:"mode"`
 	EdgeDelayMS int    `json:"edge_delay_ms"`
+	EdgeEnabled bool   `json:"edge_enabled,omitempty"`
 }
 
 type ClipboardConfig struct {

@@ -86,7 +86,7 @@ func (v *desktopView) renderSetup() {
 					return err
 				}
 				return savePreferences(v.options, prefs)
-			}, func() { v.setupStep = 2; v.refresh(true) })
+			}, func() { v.setupStep = 2; v.refresh(true); v.requestPermissions(true) })
 		})
 		if v.busy {
 			next.Disable()

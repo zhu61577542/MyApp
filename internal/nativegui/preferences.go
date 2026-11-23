@@ -10,10 +10,11 @@ import (
 )
 
 type preferences struct {
-	Appearance           string `json:"appearance"`
-	OnboardingDone       bool   `json:"onboarding_done"`
-	CloseHintShown       bool   `json:"close_hint_shown"`
-	ConnectAutomatically bool   `json:"connect_automatically"`
+	Appearance               string `json:"appearance"`
+	OnboardingDone           bool   `json:"onboarding_done"`
+	CloseHintShown           bool   `json:"close_hint_shown"`
+	ConnectAutomatically     bool   `json:"connect_automatically"`
+	PermissionRequestVersion int    `json:"permission_request_version,omitempty"`
 }
 
 func preferencesPath(options Options) string {

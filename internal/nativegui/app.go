@@ -122,6 +122,7 @@ func Run(ctx context.Context, options Options) error {
 	}()
 	if !options.Background || !view.ready {
 		window.Show()
+		fyne.Do(func() { view.requestPermissions(true) })
 	}
 	application.Run()
 	services.stop()

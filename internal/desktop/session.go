@@ -13,14 +13,17 @@ import (
 const Version = 1
 
 type Peer struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Address     string `json:"address"`
-	OS          string `json:"os,omitempty"`
-	Version     string `json:"version,omitempty"`
-	Status      string `json:"status"`
-	Control     bool   `json:"control"`
-	FileResults bool   `json:"file_results"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Address      string `json:"address"`
+	OS           string `json:"os,omitempty"`
+	Version      string `json:"version,omitempty"`
+	Status       string `json:"status"`
+	Control      bool   `json:"control"`
+	FileResults  bool   `json:"file_results"`
+	Edge         bool   `json:"edge"`
+	ScreenWidth  int    `json:"screen_width,omitempty"`
+	ScreenHeight int    `json:"screen_height,omitempty"`
 }
 
 type Task struct {
@@ -41,27 +44,29 @@ func (t Task) Active() bool {
 }
 
 type Snapshot struct {
-	Revision  uint64      `json:"revision"`
-	Phase     string      `json:"phase"`
-	DeviceID  string      `json:"device_id"`
-	Role      config.Role `json:"role"`
-	Target    string      `json:"target"`
-	Paused    bool        `json:"paused"`
-	Text      bool        `json:"text"`
-	Files     bool        `json:"files"`
-	Accepting bool        `json:"accepting"`
-	Attempt   int         `json:"attempt"`
-	Error     string      `json:"error,omitempty"`
-	Peers     []Peer      `json:"peers"`
-	Tasks     []Task      `json:"tasks"`
+	Revision    uint64      `json:"revision"`
+	Phase       string      `json:"phase"`
+	DeviceID    string      `json:"device_id"`
+	Role        config.Role `json:"role"`
+	Target      string      `json:"target"`
+	Paused      bool        `json:"paused"`
+	Text        bool        `json:"text"`
+	Files       bool        `json:"files"`
+	Accepting   bool        `json:"accepting"`
+	EdgeEnabled bool        `json:"edge_enabled"`
+	Attempt     int         `json:"attempt"`
+	Error       string      `json:"error,omitempty"`
+	Peers       []Peer      `json:"peers"`
+	Tasks       []Task      `json:"tasks"`
 }
 
 type Command struct {
-	Version int    `json:"version"`
-	ID      uint64 `json:"id"`
-	Action  string `json:"action"`
-	Target  string `json:"target,omitempty"`
-	Enabled bool   `json:"enabled"`
+	Version int               `json:"version"`
+	ID      uint64            `json:"id"`
+	Action  string            `json:"action"`
+	Target  string            `json:"target,omitempty"`
+	Enabled bool              `json:"enabled"`
+	Layout  map[string]string `json:"layout,omitempty"`
 }
 
 type Message struct {
@@ -86,7 +91,7 @@ type Session struct {
 }
 
 func New(cfg config.Config, id string) *Session {
-	s := &Session{state: Snapshot{Phase: "starting", DeviceID: id, Role: cfg.Role, Text: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Accepting: true}, tasks: make(map[string]Task), taskActions: make(map[string]Handler), senders: make(map[string]func([]string) error)}
+	s := &Session{state: Snapshot{Phase: "starting", DeviceID: id, Role: cfg.Role, Text: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Accepting: true, EdgeEnabled: cfg.Switch.EdgeEnabled}, tasks: make(map[string]Task), taskActions: make(map[string]Handler), senders: make(map[string]func([]string) error)}
 	for _, p := range cfg.Peers {
 		s.state.Peers = append(s.state.Peers, Peer{ID: p.ID, Address: p.Address, Name: p.ID, Status: "offline"})
 	}
@@ -118,7 +123,18 @@ func (s *Session) Snapshot() Snapshot {
 func (s *Session) Sharing() Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return Snapshot{Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting}
+	return Snapshot{Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting, EdgeEnabled: s.state.EdgeEnabled, Target: s.state.Target}
+}
+
+func (s *Session) UpdatePeer(id string, update func(*Peer)) {
+	s.Update(func(state *Snapshot) {
+		for index := range state.Peers {
+			if state.Peers[index].ID == id {
+				update(&state.Peers[index])
+				return
+			}
+		}
+	})
 }
 
 func (s *Session) Peer(peer Peer) {
@@ -275,6 +291,7 @@ func taskStillActive(state Snapshot, id string) bool {
 func (s *Session) Disconnected(reason string) {
 	s.Update(func(state *Snapshot) {
 		state.Target = ""
+		state.EdgeEnabled = false
 		state.Phase = "reconnecting"
 		state.Error = reason
 		for i := range state.Peers {

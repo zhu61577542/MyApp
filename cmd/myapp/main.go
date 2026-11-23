@@ -35,7 +35,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := openProcessLogger()
 	if logger != nil {
 		defer logger.Close()
-		if len(args) == 0 || args[0] != "desktop-service" {
+		if len(args) == 0 || args[0] != "desktop-service" && args[0] != "cursor-guard" {
 			stdout = io.MultiWriter(stdout, logger.Stream(logging.Info))
 		}
 		stderr = io.MultiWriter(stderr, logger.Stream(logging.Error))
@@ -65,6 +65,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		err = runControl(args[1:], stdout, stderr)
 	case "desktop-service":
 		err = runDesktopService(args[1:], stdin, stdout, stderr)
+	case "cursor-guard":
+		err = runCursorGuard(stdin, stdout)
+	case "pointer-probe":
+		err = runPointerProbe(args[1:], stdout, stderr)
 	case "gui":
 		err = runNativeGUI(args[1:], stdout, stderr)
 	case "gui-web":

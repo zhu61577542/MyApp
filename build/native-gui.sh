@@ -25,3 +25,15 @@ if [ "$target" = "darwin" ]; then
 	set -- "$@" -macosx-sdk-path="$MACOS_SDK_PATH"
 fi
 "$@"
+if [ "$target" = "darwin" ]; then
+	patched=0
+	for app in fyne-cross/dist/darwin-*/MyApp.app; do
+		[ -d "$app" ] || continue
+		go run ./build/macpermissions -app "$app"
+		patched=$((patched + 1))
+	done
+	if [ "$patched" -eq 0 ]; then
+		echo "未找到生成的 MyApp.app，无法登记权限用途" >&2
+		exit 1
+	fi
+fi

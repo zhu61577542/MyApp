@@ -44,7 +44,7 @@ func (e Event) Validate() error {
 	}
 	switch e.Kind {
 	case MouseAbsolute:
-		if e.X < 0 || e.Y < 0 || e.X > MaxCoordinate || e.Y > MaxCoordinate || e.Code != 0 || e.Value != 0 {
+		if e.X < -MaxCoordinate || e.Y < -MaxCoordinate || e.X > MaxCoordinate || e.Y > MaxCoordinate || e.Code != 0 || e.Value != 0 {
 			return errors.New("绝对鼠标事件无效")
 		}
 	case MouseRelative:

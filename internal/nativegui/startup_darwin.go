@@ -52,7 +52,7 @@ func setLoginItem(enabled bool, options Options) error {
 		}
 		arguments.WriteString("</string>")
 	}
-	data := `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>Label</key><string>local.myapp.client</string><key>ProgramArguments</key><array>` + arguments.String() + `</array><key>RunAtLoad</key><true/></dict></plist>`
+	data := `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>Label</key><string>local.myapp.client</string><key>AssociatedBundleIdentifiers</key><array><string>local.myapp.client</string></array><key>ProgramArguments</key><array>` + arguments.String() + `</array><key>RunAtLoad</key><true/></dict></plist>`
 	if err := os.MkdirAll(filepath.Dir(name), 0700); err != nil {
 		return err
 	}

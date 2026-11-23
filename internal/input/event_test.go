@@ -25,6 +25,22 @@ func TestEventRoundTrip(t *testing.T) {
 	}
 }
 
+func TestAbsolutePositionSupportsNegativeMonitorOrigin(t *testing.T) {
+	want := Event{Kind: MouseAbsolute, Sequence: 1, X: -1920, Y: -100}
+	var buffer bytes.Buffer
+	if err := want.Encode(&buffer); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Decode(&buffer)
+	if err != nil || got != want {
+		t.Fatalf("负原点位置未保留: %+v %v", got, err)
+	}
+	want.X = -MaxCoordinate - 1
+	if want.Validate() == nil {
+		t.Fatal("未拒绝超限坐标")
+	}
+}
+
 func TestCoalesceOnlyConsecutiveMouseMoves(t *testing.T) {
 	events := []Event{
 		{Kind: MouseRelative, Sequence: 1, X: math.MaxInt32, Y: 1},

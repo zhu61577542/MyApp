@@ -196,5 +196,6 @@ const infoPlist = `<?xml version="1.0" encoding="UTF-8"?>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>NSAccessibilityUsageDescription</key><string>MyApp 使用辅助功能控制已配对电脑的鼠标和键盘。</string>
 <key>NSInputMonitoringUsageDescription</key><string>MyApp 读取键盘和鼠标输入并发送到已配对电脑。</string>
+<key>NSLocalNetworkUsageDescription</key><string>MyApp 搜索并连接同一局域网内由你确认配对的电脑。</string>
 </dict></plist>
 `

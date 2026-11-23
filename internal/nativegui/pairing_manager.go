@@ -18,6 +18,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"myapp/internal/config"
+	"myapp/internal/discovery"
 	"myapp/internal/pairing"
 )
 
@@ -32,6 +33,7 @@ type pairingSnapshot struct {
 	RemoteName       string
 	Confirmed        bool
 	Deadline         time.Time
+	DiscoveryError   string
 }
 
 // 配对进程独立于窗口运行。
@@ -49,6 +51,8 @@ type pairingManager struct {
 	window          fyne.Window
 	showWindow      func()
 	advertiseCancel context.CancelFunc
+	advertisement   *discovery.Advertiser
+	discoveryError  string
 }
 
 func (m *pairingManager) start(options Options, mode, address string) error {
@@ -107,6 +111,8 @@ func (m *pairingManager) start(options Options, mode, address string) error {
 	m.terminated = false
 	m.confirmed = false
 	m.started = time.Now()
+	m.advertisement = nil
+	m.discoveryError = ""
 
 	go m.collect(options, cmd, stdout, stderr)
 	return nil
@@ -124,6 +130,9 @@ func (m *pairingManager) collect(options Options, cmd *exec.Cmd, stdout, stderr 
 			}
 			m.mu.Lock()
 			m.lines = append(m.lines, line)
+			if strings.HasPrefix(line, "远端设备:") {
+				m.stopAdvertisingLocked()
+			}
 			if len(m.lines) > 64 {
 				m.lines = append([]string(nil), m.lines[len(m.lines)-64:]...)
 			}
@@ -144,10 +153,7 @@ func (m *pairingManager) collect(options Options, cmd *exec.Cmd, stdout, stderr 
 	if m.cmd != cmd {
 		return
 	}
-	if m.advertiseCancel != nil {
-		m.advertiseCancel()
-		m.advertiseCancel = nil
-	}
+	m.stopAdvertisingLocked()
 	if m.terminated {
 		m.status = "配对进程已终止"
 	} else if err != nil {
@@ -170,10 +176,19 @@ func (m *pairingManager) stop() {
 	if cmd != nil {
 		m.terminated = true
 	}
+	m.stopAdvertisingLocked()
 	m.mu.Unlock()
 	if cmd != nil && cmd.Process != nil {
 		_ = cmd.Process.Kill()
 	}
+}
+
+func (m *pairingManager) stopAdvertisingLocked() {
+	if m.advertiseCancel != nil {
+		m.advertiseCancel()
+		m.advertiseCancel = nil
+	}
+	m.advertisement = nil
 }
 
 func (m *pairingManager) stopAndWait(ctx context.Context) error {
@@ -239,6 +254,7 @@ func (m *pairingManager) snapshot() pairingSnapshot {
 		Status:           m.status,
 		ConfirmAvailable: confirmAvailable,
 		Code:             code, RemoteName: name, Confirmed: m.confirmed, Deadline: pairingDeadline(m.started),
+		DiscoveryError: m.discoveryError,
 	}
 }
 

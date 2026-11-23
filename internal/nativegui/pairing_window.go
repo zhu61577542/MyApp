@@ -32,7 +32,7 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 	window := application.NewWindow("MyApp · 添加电脑")
 	window.Resize(fyne.NewSize(620, 560))
 	local, _ := identity.Load(options.IdentityDirectory)
-	browser := startBrowser(context.Background(), local.DeviceID)
+	browser := startBrowser(context.Background(), local.DeviceID, manager)
 	holder := container.NewStack()
 	message := paragraph("")
 	var manual bool
@@ -41,7 +41,48 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 	var render func()
 	var signature string
 	var pausedBrowser bool
+	var hidden, transition bool
+	ensureListening := func() {
+		current := manager.snapshot()
+		if current.Running || strings.HasPrefix(current.Status, "配对完成") {
+			return
+		}
+		cfg, err := config.Load(options.ConfigPath)
+		if err != nil {
+			return
+		}
+		records, err := trust.New(options.TrustDirectory).List()
+		if err == nil && len(records)+1 < cfg.MaxDevices {
+			if err := manager.start(options, "listen", defaultPairAddress(options)); err != nil {
+				message.SetText("无法允许配对：" + err.Error())
+			}
+		}
+	}
 	start := func(mode, target string) {
+		if transition {
+			return
+		}
+		current := manager.snapshot()
+		if mode == "connect" && current.Running && current.Mode == "listen" && current.Code == "" {
+			transition = true
+			go func() {
+				ctx, done := context.WithTimeout(context.Background(), 4*time.Second)
+				defer done()
+				err := manager.stopAndWait(ctx)
+				if err == nil {
+					err = manager.start(options, mode, target)
+				}
+				fyne.Do(func() {
+					transition = false
+					if err != nil {
+						message.SetText("无法连接：" + pairingOutputMessage(err.Error()))
+					}
+					signature = ""
+					render()
+				})
+			}()
+			return
+		}
 		if err := manager.start(options, mode, target); err != nil {
 			message.SetText("无法开始配对：" + pairingOutputMessage(err.Error()))
 		}
@@ -63,6 +104,10 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 	}
 	render = func() {
 		snapshot := manager.snapshot()
+		if hidden && !snapshot.Running && !pausedBrowser {
+			browser.stop()
+			pausedBrowser = true
+		}
 		cfg, cfgErr := config.Load(options.ConfigPath)
 		records, trustErr := trust.New(options.TrustDirectory).List()
 		nearby, failure := browser.snapshot()
@@ -74,7 +119,7 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 		for _, device := range nearby {
 			deviceKey.WriteString(device.ID + device.Address)
 		}
-		key := fmt.Sprintf("%t/%s/%s/%t/%d/%s/%t/%d/%s", snapshot.Running, snapshot.Status, snapshot.Code, snapshot.Confirmed, remaining, deviceKey.String(), manual, len(records), cfg.Role)
+		key := fmt.Sprintf("%t/%s/%s/%t/%d/%s/%t/%d/%s/%s/%s/%t", snapshot.Running, snapshot.Status, snapshot.Code, snapshot.Confirmed, remaining, deviceKey.String(), manual, len(records), cfg.Role, failure, snapshot.DiscoveryError, transition)
 		if key == signature {
 			return
 		}
@@ -113,7 +158,7 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 			}
 			box.Add(secondary(fmt.Sprintf("本次配对剩余约 %d 秒", remaining)))
 			box.Add(widget.NewButton("停止配对", stopPairing))
-		} else if snapshot.Running {
+		} else if snapshot.Running && snapshot.Mode != "listen" {
 			title := "正在连接另一台电脑"
 			if snapshot.Mode == "listen" {
 				title = "允许其他电脑发现我"
@@ -141,13 +186,21 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 				manager.status = ""
 				manager.lines = nil
 				manager.mu.Unlock()
+				ensureListening()
 				signature = ""
 				render()
 			}))
 		} else {
 			box.Add(heading("添加你的另一台电脑"))
 			box.Add(paragraph("两台电脑需在同一局域网，并在两端分别确认配对码。"))
-			if snapshot.Status != "" {
+			if snapshot.Running {
+				box.Add(secondary(fmt.Sprintf("本机已允许配对，剩余约 %d 秒。双方都可以搜索并选择对方。", remaining)))
+				box.Add(quiet("停止允许配对", stopPairing))
+			}
+			if snapshot.DiscoveryError != "" {
+				box.Add(secondary(snapshot.DiscoveryError))
+			}
+			if snapshot.Status != "" && !snapshot.Running {
 				box.Add(paragraph(snapshot.Status))
 				if snapshot.Status == "配对未完成" {
 					box.Add(paragraph(pairingFailureMessage(strings.Join(snapshot.Lines, "\n"))))
@@ -171,6 +224,9 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 					}
 					found = true
 					pair := primary("配对", func() { start("connect", device.Address) })
+					if transition {
+						pair.Disable()
+					}
 					note := roleName(device.Role)
 					if device.Role == cfg.Role {
 						pair.Disable()
@@ -179,18 +235,23 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 					box.Add(surface(container.NewBorder(nil, nil, nil, pair, container.NewVBox(sectionTitle(device.Name), secondary(note)))))
 				}
 				if !found {
-					box.Add(secondary("暂未找到。请在另一台电脑选择“添加电脑 → 允许其他电脑发现我”。"))
+					box.Add(secondary("暂未找到。请在另一台电脑打开“添加电脑”；程序会同时监听和搜索。组播受限时会尝试主动发现，也可通过 IP 添加。"))
 				}
 				if failure != "" {
 					box.Add(secondary(failure))
 				}
 				box.Add(container.NewHBox(widget.NewButton("重新查找", func() {
 					browser.stop()
-					browser = startBrowser(context.Background(), local.DeviceID)
+					browser = startBrowser(context.Background(), local.DeviceID, manager)
 					pausedBrowser = false
+					ensureListening()
 					signature = ""
 					render()
-				}), widget.NewButton("允许其他电脑发现我", func() { start("listen", defaultPairAddress(options)) })))
+				}), widget.NewButton("重新允许配对", func() {
+					if !manager.snapshot().Running {
+						start("listen", defaultPairAddress(options))
+					}
+				})))
 				if manual {
 					box.Add(widget.NewForm(widget.NewFormItem("对端地址", address)))
 					box.Add(primary("连接并核对配对码", func() {
@@ -215,10 +276,12 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 	manager.mu.Lock()
 	manager.window = window
 	manager.showWindow = func() {
+		hidden = false
 		if pausedBrowser {
-			browser = startBrowser(context.Background(), local.DeviceID)
+			browser = startBrowser(context.Background(), local.DeviceID, manager)
 			pausedBrowser = false
 		}
+		ensureListening()
 		signature = ""
 		render()
 		window.Show()
@@ -227,7 +290,8 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 	manager.mu.Unlock()
 	window.SetCloseIntercept(func() {
 		window.Hide()
-		if !pausedBrowser {
+		hidden = true
+		if !pausedBrowser && !manager.snapshot().Running {
 			browser.stop()
 			pausedBrowser = true
 		}
@@ -257,6 +321,7 @@ func openPairing(application fyne.App, options Options, manager *pairingManager)
 			}
 		}
 	}()
+	ensureListening()
 	render()
 	window.Show()
 }

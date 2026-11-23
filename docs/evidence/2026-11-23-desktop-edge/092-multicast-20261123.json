@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"sent\":{\"lan\":33,\"default\":33,\"unicast\":33},\"joined\":{\"lan\":true,\"default\":true},\"errors\":[],\"tag\":\"myapp-net-20261123-01\",\"received\":{}}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "092-multicast-20261123",
+  "timedOut": false
+}

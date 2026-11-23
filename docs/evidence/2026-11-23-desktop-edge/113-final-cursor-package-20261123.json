@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"before\":{\"visible\":true,\"transparent_standard\":0,\"checked_standard\":14},\"during\":{\"visible\":false,\"transparent_standard\":0,\"checked_standard\":14},\"position\":{\"x\":-1028,\"y\":1344},\"screen\":{\"id\":\"10001\",\"x\":0,\"y\":0,\"width\":2560,\"height\":1440}}\n\r\n\r\n{\"before\":{\"visible\":true,\"transparent_standard\":0,\"checked_standard\":14},\"position\":{\"x\":-1028,\"y\":1344},\"screen\":{\"id\":\"10001\",\"x\":0,\"y\":0,\"width\":2560,\"height\":1440}}\n\r\n{\"passed\":true,\"sha256\":\"e70c12a88e3643f50d0f8d64597eef82f611bfddc8c082a61577b73a876ef3c7\",\"guiStarted\":false,\"package\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\"}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "113-final-cursor-package-20261123",
+  "timedOut": false
+}

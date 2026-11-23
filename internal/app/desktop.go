@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"myapp/internal/pointer"
 	"myapp/internal/protocol"
 	"myapp/internal/transport"
 )
@@ -22,9 +23,10 @@ type Capabilities struct {
 }
 
 type controlPacket struct {
-	ID     uint64 `json:"id"`
-	Action string `json:"action,omitempty"`
-	Error  string `json:"error,omitempty"`
+	ID     uint64         `json:"id"`
+	Action string         `json:"action,omitempty"`
+	Error  string         `json:"error,omitempty"`
+	Entry  *pointer.Entry `json:"entry,omitempty"`
 }
 
 type linkDesktop struct {
@@ -38,6 +40,13 @@ type linkDesktop struct {
 	next           atomic.Uint64
 	pending        map[uint64]chan error
 	onControlEnded func()
+	edgeControl    func(context.Context, string, *pointer.Entry) error
+}
+
+func (l *Link) SetEdgeControlHandler(handler func(context.Context, string, *pointer.Entry) error) {
+	if l.desktop != nil {
+		l.desktop.edgeControl = handler
+	}
 }
 
 // 仅在启动 Run 前设置。
@@ -72,6 +81,18 @@ func (l *Link) sendCapabilities(ctx context.Context) {
 }
 
 func (l *Link) RequestControl(ctx context.Context, action string) error {
+	return l.requestControl(ctx, action, nil)
+}
+
+func (l *Link) RequestEdgeControl(ctx context.Context, entry pointer.Entry) error {
+	remote := l.RemoteScreen()
+	if remote.Version != 1 || !remote.Screen.Valid() || !entry.Valid() || entry.ScreenKey != remote.Screen.Key() {
+		return errors.New("对端尚未提供有效跨屏能力，请更新两端软件或等待屏幕信息")
+	}
+	return l.requestControl(ctx, "begin", &entry)
+}
+
+func (l *Link) requestControl(ctx context.Context, action string, entry *pointer.Entry) error {
 	state := l.desktop
 	if state == nil {
 		return errors.New("对端未声明桌面控制能力，请两端均使用新版桌面界面后重新连接")
@@ -92,7 +113,7 @@ func (l *Link) RequestControl(ctx context.Context, action string) error {
 	state.pending[id] = response
 	state.mu.Unlock()
 	defer func() { state.mu.Lock(); delete(state.pending, id); state.mu.Unlock() }()
-	payload, _ := json.Marshal(controlPacket{ID: id, Action: action})
+	payload, _ := json.Marshal(controlPacket{ID: id, Action: action, Entry: entry})
 	if err := l.writer.Enqueue(ctx, transport.PriorityRealtime, protocol.Frame{Type: protocol.TypeControlRequest, Payload: payload}); err != nil {
 		return err
 	}
@@ -162,7 +183,13 @@ func (l *Link) handleDesktopFrame(ctx context.Context, frame protocol.Frame) err
 		return errors.New("控制请求动作无效")
 	}
 	var err error
-	if state.control == nil {
+	if packet.Entry != nil {
+		if packet.Action != "begin" || !packet.Entry.Valid() || state.edgeControl == nil {
+			err = errors.New("当前会话不支持该跨屏入口")
+		} else {
+			err = state.edgeControl(ctx, packet.Action, packet.Entry)
+		}
+	} else if state.control == nil {
 		err = errors.New("这台电脑不接受键鼠控制")
 	} else {
 		err = state.control(ctx, packet.Action)

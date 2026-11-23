@@ -1,0 +1,14 @@
+{
+  "tag": "myapp-net-20261123-01",
+  "received": {
+    "unicast@192.168.1.2": 10
+  },
+  "errors": [],
+  "sent": {
+    "default": 89,
+    "lan": 89,
+    "unicast": 89
+  },
+  "started": "2026-11-23T11:10:06.468Z",
+  "finished": "2026-11-23T11:10:51.471Z"
+}

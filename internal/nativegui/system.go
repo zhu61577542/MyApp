@@ -32,7 +32,7 @@ func openPermissionSettings(page string) error {
 	if runtime.GOOS != "darwin" {
 		return errors.New("请打开系统网络与防火墙设置，允许 MyApp 访问局域网")
 	}
-	if page != "Privacy_Accessibility" && page != "Privacy_ListenEvent" {
+	if page != "Privacy_Accessibility" && page != "Privacy_ListenEvent" && page != "Privacy_LocalNetwork" {
 		return errors.New("未知权限页面")
 	}
 	address := url.URL{Scheme: "x-apple.systempreferences", Opaque: "com.apple.preference.security?" + page}

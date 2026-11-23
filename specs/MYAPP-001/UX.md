@@ -127,3 +127,13 @@
 - [Microsoft：Settings guidelines](https://learn.microsoft.com/en-us/windows/apps/design/app-settings/guidelines-for-app-settings)
 - [Microsoft：Title bar](https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/title-bar)
 - [Microsoft：Notification area](https://learn.microsoft.com/en-us/windows/win32/shell/notification-area)
+
+## 12. 2026-11-23 增强交互
+
+Mac 权限页提供“自动请求授权”和“一键删除权限”。首次设置完成、前台打开时仅自动请求一次，最终授权由系统提示确认；拒绝后通过权限行恢复。删除前确认并停止共享及配对，仅重置 MyApp 的 TCC 授权，明确保留系统本地网络登记，不显示全部权限已删除。
+
+添加电脑窗口自动进入限时可发现状态，同时显示附近电脑和 IP 添加入口；选择候选时先停止本机旧监听，再发起连接。核对短码时停止可配对广播。组播失效时仍通过有界 LAN 单播查询寻找对端，不静默信任发现结果。
+
+电脑位置支持“像扩展屏幕一样跨机切换（主屏幕）”开关。只有在线、可控制且声明主屏能力的对端可启用。进入边缘前须先移入本机屏幕内部，再在边缘停留；进入后按比例落点，反向边缘返回本机。编辑位置先停止边缘控制，保存后同步到运行时；紧急退出关闭本次运行的自动跨屏，文字和文件偏好保持独立。
+
+源端隐藏光标，目标端显示正常指针；本机恢复优先于网络确认。无法读取几何、确认隐藏或恢复时展示真实错误，不把控制状态留为成功。Mac 后台光标接口不受 Apple 稳定 API 保证，相关系统升级需回归检查；完整多物理显示器拓扑另行实现。

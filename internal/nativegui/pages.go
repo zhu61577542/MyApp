@@ -49,7 +49,26 @@ func (v *desktopView) devicesPage() fyne.CanvasObject {
 		layoutAction = quiet(label, v.toggleLayout)
 	}
 	positionHeader := container.NewBorder(nil, nil, nil, layoutAction, sectionTitle(fmt.Sprintf("电脑位置 · %d / %d 台，包含本机", len(v.records)+1, v.cfg.MaxDevices)))
-	position := container.NewVBox(positionHeader, board, secondary("控制期间通过 "+targetShortcut()+" 切换目标；屏幕边缘自动切换尚未接入。"))
+	position := container.NewVBox(positionHeader, board, secondary("按电脑位置跨越主屏幕边缘；从对端的反向边缘返回本机。控制期间也可用 "+targetShortcut()+" 切换目标。"))
+	if v.cfg.Role == config.RoleController {
+		edge := widget.NewCheck("像扩展屏幕一样跨机切换（主屏幕）", nil)
+		running, _ := v.services.snapshot()
+		value := v.cfg.Switch.EdgeEnabled
+		if running {
+			value = v.view.EdgeEnabled
+		}
+		edge.SetChecked(value)
+		capable := false
+		for _, peer := range v.view.Peers {
+			capable = capable || peer.Status == "connected" && peer.Edge && peer.Control
+		}
+		if !running || !capable || v.busy || v.view.Paused || v.layoutEditing {
+			edge.Disable()
+		}
+		edge.OnChanged = v.changeEdge
+		position.Add(edge)
+		position.Add(secondary("两端需支持跨屏能力。启用后在边缘短暂停留即可进入，源端光标会隐藏；紧急键会结束控制并暂停自动切换。"))
+	}
 	if v.layoutEditing {
 		controls := container.NewVBox(secondary("拖动电脑屏幕，或使用位置选项。编辑期间键鼠留在本机。"))
 		for _, peer := range v.cfg.Peers {
@@ -287,6 +306,10 @@ func (v *desktopView) permissionsPage() fyne.CanvasObject {
 		v.notice.SetText("已重新检测本机能力；未授权时，请在系统设置中允许 MyApp 后再检测。")
 	})
 	content := container.NewVBox(pageHeader("权限与安全", "只开放当前用途需要的能力。", recheck), sectionTitle("系统权限"))
+	if runtime.GOOS == "darwin" {
+		content.Add(container.NewHBox(primary("自动请求授权", func() { v.requestPermissions(false) }), quiet("一键删除权限", v.resetPermissions)))
+		content.Add(secondary("自动将 MyApp 登记到系统授权流程；允许与否仍由你确认。权限重置仅作用于 MyApp，当前无法清除本地网络登记。"))
+	}
 	for _, permission := range v.permissions {
 		permission := permission
 		row := container.NewVBox(container.NewBorder(nil, nil, nil, widget.NewLabel(permissionLabel(permission.State)), sectionTitle(permission.Name)), secondary(permission.Description))
@@ -468,7 +491,7 @@ func (v *desktopView) toggleLayout() {
 			v.layoutEditing = true
 			v.refresh(true)
 		}
-		if v.view.Target != "" {
+		if v.view.Target != "" || v.view.EdgeEnabled {
 			v.perform("正在结束控制后编辑位置…", func(ctx context.Context) error {
 				return v.services.command(ctx, desktop.Command{Action: "stop_control"})
 			}, begin)
@@ -499,8 +522,38 @@ func (v *desktopView) toggleLayout() {
 		return
 	}
 	v.layoutEditing = false
-	v.notice.SetText("电脑位置已保存；当前仍使用快捷键切换目标。")
+	if running, _ := v.services.snapshot(); running {
+		positions := make(map[string]string)
+		for _, peer := range cfg.Peers {
+			positions[peer.ID] = peer.Position
+		}
+		v.perform("正在应用电脑位置…", func(ctx context.Context) error {
+			return v.services.command(ctx, desktop.Command{Action: "layout", Layout: positions})
+		}, nil)
+	} else {
+		v.notice.SetText("电脑位置已保存，请连接两端后启用跨屏切换。")
+	}
 	v.refresh(true)
+}
+
+func (v *desktopView) changeEdge(enabled bool) {
+	old := v.view.EdgeEnabled
+	v.perform("正在应用主屏跨机切换…", func(ctx context.Context) error {
+		if err := v.services.command(ctx, desktop.Command{Action: "edge", Enabled: enabled}); err != nil {
+			return err
+		}
+		configMu.Lock()
+		cfg, err := config.Load(v.options.ConfigPath)
+		if err == nil {
+			cfg.Switch.EdgeEnabled = enabled
+			err = config.Save(v.options.ConfigPath, cfg)
+		}
+		configMu.Unlock()
+		if err != nil {
+			_ = v.services.command(ctx, desktop.Command{Action: "edge", Enabled: old})
+		}
+		return err
+	}, nil)
 }
 func positionLabel(value string) string {
 	switch value {

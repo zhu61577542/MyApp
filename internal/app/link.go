@@ -32,6 +32,7 @@ type Link struct {
 	disconnected func(error)
 	desktop      *linkDesktop
 	tasks        *linkTransfers
+	screen       *linkScreen
 }
 
 // 仅在启动 Run 前设置。
@@ -200,6 +201,11 @@ func (l *Link) RunChannels(ctx context.Context, realtime, bulk io.ReadWriteClose
 func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	if l.screen != nil {
+		done := make(chan struct{})
+		go func() { defer close(done); l.publishScreens(ctx) }()
+		defer func() { cancel(); <-done }()
+	}
 	monitor, err := transport.NewHeartbeatMonitor(750*time.Millisecond, time.Now())
 	if err != nil {
 		return err
@@ -333,6 +339,10 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 				if _, err := l.clipboard.Apply(ctx, entry); err != nil {
 					return err
 				}
+			}
+		case protocol.TypeScreenInfo:
+			if err := l.handleScreen(frame); err != nil {
+				return err
 			}
 		case protocol.TypeFileResult:
 			if err := l.handleTransferResult(ctx, frame); err != nil {

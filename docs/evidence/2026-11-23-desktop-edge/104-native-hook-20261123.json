@@ -1,0 +1,7 @@
+{
+  "stdout": "=== RUN   TestNativeMouseHookMessages\n    capturer_windows_test.go:63: injected_mouse_messages=map[513:1 514:1 516:1 517:1]\n--- PASS: TestNativeMouseHookMessages (0.12s)\nPASS\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "104-native-hook-20261123",
+  "timedOut": false
+}

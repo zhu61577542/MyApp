@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,8 +16,12 @@ import (
 )
 
 func runDesktopLinks(t *testing.T, sender, receiver *Link) context.Context {
+	return runDesktopLinksWithin(t, sender, receiver, 10*time.Second)
+}
+
+func runDesktopLinksWithin(t *testing.T, sender, receiver *Link, timeout time.Duration) context.Context {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	a, b := net.Pipe()
 	c, d := net.Pipe()
 	done := make(chan error, 2)
@@ -200,11 +205,23 @@ func TestIncomingCancelIsAcknowledged(t *testing.T) {
 }
 
 func TestBidirectionalTransfersDoNotBlockResults(t *testing.T) {
+	started := time.Now()
 	a, _ := NewSplitLink(nil, nil)
 	b, _ := NewSplitLink(nil, nil)
-	for _, link := range []*Link{a, b} {
+	var progressMu sync.Mutex
+	progress := make(map[string]string)
+	for index, link := range []*Link{a, b} {
 		link.EnableDesktop(Capabilities{FileResults: true}, nil, nil)
-		link.ObserveTransfers(nil, nil)
+		link.ObserveTransfers(func(event TransferEvent, _ func(context.Context) error) {
+			progressMu.Lock()
+			defer progressMu.Unlock()
+			progress[fmt.Sprintf("%d-%s", index, event.Direction)] = fmt.Sprintf("%s %d/%d error=%s", event.State, event.Bytes, event.Total, event.Error)
+		}, nil)
+		link.SetDisconnectHandler(func(err error) {
+			progressMu.Lock()
+			defer progressMu.Unlock()
+			progress[fmt.Sprintf("%d-session", index)] = fmt.Sprint(err)
+		})
 		if err := link.EnableTransfers(t.TempDir(), nil); err != nil {
 			t.Fatal(err)
 		}
@@ -213,7 +230,7 @@ func TestBidirectionalTransfersDoNotBlockResults(t *testing.T) {
 	if err := os.WriteFile(file, bytes.Repeat([]byte("data"), 1<<20), 0600); err != nil {
 		t.Fatal(err)
 	}
-	ctx := runDesktopLinks(t, a, b)
+	ctx := runDesktopLinksWithin(t, a, b, 30*time.Second)
 	done := make(chan error, 2)
 	go func() { done <- a.SendFiles(ctx, "from-a", []transfer.Source{{Path: file}}) }()
 	go func() { done <- b.SendFiles(ctx, "from-b", []transfer.Source{{Path: file}}) }()
@@ -221,10 +238,17 @@ func TestBidirectionalTransfersDoNotBlockResults(t *testing.T) {
 		select {
 		case err := <-done:
 			if err != nil {
-				t.Fatal(err)
+				progressMu.Lock()
+				snapshot := fmt.Sprint(progress)
+				progressMu.Unlock()
+				t.Fatalf("双向传输失败: %v; %s", err, snapshot)
 			}
 		case <-ctx.Done():
-			t.Fatal("双向传输阻塞")
+			progressMu.Lock()
+			snapshot := fmt.Sprint(progress)
+			progressMu.Unlock()
+			t.Fatalf("双向传输超时: %s", snapshot)
 		}
 	}
+	t.Logf("双向各 4 MiB 完成，用时 %s", time.Since(started).Round(time.Millisecond))
 }

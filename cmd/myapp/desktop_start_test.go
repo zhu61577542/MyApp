@@ -60,6 +60,7 @@ func TestRemoteStopDuringStartPreventsCapture(t *testing.T) {
 	}
 	state := desktop.New(config.Default("local", config.RoleController), "local")
 	c := newDesktopCapture(ctx, hub, []*app.Link{controller}, []config.Peer{{ID: "peer"}}, state)
+	c.geometry, c.geometryErr = nil, nil
 	creating, release := make(chan struct{}), make(chan struct{})
 	backend := &desktopTestCapturer{}
 	c.create = func() (common.Capturer, error) { close(creating); <-release; return backend, nil }

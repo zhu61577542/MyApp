@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"sent\":21,\"errors\":[],\"tag\":\"myapp-net-20261123-02\",\"received\":21}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "093-unicast-reply-20261123",
+  "timedOut": false
+}

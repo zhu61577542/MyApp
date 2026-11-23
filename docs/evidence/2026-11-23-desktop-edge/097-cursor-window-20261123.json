@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"after\":{\"visible\":true,\"transparent_standard\":0,\"checked_standard\":14},\"before\":{\"visible\":true,\"transparent_standard\":0,\"checked_standard\":14},\"during\":{\"visible\":false,\"transparent_standard\":0,\"checked_standard\":14},\"position\":{\"x\":1048,\"y\":654},\"screen\":{\"id\":\"10001\",\"x\":0,\"y\":0,\"width\":2560,\"height\":1440}}\n{\"before\":{\"visible\":true,\"transparent_standard\":0,\"checked_standard\":14},\"during\":{\"visible\":false,\"transparent_standard\":0,\"checked_standard\":14},\"position\":{\"x\":1976,\"y\":366},\"screen\":{\"id\":\"10001\",\"x\":0,\"y\":0,\"width\":2560,\"height\":1440}}\n{\"before\":{\"visible\":true,\"transparent_standard\":0,\"checked_standard\":14},\"position\":{\"x\":1362,\"y\":381},\"screen\":{\"id\":\"10001\",\"x\":0,\"y\":0,\"width\":2560,\"height\":1440}}\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "097-cursor-window-20261123",
+  "timedOut": false
+}

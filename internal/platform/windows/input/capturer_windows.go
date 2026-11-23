@@ -88,26 +88,34 @@ var (
 )
 
 type Capturer struct {
-	mu               sync.Mutex
-	setHook          *syscall.LazyProc
-	unhook           *syscall.LazyProc
-	callNext         *syscall.LazyProc
-	getMessage       *syscall.LazyProc
-	peekMessage      *syscall.LazyProc
-	postThread       *syscall.LazyProc
-	getCurrentThread *syscall.LazyProc
-	threadID         uint32
-	handler          func(common.Event) error
-	callbackErr      error
-	sequence         uint64
-	lastPoint        nativePoint
-	hasLastPoint     bool
+	keyboardSeen, keyboardInjected, keyboardUnknown atomic.Uint64
+	mouseSeen, mouseInjected, rawSeen               atomic.Uint64
+	raw                                             *rawCapture
+	mu                                              sync.Mutex
+	setHook                                         *syscall.LazyProc
+	unhook                                          *syscall.LazyProc
+	callNext                                        *syscall.LazyProc
+	getMessage                                      *syscall.LazyProc
+	peekMessage                                     *syscall.LazyProc
+	postThread                                      *syscall.LazyProc
+	getCurrentThread                                *syscall.LazyProc
+	threadID                                        uint32
+	handler                                         func(common.Event) error
+	callbackErr                                     error
+	sequence                                        uint64
+	lastPoint                                       nativePoint
+	hasLastPoint                                    bool
 }
 
 func NewCapturer() (*Capturer, error) {
+	raw, err := newRawCapture()
+	if err != nil {
+		return nil, err
+	}
 	user32 := syscall.NewLazyDLL("user32.dll")
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 	capturer := &Capturer{
+		raw:              raw,
 		setHook:          user32.NewProc("SetWindowsHookExW"),
 		unhook:           user32.NewProc("UnhookWindowsHookEx"),
 		callNext:         user32.NewProc("CallNextHookEx"),
@@ -138,6 +146,10 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 	defer activeCapturer.CompareAndSwap(c, nil)
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
+	previous, _, _ := c.raw.dpi.Call(^uintptr(3))
+	if previous != 0 {
+		defer c.raw.dpi.Call(previous)
+	}
 	threadID, _, _ := c.getCurrentThread.Call()
 	var message nativeMessage
 	c.peekMessage.Call(uintptr(unsafe.Pointer(&message)), 0, 0, 0, 0)
@@ -150,6 +162,10 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 		c.threadID, c.handler = 0, nil
 		c.mu.Unlock()
 	}()
+	if err := c.raw.start(); err != nil {
+		return err
+	}
+	defer c.raw.close()
 	mouseHook, _, mouseErr := c.setHook.Call(whMouseLowLevel, mouseCallback, 0, 0)
 	if mouseHook == 0 {
 		return nativeCallError(mouseErr, "无法安装 Windows 鼠标 Hook")
@@ -180,6 +196,15 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 		if result == 0 {
 			break
 		}
+		if message.Message == wmInput {
+			if err := c.raw.handle(c, message.LParam); err != nil {
+				c.mu.Lock()
+				c.callbackErr = err
+				c.mu.Unlock()
+				c.stop()
+			}
+		}
+		c.raw.dispatch.Call(uintptr(unsafe.Pointer(&message)))
 	}
 	close(stopped)
 	c.mu.Lock()
@@ -210,8 +235,13 @@ func (c *Capturer) handleMouse(code uintptr, message uint32, data uintptr) uintp
 		return c.next(code, uintptr(message), data)
 	}
 	native := (*mouseHookData)(unsafe.Pointer(data))
+	c.mouseSeen.Add(1)
 	if native.Flags&llMouseInjected != 0 {
+		c.mouseInjected.Add(1)
 		return c.next(code, uintptr(message), data)
+	}
+	if message == wmMouseMove {
+		return 1
 	}
 	c.mu.Lock()
 	event, emit := c.mouseEventLocked(message, native)
@@ -274,12 +304,15 @@ func (c *Capturer) handleKeyboard(code uintptr, message uint32, data uintptr) ui
 		return c.next(code, uintptr(message), data)
 	}
 	native := (*keyboardHookData)(unsafe.Pointer(data))
+	c.keyboardSeen.Add(1)
 	if native.Flags&llKeyboardInjected != 0 {
+		c.keyboardInjected.Add(1)
 		return c.next(code, uintptr(message), data)
 	}
 	extended := native.Flags&llKeyboardExtended != 0
 	hid, ok := scanCodeToHID[scanCodeEntry{scan: uint16(native.ScanCode), extended: extended}]
 	if !ok {
+		c.keyboardUnknown.Add(1)
 		return 1
 	}
 	kind := common.KeyDown
@@ -294,6 +327,10 @@ func (c *Capturer) handleKeyboard(code uintptr, message uint32, data uintptr) ui
 	c.mu.Unlock()
 	c.emit(event)
 	return 1
+}
+
+func (c *Capturer) Diagnostics() map[string]uint64 {
+	return map[string]uint64{"keyboard_messages": c.keyboardSeen.Load(), "keyboard_injected": c.keyboardInjected.Load(), "keyboard_unknown": c.keyboardUnknown.Load(), "mouse_messages": c.mouseSeen.Load(), "mouse_injected": c.mouseInjected.Load(), "raw_mouse_messages": c.rawSeen.Load()}
 }
 
 func (c *Capturer) emit(event common.Event) {
