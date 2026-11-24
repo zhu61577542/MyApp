@@ -1,0 +1,1428 @@
+{
+  "startedAt": "2026-11-24T14:39:11.272Z",
+  "scope": "MyApp local generated artifacts only",
+  "preserved": [
+    "work/single-instance-validation/MyApp.app",
+    "work/single-instance-validation/MyApp-macOS-arm64.zip",
+    "work/single-instance-validation/MyApp-Windows-x64.zip",
+    "work/single-instance-validation/SHA256SUMS",
+    "work/desktop-ui-validation/MacOSX15.2.sdk",
+    "work/desktop-ui-validation/zig-aarch64-linux-0.14.1.tar.xz",
+    "work/desktop-ui-validation/mac-cc.sh",
+    "work/desktop-ui-validation/mac-cxx.sh",
+    "work/desktop-ui-validation/myapp.rc",
+    "work/desktop-ui-validation/zig-index.json",
+    "work/windows-regression-20261122/bootstrap.ps1",
+    "work/windows-regression-20261122/server.cjs",
+    "work/windows-regression-20261122/token"
+  ],
+  "protectedUserData": "config/preferences/identity/trust unchanged",
+  "deletions": [
+    {
+      "path": "work/audit",
+      "files": 7,
+      "bytes": 155078,
+      "allocatedBytes": 167936
+    },
+    {
+      "path": "work/automatic-crossing-validation",
+      "files": 26,
+      "bytes": 171994462,
+      "allocatedBytes": 173248512
+    },
+    {
+      "path": "work/cleanup-old-programs-20261122",
+      "files": 4,
+      "bytes": 21291,
+      "allocatedBytes": 32768
+    },
+    {
+      "path": "work/desktop-edge-validation",
+      "files": 23,
+      "bytes": 129838004,
+      "allocatedBytes": 129880064
+    },
+    {
+      "path": "work/feasibility",
+      "files": 12,
+      "bytes": 28931,
+      "allocatedBytes": 65536
+    },
+    {
+      "path": "work/multidisplay-validation",
+      "files": 30,
+      "bytes": 183194849,
+      "allocatedBytes": 184107008
+    },
+    {
+      "path": "work/network-regression-20261123",
+      "files": 25,
+      "bytes": 87038178,
+      "allocatedBytes": 87097344
+    },
+    {
+      "path": "work/three-nodes",
+      "files": 4,
+      "bytes": 1635,
+      "allocatedBytes": 16384
+    },
+    {
+      "path": "work/verification-20260923",
+      "files": 3,
+      "bytes": 84558,
+      "allocatedBytes": 94208
+    },
+    {
+      "path": "work/windows-validation-00982401",
+      "files": 65,
+      "bytes": 1772447,
+      "allocatedBytes": 1970176
+    },
+    {
+      "path": "work/single-instance-validation/.DS_Store",
+      "files": 1,
+      "bytes": 6148,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/single-instance-validation/app.test.exe",
+      "files": 1,
+      "bytes": 6767616,
+      "allocatedBytes": 6770688
+    },
+    {
+      "path": "work/single-instance-validation/backend-tests.zip",
+      "files": 1,
+      "bytes": 34188549,
+      "allocatedBytes": 34279424
+    },
+    {
+      "path": "work/single-instance-validation/build-macos.log",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/single-instance-validation/build-windows.log",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/single-instance-validation/checks.log",
+      "files": 1,
+      "bytes": 6164,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/single-instance-validation/clipboard.test-macos",
+      "files": 1,
+      "bytes": 4645842,
+      "allocatedBytes": 4648960
+    },
+    {
+      "path": "work/single-instance-validation/clipboard.test.exe",
+      "files": 1,
+      "bytes": 4973056,
+      "allocatedBytes": 4976640
+    },
+    {
+      "path": "work/single-instance-validation/cmd.test-macos",
+      "files": 1,
+      "bytes": 11752466,
+      "allocatedBytes": 11755520
+    },
+    {
+      "path": "work/single-instance-validation/cmd.test.exe",
+      "files": 1,
+      "bytes": 12571648,
+      "allocatedBytes": 12574720
+    },
+    {
+      "path": "work/single-instance-validation/final-checks.log",
+      "files": 1,
+      "bytes": 1400,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/headless-gui-unit-checks.log",
+      "files": 1,
+      "bytes": 65,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/instance.test-macos",
+      "files": 1,
+      "bytes": 5047938,
+      "allocatedBytes": 5050368
+    },
+    {
+      "path": "work/single-instance-validation/instance.test.exe",
+      "files": 1,
+      "bytes": 4998144,
+      "allocatedBytes": 5001216
+    },
+    {
+      "path": "work/single-instance-validation/mac-diagnostics.json",
+      "files": 1,
+      "bytes": 296,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/mac-source-pointer.err",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/single-instance-validation/mac-source-pointer.json",
+      "files": 1,
+      "bytes": 325,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/mac-version.txt",
+      "files": 1,
+      "bytes": 46,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/macos-clipboard-tests.log",
+      "files": 1,
+      "bytes": 1061,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/macos-cmd-tests.log",
+      "files": 1,
+      "bytes": 3561,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/macos-instance-tests.log",
+      "files": 1,
+      "bytes": 253,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/myapp-macos-arm64",
+      "files": 1,
+      "bytes": 26679714,
+      "allocatedBytes": 26681344
+    },
+    {
+      "path": "work/single-instance-validation/myapp-windows.exe",
+      "files": 1,
+      "bytes": 26317312,
+      "allocatedBytes": 26320896
+    },
+    {
+      "path": "work/single-instance-validation/nativegui.test.exe",
+      "files": 1,
+      "bytes": 32411136,
+      "allocatedBytes": 32411648
+    },
+    {
+      "path": "work/single-instance-validation/targeted-checks.log",
+      "files": 1,
+      "bytes": 204,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/single-instance-validation/windows",
+      "files": 3,
+      "bytes": 26318886,
+      "allocatedBytes": 26329088
+    },
+    {
+      "path": "work/single-instance-validation/windows-resource.syso",
+      "files": 1,
+      "bytes": 19720,
+      "allocatedBytes": 20480
+    },
+    {
+      "path": "work/single-instance-validation/zig-empty-object.o",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/desktop-ui-validation/.DS_Store",
+      "files": 1,
+      "bytes": 6148,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/desktop-ui-validation/MyApp-Windows-x64.zip",
+      "files": 1,
+      "bytes": 12247047,
+      "allocatedBytes": 12251136
+    },
+    {
+      "path": "work/desktop-ui-validation/MyApp-macOS-arm64.zip",
+      "files": 1,
+      "bytes": 11824226,
+      "allocatedBytes": 11825152
+    },
+    {
+      "path": "work/desktop-ui-validation/MyApp.app",
+      "files": 3,
+      "bytes": 26604043,
+      "allocatedBytes": 26607616
+    },
+    {
+      "path": "work/desktop-ui-validation/SHA256SUMS",
+      "files": 1,
+      "bytes": 344,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/desktop-ui-validation/build-linux.log",
+      "files": 1,
+      "bytes": 105,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/desktop-ui-validation/build-macos.log",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/desktop-ui-validation/build-windows.log",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/desktop-ui-validation/checks.log",
+      "files": 1,
+      "bytes": 1203,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/desktop-ui-validation/compiler-probe.o",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/desktop-ui-validation/concurrency.log",
+      "files": 1,
+      "bytes": 31,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/desktop-ui-validation/fonts",
+      "files": 6,
+      "bytes": 10653876,
+      "allocatedBytes": 10665984
+    },
+    {
+      "path": "work/desktop-ui-validation/gui-final-check.log",
+      "files": 1,
+      "bytes": 103,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/desktop-ui-validation/myapp-linux",
+      "files": 1,
+      "bytes": 31772560,
+      "allocatedBytes": 31772672
+    },
+    {
+      "path": "work/desktop-ui-validation/myapp-macos-arm64",
+      "files": 1,
+      "bytes": 26496914,
+      "allocatedBytes": 26497024
+    },
+    {
+      "path": "work/desktop-ui-validation/myapp-windows.exe",
+      "files": 1,
+      "bytes": 26086400,
+      "allocatedBytes": 26087424
+    },
+    {
+      "path": "work/desktop-ui-validation/preview",
+      "files": 6,
+      "bytes": 52693070,
+      "allocatedBytes": 52703232
+    },
+    {
+      "path": "work/desktop-ui-validation/windows-delivery.json",
+      "files": 1,
+      "bytes": 761,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/MyApp-windows-test.zip",
+      "files": 1,
+      "bytes": 34188549,
+      "allocatedBytes": 34189312
+    },
+    {
+      "path": "work/windows-regression-20261122/clipprobe",
+      "files": 1,
+      "bytes": 1337,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/closing-20261123.json",
+      "files": 1,
+      "bytes": 39,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/closing-20261124.json",
+      "files": 1,
+      "bytes": 39,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/cross-platform-linux.sh",
+      "files": 1,
+      "bytes": 1320,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/cross-platform-windows.ps1",
+      "files": 1,
+      "bytes": 5249,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/010-clipboard-regression.json.sent",
+      "files": 1,
+      "bytes": 873,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/020-transfer-regression.json.sent",
+      "files": 1,
+      "bytes": 871,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/030-cross-platform-regression.json.sent",
+      "files": 1,
+      "bytes": 5474,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/050-refresh-validation.json.sent",
+      "files": 1,
+      "bytes": 870,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/060-mac-windows-exchange.json.sent",
+      "files": 1,
+      "bytes": 4665,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/062-mac-windows-exchange.json.sent",
+      "files": 1,
+      "bytes": 4551,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/070-windows-physical-input.json.sent",
+      "files": 1,
+      "bytes": 1088,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/072-mac-windows-exchange.json.sent",
+      "files": 1,
+      "bytes": 4551,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/073-transfer-final.json.sent",
+      "files": 1,
+      "bytes": 866,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/074-windows-physical-input.json.sent",
+      "files": 1,
+      "bytes": 1088,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/075-mac-windows-exchange.json.sent",
+      "files": 1,
+      "bytes": 4551,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/076-diagnostics.json.sent",
+      "files": 1,
+      "bytes": 345,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/077-windows-mouse-diagnostic.json.sent",
+      "files": 1,
+      "bytes": 2713,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/078-windows-mouse-diagnostic.json.sent",
+      "files": 1,
+      "bytes": 1843,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/079-mouse-settings.json.sent",
+      "files": 1,
+      "bytes": 433,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/080-mac-windows-exchange.json.sent",
+      "files": 1,
+      "bytes": 4551,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/081-windows-buttons.json.sent",
+      "files": 1,
+      "bytes": 1190,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/082-install-native.json.sent",
+      "files": 1,
+      "bytes": 1071,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/083-native-hook.json.sent",
+      "files": 1,
+      "bytes": 840,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/084-windows-physical-input.json.sent",
+      "files": 1,
+      "bytes": 1197,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/085-reverse-agent.json.sent",
+      "files": 1,
+      "bytes": 4761,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/086-long-mac-windows-exchange.json.sent",
+      "files": 1,
+      "bytes": 4646,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/088-final-audit.json.sent",
+      "files": 1,
+      "bytes": 719,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/090-deliver-ui-20261122.json.sent",
+      "files": 1,
+      "bytes": 1731,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/091-link-preflight-20261123.json.sent",
+      "files": 1,
+      "bytes": 1771,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/092-multicast-20261123.json.sent",
+      "files": 1,
+      "bytes": 2925,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/093-unicast-reply-20261123.json.sent",
+      "files": 1,
+      "bytes": 1509,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/094-backend-native-20261123.json.sent",
+      "files": 1,
+      "bytes": 1072,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/095-backend-native-20261123.json.sent",
+      "files": 1,
+      "bytes": 1072,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/096-backend-units-20261123.json.sent",
+      "files": 1,
+      "bytes": 366,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/097-cursor-window-20261123.json.sent",
+      "files": 1,
+      "bytes": 1069,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/098-physical-capture-20261123.json.sent",
+      "files": 1,
+      "bytes": 1387,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/099-physical-capture-20261123.json.sent",
+      "files": 1,
+      "bytes": 1387,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/100-signed-discovery-20261123.json.sent",
+      "files": 1,
+      "bytes": 276,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/101-input-desktop-20261123.json.sent",
+      "files": 1,
+      "bytes": 1696,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/102-final-native-20261123.json.sent",
+      "files": 1,
+      "bytes": 2134,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/103-final-package-hook-20261123.json.sent",
+      "files": 1,
+      "bytes": 2360,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/104-native-hook-20261123.json.sent",
+      "files": 1,
+      "bytes": 312,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/105-diagnostic-ready-20261123.json.sent",
+      "files": 1,
+      "bytes": 664,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/106-physical-diagnostic-20261123.json.sent",
+      "files": 1,
+      "bytes": 1390,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/107-final-launch-boundary-20261123.json.sent",
+      "files": 1,
+      "bytes": 1229,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/108-final-regression-20261123.json.sent",
+      "files": 1,
+      "bytes": 2392,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/109-transfer-stack-20261123.json.sent",
+      "files": 1,
+      "bytes": 316,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/110-transfer-progress-20261123.json.sent",
+      "files": 1,
+      "bytes": 662,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/111-transfer-completion-20261123.json.sent",
+      "files": 1,
+      "bytes": 664,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/112-final-regression-20261123.json.sent",
+      "files": 1,
+      "bytes": 2392,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/113-final-cursor-package-20261123.json.sent",
+      "files": 1,
+      "bytes": 1619,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/114-automatic-fix-20261123.json.sent",
+      "files": 1,
+      "bytes": 3048,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/115-automatic-final-20261124.json.sent",
+      "files": 1,
+      "bytes": 3050,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/116-display-layout-20261124.json.sent",
+      "files": 1,
+      "bytes": 713,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/117-native-topology-20261124.json.sent",
+      "files": 1,
+      "bytes": 578,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/118-network-latency-20261124.json.sent",
+      "files": 1,
+      "bytes": 158,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/119-rtt-20261124.json.sent",
+      "files": 1,
+      "bytes": 323,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/120-multidisplay-final-20261124.json.sent",
+      "files": 1,
+      "bytes": 3790,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/121-multidisplay-final-20261124.json.sent",
+      "files": 1,
+      "bytes": 3790,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/122-instance-preflight-20261124.json.sent",
+      "files": 1,
+      "bytes": 1356,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/123-instance-final-20261124.json.sent",
+      "files": 1,
+      "bytes": 3636,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/124-live-crossing-state-20261124.json.sent",
+      "files": 1,
+      "bytes": 1194,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/final-close-1.json.unused",
+      "files": 1,
+      "bytes": 13,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/final-close-2.json.unused",
+      "files": 1,
+      "bytes": 13,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/final-close-3.json.unused",
+      "files": 1,
+      "bytes": 13,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/stop-before-ui-delivery-20261122.json.sent",
+      "files": 1,
+      "bytes": 25,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/stop-previous-1795518092120.json.sent",
+      "files": 1,
+      "bytes": 13,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/stop-prior-1795438714527.json.sent",
+      "files": 1,
+      "bytes": 18,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/stop.json.sent",
+      "files": 1,
+      "bytes": 13,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/stop.json.sent-prior-1795524054361",
+      "files": 1,
+      "bytes": 13,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/jobs/stop.json.sent-prior-1795529451397",
+      "files": 1,
+      "bytes": 13,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/linux",
+      "files": 13,
+      "bytes": 393559,
+      "allocatedBytes": 434176
+    },
+    {
+      "path": "work/windows-regression-20261122/mac",
+      "files": 23,
+      "bytes": 7219,
+      "allocatedBytes": 65536
+    },
+    {
+      "path": "work/windows-regression-20261122/mac-exchange.cjs",
+      "files": 1,
+      "bytes": 2697,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/mac-reverse",
+      "files": 7,
+      "bytes": 2246,
+      "allocatedBytes": 20480
+    },
+    {
+      "path": "work/windows-regression-20261122/mac-services.cjs",
+      "files": 1,
+      "bytes": 1006,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/mac-windows-job.ps1",
+      "files": 1,
+      "bytes": 4476,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/payload",
+      "files": 3,
+      "bytes": 11043488,
+      "allocatedBytes": 11051008
+    },
+    {
+      "path": "work/windows-regression-20261122/probe",
+      "files": 1,
+      "bytes": 7021,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/results/010-clipboard-regression.json",
+      "files": 1,
+      "bytes": 825,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/020-transfer-regression.json",
+      "files": 1,
+      "bytes": 2608,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/030-cross-platform-regression.json",
+      "files": 1,
+      "bytes": 934,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/040-mac-physical-input.json",
+      "files": 1,
+      "bytes": 72,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/041-mac-physical-input.json",
+      "files": 1,
+      "bytes": 71,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/050-refresh-validation.json",
+      "files": 1,
+      "bytes": 2719,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/060-mac-windows-exchange.json",
+      "files": 1,
+      "bytes": 815,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/061-mac-clipboard.txt",
+      "files": 1,
+      "bytes": 281,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/062-mac-exchange.txt",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/windows-regression-20261122/results/062-mac-windows-exchange.json",
+      "files": 1,
+      "bytes": 550,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/063-mac-clipboard.txt",
+      "files": 1,
+      "bytes": 2376,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/064-mac-clipboard.txt",
+      "files": 1,
+      "bytes": 2853,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/065-mac-clipboard.txt",
+      "files": 1,
+      "bytes": 2465,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/070-windows-capture-ready.json",
+      "files": 1,
+      "bytes": 58,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/070-windows-physical-input.json",
+      "files": 1,
+      "bytes": 218,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/072-mac-exchange.txt",
+      "files": 1,
+      "bytes": 120,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/072-mac-windows-exchange.json",
+      "files": 1,
+      "bytes": 550,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/073-transfer-final.json",
+      "files": 1,
+      "bytes": 2717,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/074-windows-capture-ready.json",
+      "files": 1,
+      "bytes": 58,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/074-windows-physical-input.json",
+      "files": 1,
+      "bytes": 218,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/075-mac-exchange.txt",
+      "files": 1,
+      "bytes": 120,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/075-mac-windows-exchange.json",
+      "files": 1,
+      "bytes": 1045,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/076-diagnostics.json",
+      "files": 1,
+      "bytes": 312,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/077-windows-mouse-diagnostic.json",
+      "files": 1,
+      "bytes": 2478,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/078-windows-capture-ready.json",
+      "files": 1,
+      "bytes": 58,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/078-windows-mouse-diagnostic.json",
+      "files": 1,
+      "bytes": 474,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/079-mouse-settings.json",
+      "files": 1,
+      "bytes": 175,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/080-mac-exchange.txt",
+      "files": 1,
+      "bytes": 120,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/080-mac-windows-exchange.json",
+      "files": 1,
+      "bytes": 560,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/081-windows-buttons.json",
+      "files": 1,
+      "bytes": 435,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/081-windows-capture-ready.json",
+      "files": 1,
+      "bytes": 58,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/082-install-native.json",
+      "files": 1,
+      "bytes": 418,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/083-native-hook.json",
+      "files": 1,
+      "bytes": 278,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/084-windows-capture-ready.json",
+      "files": 1,
+      "bytes": 58,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/084-windows-physical-input.json",
+      "files": 1,
+      "bytes": 396,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/085-reverse-agent-ready.json",
+      "files": 1,
+      "bytes": 56,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/085-reverse-agent.json",
+      "files": 1,
+      "bytes": 546,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/085-reverse-mac-exchange.txt",
+      "files": 1,
+      "bytes": 120,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/086-long-mac-windows-exchange.json",
+      "files": 1,
+      "bytes": 606,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/086-mac-exchange.txt",
+      "files": 1,
+      "bytes": 121,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/086-network-ping.txt",
+      "files": 1,
+      "bytes": 16504,
+      "allocatedBytes": 20480
+    },
+    {
+      "path": "work/windows-regression-20261122/results/087-mac-transfer.txt",
+      "files": 1,
+      "bytes": 1585,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/088-final-audit.json",
+      "files": 1,
+      "bytes": 545,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/090-deliver-ui-20261122.json",
+      "files": 1,
+      "bytes": 371,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/091-link-preflight-20261123.json",
+      "files": 1,
+      "bytes": 1767,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/092-multicast-20261123.json",
+      "files": 1,
+      "bytes": 270,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/093-unicast-reply-20261123.json",
+      "files": 1,
+      "bytes": 191,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/094-backend-native-20261123.json",
+      "files": 1,
+      "bytes": 992,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/095-backend-native-20261123.json",
+      "files": 1,
+      "bytes": 3592,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/096-backend-units-20261123.json",
+      "files": 1,
+      "bytes": 2044,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/097-cursor-window-20261123.json",
+      "files": 1,
+      "bytes": 945,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/098-capture-ready.json",
+      "files": 1,
+      "bytes": 48,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/098-physical-capture-20261123.json",
+      "files": 1,
+      "bytes": 793,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/099-capture-ready.json",
+      "files": 1,
+      "bytes": 48,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/099-physical-capture-20261123.json",
+      "files": 1,
+      "bytes": 793,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/100-signed-discovery-20261123.json",
+      "files": 1,
+      "bytes": 191,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/101-input-desktop-20261123.json",
+      "files": 1,
+      "bytes": 220,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/102-final-native-20261123.json",
+      "files": 1,
+      "bytes": 3108,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/103-final-package-hook-20261123.json",
+      "files": 1,
+      "bytes": 953,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/104-native-hook-20261123.json",
+      "files": 1,
+      "bytes": 287,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/105-diagnostic-ready-20261123.json",
+      "files": 1,
+      "bytes": 159,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/106-capture-ready.json",
+      "files": 1,
+      "bytes": 48,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/106-physical-diagnostic-20261123.json",
+      "files": 1,
+      "bytes": 396,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/107-final-launch-boundary-20261123.json",
+      "files": 1,
+      "bytes": 316,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/108-final-regression-20261123.json",
+      "files": 1,
+      "bytes": 5554,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/results/109-transfer-stack-20261123.json",
+      "files": 1,
+      "bytes": 13899,
+      "allocatedBytes": 16384
+    },
+    {
+      "path": "work/windows-regression-20261122/results/110-transfer-progress-20261123.json",
+      "files": 1,
+      "bytes": 962,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/111-transfer-completion-20261123.json",
+      "files": 1,
+      "bytes": 307,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/112-final-regression-20261123.json",
+      "files": 1,
+      "bytes": 6433,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/results/113-final-cursor-package-20261123.json",
+      "files": 1,
+      "bytes": 784,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/114-automatic-fix-20261123.json",
+      "files": 1,
+      "bytes": 3554,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/115-automatic-final-20261124.json",
+      "files": 1,
+      "bytes": 3686,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/116-display-layout-20261124.json",
+      "files": 1,
+      "bytes": 256,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/117-native-topology-20261124.json",
+      "files": 1,
+      "bytes": 590,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/118-network-latency-20261124.json",
+      "files": 1,
+      "bytes": 767,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/119-rtt-20261124.json",
+      "files": 1,
+      "bytes": 255,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/120-multidisplay-final-20261124.json",
+      "files": 1,
+      "bytes": 7355,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/results/121-multidisplay-final-20261124.json",
+      "files": 1,
+      "bytes": 7481,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/results/122-instance-preflight-20261124.json",
+      "files": 1,
+      "bytes": 7952,
+      "allocatedBytes": 8192
+    },
+    {
+      "path": "work/windows-regression-20261122/results/123-instance-final-20261124.json",
+      "files": 1,
+      "bytes": 9007,
+      "allocatedBytes": 12288
+    },
+    {
+      "path": "work/windows-regression-20261122/results/124-live-crossing-state-20261124.json",
+      "files": 1,
+      "bytes": 3071,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/connected-before-mac-validation.json",
+      "files": 1,
+      "bytes": 221,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/connected.json",
+      "files": 1,
+      "bytes": 221,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/final-linux-race.txt",
+      "files": 1,
+      "bytes": 1067,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/final-linux-vet.txt",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/windows-regression-20261122/results/final-macos-vet-native-api.txt",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/windows-regression-20261122/results/final-macos-vet.txt",
+      "files": 1,
+      "bytes": 91,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/final-windows-vet-native-api.txt",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/windows-regression-20261122/results/final-windows-vet.txt",
+      "files": 1,
+      "bytes": 956,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/linux-race.txt",
+      "files": 1,
+      "bytes": 2181,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/linux-vet.txt",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    },
+    {
+      "path": "work/windows-regression-20261122/results/stopped-before-mac-validation.json",
+      "files": 1,
+      "bytes": 40,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/results/stopped.json",
+      "files": 1,
+      "bytes": 40,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "work/windows-regression-20261122/tcp-proxy.cjs",
+      "files": 1,
+      "bytes": 892,
+      "allocatedBytes": 4096
+    },
+    {
+      "path": "fyne-cross",
+      "files": 7,
+      "bytes": 45964554,
+      "allocatedBytes": 45977600
+    },
+    {
+      "path": ".fyne-cache",
+      "files": 1,
+      "bytes": 0,
+      "allocatedBytes": 0
+    }
+  ],
+  "total": {
+    "files": 484,
+    "bytes": 1061101265,
+    "allocatedBytes": 1064513536
+  },
+  "status": "completed",
+  "completedAt": "2026-11-24T14:39:12.922Z",
+  "protectedChecksumsUnchanged": true
+}

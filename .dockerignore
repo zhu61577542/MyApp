@@ -1,3 +1,8 @@
 .git
 dist
 work
+.codegraph
+.fyne-cache
+fyne-cross
+*.log
+coverage.out

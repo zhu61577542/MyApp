@@ -1,0 +1,4 @@
+=== RUN   TestSplitLinkSupportsSequentialControlInBothDirections
+--- PASS: TestSplitLinkSupportsSequentialControlInBothDirections (0.00s)
+PASS
+ok  	myapp/internal/app	1.012s

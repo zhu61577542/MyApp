@@ -3,4 +3,6 @@ dist/
 work/
 *.log
 .codegraph
+.fyne-cache/
+fyne-cross/
 coverage.out

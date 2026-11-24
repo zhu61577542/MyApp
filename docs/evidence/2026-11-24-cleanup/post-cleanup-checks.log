@@ -1,0 +1,33 @@
+?   	myapp/build/icon	[no test files]
+ok  	myapp/build/macpermissions	1.008s
+?   	myapp/build/release	[no test files]
+ok  	myapp/cmd/myapp	1.350s
+ok  	myapp/internal/app	3.095s
+ok  	myapp/internal/clipboard	1.142s
+ok  	myapp/internal/config	1.090s
+ok  	myapp/internal/desktop	1.048s
+ok  	myapp/internal/device	1.009s
+ok  	myapp/internal/discovery	1.052s
+ok  	myapp/internal/fileclipboard	1.143s
+ok  	myapp/internal/gui	1.032s
+ok  	myapp/internal/identity	1.038s
+ok  	myapp/internal/input	1.012s
+ok  	myapp/internal/instance	2.024s
+ok  	myapp/internal/layout	1.016s
+ok  	myapp/internal/logging	1.015s
+ok  	myapp/internal/pairing	1.087s
+?   	myapp/internal/platform	[no test files]
+?   	myapp/internal/platform/linux/clipboard	[no test files]
+?   	myapp/internal/platform/linux/input	[no test files]
+ok  	myapp/internal/pointer	1.006s
+ok  	myapp/internal/protocol	1.015s
+ok  	myapp/internal/transfer	1.036s
+ok  	myapp/internal/transport	6.092s
+ok  	myapp/internal/trust	1.036s
+?   	myapp/tests/discoveryprobe	[no test files]
+?   	myapp/tests/inputcaptureprobe	[no test files]
+ok  	myapp/tests/integration	1.055s
+?   	myapp/tests/x11probe	[no test files]
+ok  	myapp/internal/nativegui	0.012s [no tests to run]
+ok  	myapp/cmd/myapp	0.004s [no tests to run]
+ok  	myapp/internal/nativegui	0.004s
