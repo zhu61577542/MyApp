@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"os/signal"
@@ -17,6 +18,7 @@ import (
 
 	"myapp/internal/config"
 	"myapp/internal/desktop"
+	"myapp/internal/instance"
 )
 
 func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
@@ -28,6 +30,11 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 	if err := set.Parse(args); err != nil {
 		return err
 	}
+	guard, err := instance.Acquire("desktop-service")
+	if err != nil {
+		return fmt.Errorf("共享服务已运行或无法取得实例锁: %w", err)
+	}
+	defer guard.Close()
 	cfg, local, store, err := loadRuntime(*configPath, *identityDir, *trustDir)
 	if err != nil {
 		return err
@@ -50,6 +57,7 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
 		var revision uint64
+		var edgeDiagnostic string
 		write := func(message desktop.Message) bool {
 			if err := encoder.Encode(message); err != nil {
 				cancel()
@@ -65,6 +73,11 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 				}
 			case <-ticker.C:
 				snapshot := state.Snapshot()
+				diagnostic := snapshot.EdgeStatus + ": " + snapshot.EdgeError
+				if snapshot.EdgeStatus != "" && diagnostic != edgeDiagnostic {
+					fmt.Fprintln(stderr, "跨屏状态："+diagnostic)
+					edgeDiagnostic = diagnostic
+				}
 				if snapshot.Revision != revision || revision == 0 {
 					revision = snapshot.Revision
 					if !write(desktop.Message{Version: desktop.Version, Snapshot: snapshot}) {

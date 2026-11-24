@@ -21,6 +21,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"myapp/internal/config"
 	"myapp/internal/desktop"
+	"myapp/internal/instance"
 	"myapp/internal/trust"
 )
 
@@ -81,8 +82,18 @@ type desktopView struct {
 }
 
 func Run(ctx context.Context, options Options) error {
+	guard, err := instance.Acquire("desktop-gui")
+	if errors.Is(err, instance.ErrRunning) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("无法建立主程序单实例保护: %w", err)
+	}
+	defer guard.Close()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	application := app.NewWithID("local.myapp.client")
-	application.SetIcon(fyne.NewStaticResource("myapp-app.svg", appIcon))
+	application.SetIcon(applicationIcon(runtime.GOOS))
 	window := application.NewWindow("MyApp")
 	window.Resize(fyne.NewSize(1000, 700))
 	services := &serviceManager{status: "已停止"}
@@ -114,6 +125,8 @@ func Run(ctx context.Context, options Options) error {
 				pairings.stop()
 				fyne.Do(application.Quit)
 				return
+			case <-guard.Activations:
+				fyne.Do(func() { window.Show(); window.RequestFocus() })
 			case <-ticker.C:
 				fyne.Do(func() {
 					if !view.closing {
@@ -377,7 +390,7 @@ func (v *desktopView) installMenus() {
 		v.window.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("MyApp", settings, fyne.NewMenuItemSeparator(), quit)))
 	}
 	if desktopApp, ok := v.application.(fynedesktop.App); ok {
-		desktopApp.SetSystemTrayIcon(fyne.NewStaticResource("myapp-tray.svg", trayIcon))
+		desktopApp.SetSystemTrayIcon(systemTrayIcon(runtime.GOOS))
 	}
 	v.refreshTray()
 }

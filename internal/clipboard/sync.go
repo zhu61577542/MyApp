@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 type Backend interface {
@@ -84,6 +85,10 @@ func (s *Synchronizer) Run(ctx context.Context) error {
 				continue
 			}
 			revision = current
+			if !utf8.ValidString(text) || len(text) > MaxTextBytes {
+				s.writeMu.Unlock()
+				continue
+			}
 			entry, decision, err := s.engine.Local(text, time.Now())
 			if err != nil {
 				s.writeMu.Unlock()

@@ -69,6 +69,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		err = runCursorGuard(stdin, stdout)
 	case "pointer-probe":
 		err = runPointerProbe(args[1:], stdout, stderr)
+	case "desktop-diagnostics":
+		err = runDesktopDiagnostics(args[1:], stdout, stderr)
 	case "gui":
 		err = runNativeGUI(args[1:], stdout, stderr)
 	case "gui-web":

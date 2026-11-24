@@ -120,6 +120,7 @@ func TestPairingProcessExitDuringSnapshot(t *testing.T) {
 
 func TestBackgroundPairingPersistsPeerAfterWindowClosed(t *testing.T) {
 	application := test.NewApp()
+	application.Settings().SetTheme(desktopTheme{appearance: "system"})
 	defer application.Quit()
 	options := pairingTestOptions(t, config.RoleController)
 	manager, done, remoteID := startPairingTestProcess(t, options)
@@ -156,6 +157,7 @@ func TestPairingSaveFailureRemainsVisible(t *testing.T) {
 
 func TestSavingSettingsKeepsBackgroundPairedPeer(t *testing.T) {
 	application := test.NewApp()
+	application.Settings().SetTheme(desktopTheme{appearance: "system"})
 	defer application.Quit()
 	options := pairingTestOptions(t, config.RoleController)
 	openSettings(application, options, func() {})

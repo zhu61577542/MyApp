@@ -153,6 +153,16 @@ func (v *desktopView) controlSummary() (title, copy, action string, enabled bool
 	}
 	for _, peer := range v.view.Peers {
 		if peer.Status == "connected" && peer.Control && peer.Edge {
+			if v.view.EdgeError != "" {
+				return "跨屏暂不可用", v.view.EdgeError + "。修复后从屏幕中央重新移向边缘即可重试。", "查看权限", true
+			}
+			if !v.view.EdgeReady {
+				status := v.view.EdgeStatus
+				if status == "" {
+					status = "正在检查本机屏幕与指针"
+				}
+				return "正在准备跨屏", status, "等待就绪", false
+			}
 			return "跨屏切换已就绪", "已连接 " + peerName(peer.ID, v.view.Peers, v.records) + "。鼠标越过相邻屏幕边缘即可切换，键盘自动跟随。", "调整位置", !v.layoutEditing
 		}
 	}

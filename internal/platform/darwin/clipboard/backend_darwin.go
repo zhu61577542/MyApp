@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"os"
 	"os/exec"
 )
 
@@ -16,7 +17,7 @@ func New() *Backend {
 }
 
 func (b *Backend) ReadText(ctx context.Context) (string, uint64, error) {
-	data, err := exec.CommandContext(ctx, "/usr/bin/pbpaste").Output()
+	data, err := utf8Command(ctx, "/usr/bin/pbpaste").Output()
 	if err != nil {
 		if ctx.Err() != nil {
 			return "", 0, ctx.Err()
@@ -28,7 +29,7 @@ func (b *Backend) ReadText(ctx context.Context) (string, uint64, error) {
 }
 
 func (b *Backend) WriteText(ctx context.Context, text string) error {
-	command := exec.CommandContext(ctx, "/usr/bin/pbcopy")
+	command := utf8Command(ctx, "/usr/bin/pbcopy")
 	input, err := command.StdinPipe()
 	if err != nil {
 		return err
@@ -46,4 +47,10 @@ func (b *Backend) WriteText(ctx context.Context, text string) error {
 		return err
 	}
 	return command.Wait()
+}
+
+func utf8Command(ctx context.Context, path string) *exec.Cmd {
+	command := exec.CommandContext(ctx, path)
+	command.Env = append(os.Environ(), "LC_ALL=en_US.UTF-8", "LC_CTYPE=en_US.UTF-8", "LANG=en_US.UTF-8")
+	return command
 }

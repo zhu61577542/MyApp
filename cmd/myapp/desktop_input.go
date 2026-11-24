@@ -194,23 +194,24 @@ func (c *desktopCapture) remoteStopped(peer string) {
 }
 
 type desktopCapture struct {
-	op          sync.Mutex
-	mu          sync.Mutex
-	run         *captureRun
-	ctx         context.Context
-	hub         *app.Hub
-	links       []*app.Link
-	peers       []config.Peer
-	state       *desktop.Session
-	create      func() (common.Capturer, error)
-	sequence    uint64
-	stopped     map[string]uint64
-	geometry    pointer.Backend
-	geometryErr error
-	recoveryErr error
-	stopEpoch   uint64
-	positions   map[string]string
-	edgeDelay   time.Duration
+	op           sync.Mutex
+	mu           sync.Mutex
+	run          *captureRun
+	ctx          context.Context
+	hub          *app.Hub
+	links        []*app.Link
+	peers        []config.Peer
+	state        *desktop.Session
+	create       func() (common.Capturer, error)
+	sequence     uint64
+	stopped      map[string]uint64
+	geometry     pointer.Backend
+	geometryErr  error
+	recoveryErr  error
+	captureError string
+	stopEpoch    uint64
+	positions    map[string]string
+	edgeDelay    time.Duration
 }
 
 func (c *desktopCapture) stop(ctx context.Context) error {
@@ -429,6 +430,10 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 		}
 		c.mu.Lock()
 		c.recoveryErr = cursorErr
+		if result != nil {
+			c.captureError = result.Error()
+			c.state.ReportEdge(false, "跨屏控制已结束", c.captureError)
+		}
 		run.alive = false
 		run.err = result
 		if c.run == run {
@@ -517,5 +522,9 @@ func newDesktopCapture(ctx context.Context, hub *app.Hub, links []*app.Link, pee
 		}
 		positions[peer.ID] = position
 	}
-	return &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: create, geometry: geometry, geometryErr: err, positions: positions, edgeDelay: 0}
+	captureError := ""
+	if backendErr != nil {
+		captureError = backendErr.Error()
+	}
+	return &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: create, geometry: geometry, geometryErr: err, captureError: captureError, positions: positions, edgeDelay: 0}
 }

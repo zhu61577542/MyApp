@@ -1,0 +1,24 @@
+{
+  "mac": {
+    "guiStartTimes": [
+      "2026-11-24T21:09:45+08:00",
+      "2026-11-24T21:10:49+08:00",
+      "2026-11-24T21:13:23+08:00"
+    ],
+    "priorConnectionErrors": [
+      "no route to host",
+      "remote error: tls: bad certificate",
+      "EOF"
+    ],
+    "configuredSide": "left",
+    "runningProcessesAtInspection": 0
+  },
+  "windows": {
+    "runningProcessesAtInspection": 0,
+    "priorDuplicateListenFailures": true,
+    "priorClipboardHashFailures": true,
+    "trustRevokedDuringManualSession": true,
+    "repairedPairingLaterConnected": true
+  },
+  "interpretation": "Historical errors are not proof of the latest crossing failure cause. No private keys or clipboard contents collected."
+}

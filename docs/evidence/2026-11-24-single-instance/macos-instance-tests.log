@@ -1,0 +1,5 @@
+=== RUN   TestDuplicateProcessActivatesOwnerAndReleasesAfterExit
+--- PASS: TestDuplicateProcessActivatesOwnerAndReleasesAfterExit (0.01s)
+=== RUN   TestLockIsReleasedAfterOwnerProcessCrash
+--- PASS: TestLockIsReleasedAfterOwnerProcessCrash (0.01s)
+PASS

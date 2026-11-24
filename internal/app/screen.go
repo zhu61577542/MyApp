@@ -58,18 +58,6 @@ func (l *Link) publishScreens(ctx context.Context) {
 				info.Screen = screen
 			}
 		}
-		key := info.Screen.Key()
-		if key != last {
-			payload, _ := json.Marshal(info)
-			writer := l.bulkWriter
-			if writer == nil {
-				writer = l.writer
-			}
-			if writer.Enqueue(ctx, transport.PriorityBulk, protocol.Frame{Type: protocol.TypeScreenInfo, Payload: payload}) != nil {
-				return
-			}
-			last = key
-		}
 		if l.screen.localTopology != nil {
 			topology, err := l.screen.localTopology()
 			if err != nil || !topology.Valid() {
@@ -90,6 +78,18 @@ func (l *Link) publishScreens(ctx context.Context) {
 				}
 				lastTopology = key
 			}
+		}
+		key := info.Screen.Key()
+		if key != last {
+			payload, _ := json.Marshal(info)
+			writer := l.bulkWriter
+			if writer == nil {
+				writer = l.writer
+			}
+			if writer.Enqueue(ctx, transport.PriorityBulk, protocol.Frame{Type: protocol.TypeScreenInfo, Payload: payload}) != nil {
+				return
+			}
+			last = key
 		}
 		select {
 		case <-ctx.Done():
@@ -118,7 +118,7 @@ func (l *Link) handleScreen(frame protocol.Frame) error {
 	l.screen.remote = info
 	l.screen.mu.Unlock()
 	if l.screen.onInfo != nil {
-		l.screen.onInfo(info)
+		l.screen.onInfo(l.RemoteScreen())
 	}
 	if old.Version != 0 && old.Screen.Key() != info.Screen.Key() && l.screen.onChange != nil {
 		l.screen.onChange()

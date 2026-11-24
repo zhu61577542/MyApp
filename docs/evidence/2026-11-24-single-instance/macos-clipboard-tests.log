@@ -1,0 +1,19 @@
+=== RUN   TestEngineSuppressesRemoteLoopAndStaleEntries
+--- PASS: TestEngineSuppressesRemoteLoopAndStaleEntries (0.00s)
+=== RUN   TestApplyRemoteCanRetryAfterWriteFailure
+--- PASS: TestApplyRemoteCanRetryAfterWriteFailure (0.00s)
+=== RUN   TestEnginePause
+--- PASS: TestEnginePause (0.00s)
+=== RUN   TestSynchronizerApplyDoesNotRepublish
+--- PASS: TestSynchronizerApplyDoesNotRepublish (0.07s)
+=== RUN   TestBlockedPublishDoesNotBlockRemoteApplyAndPause
+--- PASS: TestBlockedPublishDoesNotBlockRemoteApplyAndPause (0.00s)
+=== RUN   TestRequirementDuplicateContentStillAdvancesRemoteVersion
+--- PASS: TestRequirementDuplicateContentStillAdvancesRemoteVersion (0.00s)
+=== RUN   TestRequirementLocalCopyAfterUnobservedRemoteWrite
+--- PASS: TestRequirementLocalCopyAfterUnobservedRemoteWrite (0.00s)
+=== RUN   TestEntryRejectsInvalidUTF8BeforeJSONCanChangeHash
+--- PASS: TestEntryRejectsInvalidUTF8BeforeJSONCanChangeHash (0.00s)
+=== RUN   TestUnsupportedLocalTextDoesNotStopInputConnection
+--- PASS: TestUnsupportedLocalTextDoesNotStopInputConnection (0.08s)
+PASS

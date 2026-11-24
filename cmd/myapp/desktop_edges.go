@@ -10,6 +10,11 @@ import (
 
 func (c *desktopCapture) runEdges(ctx context.Context) error {
 	if c.geometry == nil {
+		failure := "本机屏幕监视器不可用"
+		if c.geometryErr != nil {
+			failure = c.geometryErr.Error()
+		}
+		c.state.ReportEdge(false, "本机显示器不可用", failure)
 		<-ctx.Done()
 		return ctx.Err()
 	}
@@ -17,6 +22,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 	defer ticker.Stop()
 	watcher := &pointer.Watcher{}
 	var screen pointer.Screen
+	var screenErr error
 	var nextGeometry time.Time
 	for {
 		select {
@@ -29,18 +35,17 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			watcher.Reset()
 			continue
 		}
-		var err error
 		if !time.Now().Before(nextGeometry) {
-			screen, err = c.geometry.Screen()
+			screen, screenErr = c.geometry.Screen()
 			nextGeometry = time.Now().Add(250 * time.Millisecond)
 		}
-		if err != nil {
+		if screenErr != nil {
 			c.mu.Lock()
 			if c.run != nil {
 				c.run.cancel()
 			}
 			c.mu.Unlock()
-			c.state.Update(func(s *desktop.Snapshot) { s.Error = err.Error() })
+			c.state.ReportEdge(false, "读取本机显示器失败", screenErr.Error())
 			continue
 		}
 		c.mu.Lock()
@@ -50,6 +55,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			currentScreen = run.sourceScreen.Key()
 		}
 		positions := make(map[string]string)
+		captureFailure := c.captureError
 		for id, side := range c.positions {
 			positions[id] = side
 		}
@@ -67,6 +73,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		}
 		point, err := c.geometry.Position()
 		if err != nil {
+			c.state.ReportEdge(false, "读取本机指针失败", err.Error())
 			continue
 		}
 		neighbors := make(map[string]string)
@@ -75,16 +82,34 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 				neighbors[positions[peer.ID]] = peer.ID
 			}
 		}
+		if len(neighbors) == 0 {
+			c.state.ReportEdge(false, "等待对端显示器布局", captureFailure)
+		} else if !screen.Contains(point) {
+			c.state.ReportEdge(false, "请将鼠标移回本机主屏", captureFailure)
+		} else {
+			c.state.ReportEdge(true, "边缘监视已就绪", captureFailure)
+		}
 		id, entry, hit := watcher.Observe(point, screen, neighbors, c.edgeDelay, time.Now())
 		if !hit {
 			continue
 		}
 		request, done := context.WithTimeout(ctx, 8*time.Second)
+		c.state.ReportEdge(false, "正在准备跨屏", "")
 		err = c.startAt(request, id, &entry)
 		nextGeometry = time.Time{}
 		done()
 		if err != nil {
+			captureFailure = err.Error()
+			c.mu.Lock()
+			c.captureError = captureFailure
+			c.mu.Unlock()
+			c.state.ReportEdge(false, "跨屏启动失败", captureFailure)
 			c.state.Update(func(s *desktop.Snapshot) { s.Error = err.Error() })
+		} else {
+			c.mu.Lock()
+			c.captureError = ""
+			c.mu.Unlock()
+			c.state.ReportEdge(true, "跨屏控制已启动", "")
 		}
 	}
 }

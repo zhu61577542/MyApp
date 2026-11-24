@@ -1,0 +1,6 @@
+ok  	myapp/internal/instance	2.036s
+ok  	myapp/internal/clipboard	1.163s
+ok  	myapp/internal/app	3.002s
+ok  	myapp/internal/desktop	1.033s
+ok  	myapp/cmd/myapp	1.280s
+ok  	myapp/internal/nativegui	0.004s

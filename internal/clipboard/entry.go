@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -39,6 +40,9 @@ func (e Entry) Validate() error {
 	}
 	if len(e.Text) > MaxTextBytes {
 		return errors.New("剪贴板文字超过 128 KiB")
+	}
+	if !utf8.ValidString(e.Text) {
+		return errors.New("剪贴板文字不是有效 UTF-8")
 	}
 	if e.Hash != TextHash(e.Text) {
 		return errors.New("剪贴板文字哈希不匹配")

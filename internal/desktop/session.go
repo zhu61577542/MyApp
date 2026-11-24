@@ -54,6 +54,9 @@ type Snapshot struct {
 	Files       bool        `json:"files"`
 	Accepting   bool        `json:"accepting"`
 	EdgeEnabled bool        `json:"edge_enabled"`
+	EdgeReady   bool        `json:"edge_ready"`
+	EdgeStatus  string      `json:"edge_status,omitempty"`
+	EdgeError   string      `json:"edge_error,omitempty"`
 	Attempt     int         `json:"attempt"`
 	Error       string      `json:"error,omitempty"`
 	Peers       []Peer      `json:"peers"`
@@ -118,6 +121,16 @@ func (s *Session) Snapshot() Snapshot {
 	}
 	sort.Slice(state.Tasks, func(i, j int) bool { return state.Tasks[i].Updated.After(state.Tasks[j].Updated) })
 	return state
+}
+
+func (s *Session) ReportEdge(ready bool, status, failure string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.state.EdgeReady == ready && s.state.EdgeStatus == status && s.state.EdgeError == failure {
+		return
+	}
+	s.state.EdgeReady, s.state.EdgeStatus, s.state.EdgeError = ready, status, failure
+	s.state.Revision++
 }
 
 func (s *Session) Sharing() Snapshot {

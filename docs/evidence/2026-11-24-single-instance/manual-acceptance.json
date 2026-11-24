@@ -1,0 +1,9 @@
+{
+  "date": "2026-11-24",
+  "version": "0.1.9-alpha",
+  "userConfirmed": "刚才测试了鼠标跨越屏幕，非常完美。",
+  "scope": "Mac源端发起的跨屏体验",
+  "windowsTrayVisible": "用户尚未单独回报",
+  "singleInstance": "双端后台子进程防重/唤起/崩溃释放检查通过，运行快照为单个GUI及其服务",
+  "remainingProductQuestion": "Windows本机鼠标反向发起未实现；当前固定controller/agent架构，不是本轮已实现能力。"
+}
