@@ -28,6 +28,7 @@ type desktopInjector struct {
 	onBlocked  func() error
 	geometry   pointer.Backend
 	edgeScreen string
+	nextCheck  time.Time
 }
 
 func (i *desktopInjector) control(_ context.Context, action string) error {
@@ -49,6 +50,7 @@ func (i *desktopInjector) control(_ context.Context, action string) error {
 	}
 	i.active = true
 	i.edgeScreen = ""
+	i.nextCheck = time.Time{}
 	i.begun = true
 	i.state.Update(func(s *desktop.Snapshot) { s.Target = i.peer })
 	return nil
@@ -63,7 +65,7 @@ func (i *desktopInjector) controlEdge(ctx context.Context, action string, entry 
 	if i.geometry == nil || !entry.Valid() {
 		return errors.New("本机尚不支持跨屏入口")
 	}
-	screen, err := i.geometry.Screen()
+	screen, err := pointer.ScreenWithKey(i.geometry, entry.ScreenKey)
 	if err != nil {
 		return err
 	}
@@ -84,12 +86,20 @@ func (i *desktopInjector) controlEdge(ctx context.Context, action string, entry 
 	if err != nil {
 		return err
 	}
+	if topology, e := pointer.TopologyFor(i.geometry); e == nil && topology.Bounds.Key() == entry.ScreenKey {
+		travel, e := pointer.NewTopologyTravel(topology, *entry)
+		if e != nil {
+			return e
+		}
+		landing = travel.Point
+	}
 	if err := i.inner.Inject(common.Event{Kind: common.MouseAbsolute, Sequence: 1, X: int32(landing.X), Y: int32(landing.Y)}); err != nil {
 		return err
 	}
 	i.active = true
 	i.begun = true
 	i.edgeScreen = screen.Key()
+	i.nextCheck = time.Now().Add(250 * time.Millisecond)
 	i.state.Update(func(s *desktop.Snapshot) { s.Target = i.peer })
 	return nil
 }
@@ -118,16 +128,20 @@ func (i *desktopInjector) Inject(event common.Event) error {
 	if state.Paused || !state.Accepting {
 		return i.endLocked()
 	}
-	if checker, ok := i.inner.(interface{ CanInject() bool }); ok && !checker.CanInject() {
+	check := !time.Now().Before(i.nextCheck)
+	if checker, ok := i.inner.(interface{ CanInject() bool }); check && ok && !checker.CanInject() {
 		_ = i.endLocked()
 		return errors.New("控制键鼠权限已撤销")
 	}
-	if i.edgeScreen != "" {
-		screen, err := i.geometry.Screen()
+	if check && i.edgeScreen != "" {
+		screen, err := pointer.ScreenWithKey(i.geometry, i.edgeScreen)
 		if err != nil || screen.Key() != i.edgeScreen {
 			_ = i.endLocked()
-			return errors.New("目标主屏幕变化，已停止控制")
+			return errors.New("目标显示器布局变化，已停止控制")
 		}
+	}
+	if check {
+		i.nextCheck = time.Now().Add(250 * time.Millisecond)
 	}
 	return i.inner.Inject(event)
 }
@@ -194,11 +208,18 @@ type desktopCapture struct {
 	geometry    pointer.Backend
 	geometryErr error
 	recoveryErr error
+	stopEpoch   uint64
 	positions   map[string]string
 	edgeDelay   time.Duration
 }
 
 func (c *desktopCapture) stop(ctx context.Context) error {
+	c.mu.Lock()
+	c.stopEpoch++
+	if c.run != nil {
+		c.run.cancel()
+	}
+	c.mu.Unlock()
 	c.op.Lock()
 	defer c.op.Unlock()
 	return c.stopLocked(ctx)
@@ -206,9 +227,10 @@ func (c *desktopCapture) stop(ctx context.Context) error {
 func (c *desktopCapture) stopLocked(ctx context.Context) error {
 	c.mu.Lock()
 	run := c.run
+	recoveryErr := c.recoveryErr
 	c.mu.Unlock()
 	if run == nil {
-		return nil
+		return recoveryErr
 	}
 	run.cancel()
 	select {
@@ -228,6 +250,7 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 	defer c.op.Unlock()
 	c.mu.Lock()
 	recoveryErr := c.recoveryErr
+	startEpoch := c.stopEpoch
 	c.mu.Unlock()
 	if recoveryErr != nil {
 		return fmt.Errorf("上次光标恢复未确认，请重启共享服务: %w", recoveryErr)
@@ -276,7 +299,6 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 			return err
 		}
 	}
-	var beginErr error
 	if entry != nil {
 		if c.geometry == nil {
 			return errors.New("当前平台无法监视屏幕边缘")
@@ -284,21 +306,15 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 		copy := *entry
 		copy.ScreenKey = c.links[index].RemoteScreen().Screen.Key()
 		var err error
-		travel, err = pointer.NewTravel(c.links[index].RemoteScreen().Screen, copy)
+		info := c.links[index].RemoteScreen()
+		if info.Topology != nil {
+			travel, err = pointer.NewTopologyTravel(*info.Topology, copy)
+		} else {
+			travel, err = pointer.NewTravel(info.Screen, copy)
+		}
 		if err != nil {
 			return err
 		}
-		beginErr = c.links[index].RequestEdgeControl(ctx, copy)
-	} else {
-		beginErr = c.links[index].RequestControl(ctx, "begin")
-	}
-	if beginErr != nil {
-		return beginErr
-	}
-	latest := c.state.Sharing()
-	if latest.Paused || entry != nil && !latest.EdgeEnabled {
-		_ = c.links[index].RequestControl(ctx, "end")
-		return errors.New("控制启动期间已暂停或关闭跨屏")
 	}
 	capturer, err := c.create()
 	if err != nil {
@@ -312,20 +328,9 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 	}
 	captureCtx, cancel := context.WithCancel(c.ctx)
 	run := &captureRun{cancel: cancel, done: make(chan struct{}), alive: true, peer: id, sourceScreen: sourceScreen}
-	if c.geometry != nil {
-		run.returnPoint = &sourcePoint
-		var err error
-		run.restoreCursor, err = c.geometry.Hide(ctx)
-		if err != nil {
-			cancel()
-			capturer.Close()
-			_ = c.hub.RecoverLocal(ctx)
-			_ = c.links[index].RequestControl(ctx, "end")
-			return err
-		}
-	}
 	c.mu.Lock()
-	if generation != c.stopped[id] {
+	latest := c.state.Sharing()
+	if generation != c.stopped[id] || startEpoch != c.stopEpoch || latest.Paused || entry != nil && !latest.EdgeEnabled {
 		c.mu.Unlock()
 		cancel()
 		var cursorErr error
@@ -343,6 +348,12 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 	c.run = run
 	c.mu.Unlock()
 	ready := make(chan struct{})
+	startSending := make(chan struct{})
+	handoffDone := make(chan struct{})
+	nativeStopped := make(chan struct{})
+	var handoffOnce sync.Once
+	finishHandoff := func() { handoffOnce.Do(func() { close(handoffDone) }) }
+	defer finishHandoff()
 	var once sync.Once
 	onReady := func() { once.Do(func() { close(ready) }) }
 	go func() {
@@ -360,9 +371,6 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 			return nil
 		})
 		handler := func(eventCtx context.Context, event common.Event) error {
-			if emergency(event) {
-				return nil
-			}
 			if consumed, err := choose(event); consumed || err != nil {
 				return err
 			}
@@ -387,7 +395,10 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 			event.Sequence = c.sequence
 			return c.hub.SendInput(eventCtx, event)
 		}
-		result := captureQueued(captureCtx, capturer, handler, onReady)
+		result := captureQueuedAfter(captureCtx, capturer, handler, onReady, startSending, emergency)
+		cancel()
+		close(nativeStopped)
+		<-handoffDone
 		if result == context.Canceled {
 			result = nil
 		}
@@ -437,32 +448,64 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 	}()
 	select {
 	case <-ready:
-		if captureCtx.Err() != nil {
+		request, stopRequest := context.WithCancel(ctx)
+		stopOnCapture := context.AfterFunc(captureCtx, stopRequest)
+		defer func() { stopOnCapture(); stopRequest() }()
+		var beginErr error
+		if entry != nil {
+			copy := travel.Entry
+			beginErr = c.links[index].RequestEdgeControl(request, copy)
+		} else {
+			beginErr = c.links[index].RequestControl(request, "begin")
+		}
+		latest := c.state.Sharing()
+		if beginErr == nil && (latest.Paused || entry != nil && !latest.EdgeEnabled) {
+			beginErr = errors.New("控制启动期间已暂停或关闭跨屏")
+		}
+		if beginErr == nil && c.geometry != nil {
+			run.restoreCursor, beginErr = c.geometry.Hide(request)
+			if beginErr == nil {
+				run.returnPoint = &sourcePoint
+			}
+		}
+		if beginErr == nil {
+			beginErr = captureCtx.Err()
+		}
+		if beginErr != nil {
+			cancel()
+			finishHandoff()
 			<-run.done
-			return errors.New("控制启动期间已被停止")
+			return errors.Join(beginErr, run.err)
 		}
-		c.mu.Lock()
-		alive := run.alive
-		if alive {
-			c.state.Update(func(s *desktop.Snapshot) { s.Target = id; s.Error = "" })
-		}
-		c.mu.Unlock()
-		if !alive {
-			<-run.done
-			return run.err
-		}
+		c.state.Update(func(s *desktop.Snapshot) { s.Target = id; s.Error = "" })
+		close(startSending)
+		finishHandoff()
 		return nil
-	case <-run.done:
+	case <-nativeStopped:
+		finishHandoff()
+		<-run.done
+		if run.err == nil {
+			return errors.New("捕获在跨屏确认前结束")
+		}
 		return run.err
 	case <-ctx.Done():
 		cancel()
+		finishHandoff()
 		<-run.done
 		return ctx.Err()
 	}
+
 }
 
 func newDesktopCapture(ctx context.Context, hub *app.Hub, links []*app.Link, peers []config.Peer, state *desktop.Session) *desktopCapture {
 	geometry, err := pointer.New()
+	backend, backendErr := platform.NewCapturer()
+	create := func() (common.Capturer, error) {
+		if backend == nil {
+			backend, backendErr = platform.NewCapturer()
+		}
+		return backend, backendErr
+	}
 	positions := make(map[string]string)
 	for index, peer := range peers {
 		position := peer.Position
@@ -474,5 +517,5 @@ func newDesktopCapture(ctx context.Context, hub *app.Hub, links []*app.Link, pee
 		}
 		positions[peer.ID] = position
 	}
-	return &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: platform.NewCapturer, geometry: geometry, geometryErr: err, positions: positions, edgeDelay: 150 * time.Millisecond}
+	return &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: create, geometry: geometry, geometryErr: err, positions: positions, edgeDelay: 0}
 }

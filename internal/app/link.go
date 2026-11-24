@@ -344,6 +344,10 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 			if err := l.handleScreen(frame); err != nil {
 				return err
 			}
+		case protocol.TypeScreenTopology:
+			if err := l.handleTopology(frame); err != nil {
+				return err
+			}
 		case protocol.TypeFileResult:
 			if err := l.handleTransferResult(ctx, frame); err != nil {
 				return err

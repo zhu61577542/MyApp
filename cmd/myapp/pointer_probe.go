@@ -48,6 +48,9 @@ func runPointerProbe(args []string, output, stderr io.Writer) error {
 		return err
 	}
 	result := map[string]any{"screen": screen, "position": position, "before": before}
+	if topology, e := pointer.TopologyFor(backend); e == nil {
+		result["topology"] = topology
+	}
 	if *hide {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

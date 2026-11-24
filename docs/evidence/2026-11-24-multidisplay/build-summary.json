@@ -1,0 +1,29 @@
+{
+  "version": "0.1.8-alpha",
+  "embeddedCommit": "preview",
+  "windows": {
+    "image": "fyneio/fyne-cross:1.3-windows",
+    "go": "1.26.1",
+    "GOOS": "windows",
+    "GOARCH": "amd64",
+    "CGO_ENABLED": 1,
+    "CC": "x86_64-w64-mingw32-gcc",
+    "tags": "gui",
+    "exitCode": 0
+  },
+  "macos": {
+    "image": "golang:1.26.1-alpine",
+    "GOOS": "darwin",
+    "GOARCH": "arm64",
+    "CGO_ENABLED": 1,
+    "compiler": "Zig 0.14.1",
+    "sdk": "MacOSX15.2.sdk (read-only)",
+    "tags": "gui",
+    "cflags": "-isysroot /sdk -isystem /sdk/usr/include -F/sdk/System/Library/Frameworks -Wno-nullability-completeness",
+    "ldflags": "-isysroot /sdk -F/sdk/System/Library/Frameworks -L/sdk/usr/lib",
+    "exitCode": 0,
+    "warningLines": 764,
+    "localFullLog": "work/multidisplay-validation/build-macos.log",
+    "fullLogSHA256": "274430e46a7bfead84380e9b0c688763012b55731197e99a48a614c2274f7009"
+  }
+}

@@ -13,9 +13,11 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		<-ctx.Done()
 		return ctx.Err()
 	}
-	ticker := time.NewTicker(20 * time.Millisecond)
+	ticker := time.NewTicker(4 * time.Millisecond)
 	defer ticker.Stop()
 	watcher := &pointer.Watcher{}
+	var screen pointer.Screen
+	var nextGeometry time.Time
 	for {
 		select {
 		case <-ctx.Done():
@@ -27,7 +29,11 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			watcher.Reset()
 			continue
 		}
-		screen, err := c.geometry.Screen()
+		var err error
+		if !time.Now().Before(nextGeometry) {
+			screen, err = c.geometry.Screen()
+			nextGeometry = time.Now().Add(250 * time.Millisecond)
+		}
 		if err != nil {
 			c.mu.Lock()
 			if c.run != nil {
@@ -75,6 +81,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		}
 		request, done := context.WithTimeout(ctx, 8*time.Second)
 		err = c.startAt(request, id, &entry)
+		nextGeometry = time.Time{}
 		done()
 		if err != nil {
 			c.state.Update(func(s *desktop.Snapshot) { s.Error = err.Error() })

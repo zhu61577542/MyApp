@@ -10,11 +10,22 @@ import (
 var errInputCongestion = errors.New("输入处理队列拥塞，已停止键鼠控制")
 
 func captureQueued(parent context.Context, source common.Capturer, handler func(context.Context, common.Event) error, ready func()) error {
+	return captureQueuedAfter(parent, source, handler, ready, nil, nil)
+}
+func captureQueuedAfter(parent context.Context, source common.Capturer, handler func(context.Context, common.Event) error, ready func(), start <-chan struct{}, filter func(common.Event) bool) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	events := make(chan common.Event, 256)
 	ended := make(chan error, 1)
 	go func() {
+		if start != nil {
+			select {
+			case <-start:
+			case <-ctx.Done():
+				ended <- nil
+				return
+			}
+		}
 		for {
 			select {
 			case <-ctx.Done():
@@ -40,6 +51,9 @@ func captureQueued(parent context.Context, source common.Capturer, handler func(
 		}
 	}()
 	enqueue := func(event common.Event) error {
+		if filter != nil && filter(event) {
+			return nil
+		}
 		if err := ctx.Err(); err != nil {
 			return err
 		}

@@ -89,6 +89,12 @@ func enableDesktopLink(ctx context.Context, link *app.Link, cfg config.Config, p
 			update.ScreenHeight = info.Screen.Height
 		})
 	})
+	link.EnableTopology(func() (pointer.Topology, error) {
+		if geometryErr != nil {
+			return pointer.Topology{}, geometryErr
+		}
+		return pointer.TopologyFor(geometry)
+	})
 }
 
 func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *fileclipboard.Synchronizer, capture *desktopCapture, gate *desktopInjector) func() {

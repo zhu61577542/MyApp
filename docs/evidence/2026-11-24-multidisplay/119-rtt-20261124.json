@@ -1,0 +1,7 @@
+{
+  "stdout": "[{\"rttMs\":10,\"status\":\"Success\"},{\"rttMs\":15,\"status\":\"Success\"},{\"rttMs\":9,\"status\":\"Success\"},{\"rttMs\":9,\"status\":\"Success\"}]\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "119-rtt-20261124",
+  "timedOut": false
+}

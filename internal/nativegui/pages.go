@@ -49,7 +49,7 @@ func (v *desktopView) devicesPage() fyne.CanvasObject {
 		layoutAction = quiet(label, v.toggleLayout)
 	}
 	positionHeader := container.NewBorder(nil, nil, nil, layoutAction, sectionTitle(fmt.Sprintf("电脑位置 · %d / %d 台，包含本机", len(v.records)+1, v.cfg.MaxDevices)))
-	position := container.NewVBox(positionHeader, board, secondary("按电脑位置跨越主屏幕边缘；从对端的反向边缘返回本机。控制期间也可用 "+targetShortcut()+" 切换目标。"))
+	position := container.NewVBox(positionHeader, board, secondary("从本机主屏边缘进入对端，Windows 的全部扩展显示器可连续操作；从反向边缘返回本机。控制期间也可用 "+targetShortcut()+" 切换目标。"))
 	position.Add(secondary("建立信任后自动跨屏，无需点击控制按钮或启用开关。"))
 	if v.layoutEditing {
 		controls := container.NewVBox(secondary("拖动电脑屏幕，或使用位置选项。编辑期间键鼠留在本机。"))
@@ -152,11 +152,11 @@ func (v *desktopView) controlSummary() (title, copy, action string, enabled bool
 		return "跨屏等待系统授权", "权限预检提示：" + strings.Join(missing, "、") + "。授权可用后，直接移过屏幕边缘即可切换。", "查看权限", true
 	}
 	for _, peer := range v.view.Peers {
-		if peer.Status == "connected" && peer.Control {
+		if peer.Status == "connected" && peer.Control && peer.Edge {
 			return "跨屏切换已就绪", "已连接 " + peerName(peer.ID, v.view.Peers, v.records) + "。鼠标越过相邻屏幕边缘即可切换，键盘自动跟随。", "调整位置", !v.layoutEditing
 		}
 	}
-	return "连接已建立", "对端尚未声明安全控制能力。请两端均使用新版桌面界面，并将另一台设为子电脑。", "等待对端就绪", false
+	return "连接已建立", "对端尚未提供可用的显示器布局或输入能力，准备完成后会自动跨屏。", "等待对端就绪", false
 }
 func (v *desktopView) performMainAction() {
 	_, _, action, _ := v.controlSummary()

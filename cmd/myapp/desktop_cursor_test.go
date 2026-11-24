@@ -205,7 +205,7 @@ func TestCursorRestoresBeforeRemoteAcknowledgement(t *testing.T) {
 	}
 }
 
-func TestCursorHideFailureDoesNotCapture(t *testing.T) {
+func TestCursorHideFailureStopsPreparedCapture(t *testing.T) {
 	c, ctx := testDesktopCapture(t, func(context.Context, string) error { return nil })
 	backend := &desktopTestCapturer{}
 	c.geometry = &desktopTestPointer{hideErr: errors.New("hide-test-error")}
@@ -213,8 +213,8 @@ func TestCursorHideFailureDoesNotCapture(t *testing.T) {
 	if err := c.start(ctx, "peer"); err == nil || !strings.Contains(err.Error(), "hide-test-error") {
 		t.Fatal(err)
 	}
-	if backend.started.Load() || c.state.Snapshot().Target != "" {
-		t.Fatal("隐藏失败后仍开始捕获")
+	if !backend.started.Load() || c.state.Snapshot().Target != "" || c.run != nil {
+		t.Fatal("隐藏失败后没有结束预备捕获")
 	}
 }
 
@@ -246,6 +246,23 @@ func TestCaptureCanRestartAfterStartupFailure(t *testing.T) {
 	c.create = func() (common.Capturer, error) { return &desktopTestCapturer{}, nil }
 	if err := c.start(ctx, "peer"); err != nil {
 		t.Fatalf("历史错误阻止重试: %v", err)
+	}
+	if err := c.stop(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNativeCaptureIsReadyBeforeRequestingTarget(t *testing.T) {
+	backend := &desktopTestCapturer{}
+	c, ctx := testDesktopCapture(t, func(_ context.Context, action string) error {
+		if action == "begin" && !backend.started.Load() {
+			return errors.New("等待远端确认时本机尚未捕获输入")
+		}
+		return nil
+	})
+	c.create = func() (common.Capturer, error) { return backend, nil }
+	if err := c.start(ctx, "peer"); err != nil {
+		t.Fatal(err)
 	}
 	if err := c.stop(ctx); err != nil {
 		t.Fatal(err)

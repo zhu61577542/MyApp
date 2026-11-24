@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"screen\":{\"id\":\"10034\",\"x\":0,\"y\":0,\"width\":2560,\"height\":1440},\"topology\":{\"bounds\":{\"id\":\"desktop-194f603a5c6d9b01c79db5c9\",\"x\":-1080,\"y\":-493,\"width\":3640,\"height\":1933},\"displays\":[{\"id\":\"10034\",\"x\":0,\"y\":0,\"width\":2560,\"height\":1440},{\"id\":\"20001\",\"x\":-1080,\"y\":-493,\"width\":1080,\"height\":1920}]}}",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "117-native-topology-20261124",
+  "timedOut": false
+}

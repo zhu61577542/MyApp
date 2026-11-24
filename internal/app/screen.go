@@ -12,15 +12,18 @@ import (
 )
 
 type ScreenInfo struct {
-	Version int            `json:"version"`
-	Screen  pointer.Screen `json:"screen"`
+	Topology *pointer.Topology `json:"-"`
+	Version  int               `json:"version"`
+	Screen   pointer.Screen    `json:"screen"`
 }
 type linkScreen struct {
-	mu       sync.Mutex
-	local    func() (pointer.Screen, error)
-	remote   ScreenInfo
-	onInfo   func(ScreenInfo)
-	onChange func()
+	localTopology  func() (pointer.Topology, error)
+	remoteTopology *pointer.Topology
+	mu             sync.Mutex
+	local          func() (pointer.Screen, error)
+	remote         ScreenInfo
+	onInfo         func(ScreenInfo)
+	onChange       func()
 }
 
 func (l *Link) EnableScreen(local func() (pointer.Screen, error), receive func(ScreenInfo)) {
@@ -37,6 +40,9 @@ func (l *Link) RemoteScreen() ScreenInfo {
 	}
 	l.screen.mu.Lock()
 	defer l.screen.mu.Unlock()
+	if t := l.screen.remoteTopology; t != nil {
+		return ScreenInfo{Version: 1, Screen: t.Bounds, Topology: t}
+	}
 	return l.screen.remote
 }
 
@@ -44,6 +50,7 @@ func (l *Link) publishScreens(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	last := ""
+	lastTopology := ""
 	for {
 		info := ScreenInfo{Version: 1}
 		if l.screen.local != nil {
@@ -62,6 +69,27 @@ func (l *Link) publishScreens(ctx context.Context) {
 				return
 			}
 			last = key
+		}
+		if l.screen.localTopology != nil {
+			topology, err := l.screen.localTopology()
+			if err != nil || !topology.Valid() {
+				topology = pointer.Topology{}
+			}
+			key := topology.Bounds.Key()
+			if key != lastTopology {
+				payload, _ := json.Marshal(struct {
+					Version  int              `json:"version"`
+					Topology pointer.Topology `json:"topology"`
+				}{1, topology})
+				writer := l.bulkWriter
+				if writer == nil {
+					writer = l.writer
+				}
+				if writer.Enqueue(ctx, transport.PriorityBulk, protocol.Frame{Type: protocol.TypeScreenTopology, Payload: payload}) != nil {
+					return
+				}
+				lastTopology = key
+			}
 		}
 		select {
 		case <-ctx.Done():

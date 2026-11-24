@@ -1,0 +1,7 @@
+{
+  "stdout": "[{\"y\":-493,\"width\":1080,\"primary\":false,\"height\":1920,\"x\":-1080},{\"y\":0,\"width\":2560,\"primary\":true,\"height\":1440,\"x\":0}]\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "116-display-layout-20261124",
+  "timedOut": false
+}

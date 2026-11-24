@@ -194,7 +194,7 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 				current := state.Sharing()
 				if current.Target == peerID || current.EdgeEnabled {
 					capture.remoteStopped(peerID)
-					state.Update(func(s *desktop.Snapshot) { s.Error = "对端主屏幕变化，已恢复本机控制" })
+					state.Update(func(s *desktop.Snapshot) { s.Error = "对端显示器布局变化，已恢复本机控制" })
 				}
 			})
 		}

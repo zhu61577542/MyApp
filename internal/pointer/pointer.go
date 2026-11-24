@@ -76,9 +76,10 @@ func Landing(screen Screen, entry Entry, returning bool) (Point, error) {
 }
 
 type Travel struct {
-	Screen Screen
-	Entry  Entry
-	Point  Point
+	displays []Screen
+	Screen   Screen
+	Entry    Entry
+	Point    Point
 }
 
 func NewTravel(screen Screen, entry Entry) (*Travel, error) {
@@ -92,6 +93,22 @@ func (t *Travel) Move(dx, dy int) (Point, bool) {
 	x, y := int64(t.Point.X)+int64(dx), int64(t.Point.Y)+int64(dy)
 	back := t.Entry.Side == "right" && x < int64(t.Screen.X) || t.Entry.Side == "left" && x >= int64(t.Screen.X+t.Screen.Width) || t.Entry.Side == "down" && y < int64(t.Screen.Y) || t.Entry.Side == "up" && y >= int64(t.Screen.Y+t.Screen.Height)
 	t.Point = Point{int(max(int64(t.Screen.X), min(x, int64(t.Screen.X+t.Screen.Width-1)))), int(max(int64(t.Screen.Y), min(y, int64(t.Screen.Y+t.Screen.Height-1))))}
+	if len(t.displays) > 0 {
+		candidate := t.Point
+		left, right, top, bottom := int64(1000001), int64(-1000001), int64(1000001), int64(-1000001)
+		for _, s := range t.displays {
+			if candidate.Y >= s.Y && candidate.Y < s.Y+s.Height {
+				left = min(left, int64(s.X))
+				right = max(right, int64(s.X+s.Width))
+			}
+			if candidate.X >= s.X && candidate.X < s.X+s.Width {
+				top = min(top, int64(s.Y))
+				bottom = max(bottom, int64(s.Y+s.Height))
+			}
+		}
+		back = t.Entry.Side == "right" && dx < 0 && left <= 1000000 && x < left || t.Entry.Side == "left" && dx > 0 && right >= -1000000 && x >= right || t.Entry.Side == "down" && dy < 0 && top <= 1000000 && y < top || t.Entry.Side == "up" && dy > 0 && bottom >= -1000000 && y >= bottom
+		t.Point = project(candidate, t.displays)
+	}
 	return t.Point, back
 }
 func (t *Travel) ReturnRatio() float64 {

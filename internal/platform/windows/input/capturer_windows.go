@@ -137,6 +137,9 @@ func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error
 }
 
 func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Event) error, ready func()) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if handler == nil {
 		return errors.New("输入处理函数不能为空")
 	}

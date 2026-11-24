@@ -11,10 +11,10 @@ import (
 )
 
 func (v *desktopView) requestPermissions(automatic bool) {
-	if runtime.GOOS != "darwin" || !v.ready || (automatic && v.prefs.PermissionRequestVersion >= 2) {
+	if runtime.GOOS != "darwin" || !v.ready || (automatic && v.prefs.PermissionRequestVersion >= 3) {
 		return
 	}
-	v.prefs.PermissionRequestVersion = 2
+	v.prefs.PermissionRequestVersion = 3
 	if err := savePreferences(v.options, v.prefs); err != nil {
 		v.showError(err)
 		return
