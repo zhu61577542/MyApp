@@ -8,11 +8,8 @@ import (
 )
 
 func (v *desktopView) notifyProblems(running bool) {
-	previous := v.notified
-	v.notified = make(map[string]bool)
 	notify := func(key, title, body string) {
-		v.notified[key] = true
-		if !previous[key] {
+		if v.notified.Take(key) {
 			v.application.SendNotification(fyne.NewNotification(title, body))
 		}
 	}
@@ -30,12 +27,9 @@ func (v *desktopView) notifyProblems(running bool) {
 		}
 	} else {
 		v.reconnectSince = time.Time{}
-	}
-	if running && connectionCount(v.view) > 0 && !v.view.Paused {
-		for _, permission := range v.permissions {
-			if permission.State == "denied" {
-				notify("permission:"+permission.Name, "MyApp 需要系统授权", "从菜单栏或托盘打开“权限与安全”，完成授权后重新检测。")
-			}
+		if running && connectionCount(v.view) > 0 {
+			v.notified.Resolved("connection")
 		}
 	}
+	// 权限预检只在页面展示；系统授权由用户操作时请求，避免误报和重复通知。
 }

@@ -70,7 +70,7 @@ func (v *desktopView) settingsContent(afterSave func()) fyne.CanvasObject {
 		}
 		v.application.Settings().SetTheme(desktopTheme{appearance: v.prefs.Appearance})
 	}
-	startup := widget.NewCheck("登录后启动 MyApp（不自动开始键鼠控制）", nil)
+	startup := widget.NewCheck("登录后启动 MyApp（自动连接已信任电脑）", nil)
 	enabled, startupErr := loginItemEnabled()
 	startup.SetChecked(enabled)
 	if startupErr != nil {
@@ -83,20 +83,6 @@ func (v *desktopView) settingsContent(afterSave func()) fyne.CanvasObject {
 			startup.OnChanged = nil
 			startup.SetChecked(!value)
 			startup.OnChanged = callback
-		}
-	}
-	autoConnect := widget.NewCheck("打开后自动建立已配对的共享连接", nil)
-	autoConnect.SetChecked(v.prefs.ConnectAutomatically)
-	autoConnect.OnChanged = func(value bool) {
-		old := v.prefs.ConnectAutomatically
-		v.prefs.ConnectAutomatically = value
-		if err := savePreferences(v.options, v.prefs); err != nil {
-			v.prefs.ConnectAutomatically = old
-			result.SetText("自动连接偏好未保存：" + err.Error())
-			callback := autoConnect.OnChanged
-			autoConnect.OnChanged = nil
-			autoConnect.SetChecked(old)
-			autoConnect.OnChanged = callback
 		}
 	}
 	text := widget.NewCheck("文字剪贴板同步", nil)
@@ -204,5 +190,5 @@ func (v *desktopView) settingsContent(afterSave func()) fyne.CanvasObject {
 		version = "dev"
 	}
 	advanced.Add(secondary("MyApp " + version + " · 构建 " + v.options.Commit))
-	return container.NewVBox(pageHeader("设置", "更改这台电脑的用途与共享偏好。"), sectionTitle("这台电脑"), surface(widget.NewForm(widget.NewFormItem("设备名称", name), widget.NewFormItem("使用方式", role))), sectionTitle("共享偏好"), surface(container.NewVBox(text, files, secondary("运行时快速开关也可在设备页操作。"))), sectionTitle("外观与启动"), surface(container.NewVBox(widget.NewForm(widget.NewFormItem("外观", appearance)), startup, autoConnect)), sectionTitle("快捷键"), surface(container.NewVBox(paragraph("结束控制："+emergencyShortcut()), secondary("切换目标："+targetShortcut()))), widget.NewAccordion(widget.NewAccordionItem("高级与诊断", advanced)), result, container.NewHBox(save), secondary("MyApp · 局域网协同工具"))
+	return container.NewVBox(pageHeader("设置", "更改这台电脑的用途与共享偏好。"), sectionTitle("这台电脑"), surface(widget.NewForm(widget.NewFormItem("设备名称", name), widget.NewFormItem("使用方式", role))), sectionTitle("共享偏好"), surface(container.NewVBox(text, files, secondary("运行时快速开关也可在设备页操作。"))), sectionTitle("外观与启动"), surface(container.NewVBox(widget.NewForm(widget.NewFormItem("外观", appearance)), startup, secondary("已信任电脑会自动连接，并自动准备跨屏切换。"))), sectionTitle("快捷键"), surface(container.NewVBox(paragraph("结束控制："+emergencyShortcut()), secondary("切换目标："+targetShortcut()))), widget.NewAccordion(widget.NewAccordionItem("高级与诊断", advanced)), result, container.NewHBox(save), secondary("MyApp · 局域网协同工具"))
 }

@@ -185,7 +185,7 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 	}
 	if state := desktop.From(ctx); state != nil {
 		capture := newDesktopCapture(ctx, hub, desktopLinks, cfg.Peers, state)
-		capture.edgeDelay = time.Duration(cfg.Switch.EdgeDelayMS) * time.Millisecond
+		capture.edgeDelay = 0
 		workers = append(workers, capture.runEdges)
 		for index, link := range desktopLinks {
 			peerID := cfg.Peers[index].ID
@@ -194,7 +194,7 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 				current := state.Sharing()
 				if current.Target == peerID || current.EdgeEnabled {
 					capture.remoteStopped(peerID)
-					state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = false; s.Error = "对端主屏幕变化，已停止控制" })
+					state.Update(func(s *desktop.Snapshot) { s.Error = "对端主屏幕变化，已恢复本机控制" })
 				}
 			})
 		}

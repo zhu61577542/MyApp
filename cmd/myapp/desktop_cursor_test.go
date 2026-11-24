@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 )
 
 type desktopTestPointer struct {
+	position   func() pointer.Point
 	hideErr    error
 	restoreErr error
 	restored   chan struct{}
@@ -27,6 +29,9 @@ func (p *desktopTestPointer) Screen() (pointer.Screen, error) {
 	return pointer.Screen{ID: "test", Width: 100, Height: 100}, nil
 }
 func (p *desktopTestPointer) Position() (pointer.Point, error) {
+	if p.position != nil {
+		return p.position(), nil
+	}
 	return pointer.Point{X: 30, Y: 40}, nil
 }
 func (p *desktopTestPointer) Warp(point pointer.Point) error { p.warped <- point; return nil }
@@ -37,13 +42,18 @@ func (p *desktopTestPointer) Hide(context.Context) (func() error, error) {
 	return func() error { close(p.restored); return p.restoreErr }, nil
 }
 
-func testDesktopCapture(t *testing.T, end func(context.Context, string) error) (*desktopCapture, context.Context) {
+func testDesktopCapture(t *testing.T, end func(context.Context, string) error, screens ...bool) (*desktopCapture, context.Context) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	controller, _ := app.NewSplitLink(nil, nil)
 	agent, _ := app.NewSplitLink(&desktopTestInjector{}, nil)
 	controller.EnableDesktop(app.Capabilities{}, nil, nil)
 	agent.EnableDesktop(app.Capabilities{Control: true}, nil, end)
+	if len(screens) > 0 && screens[0] {
+		controller.EnableScreen(nil, nil)
+		agent.EnableScreen(func() (pointer.Screen, error) { return pointer.Screen{ID: "peer", Width: 100, Height: 100}, nil }, nil)
+		agent.SetEdgeControlHandler(func(context.Context, string, *pointer.Entry) error { return nil })
+	}
 	a, b := net.Pipe()
 	x, y := net.Pipe()
 	ended := make(chan error, 2)
@@ -69,6 +79,83 @@ func testDesktopCapture(t *testing.T, end func(context.Context, string) error) (
 	c := newDesktopCapture(ctx, hub, []*app.Link{controller}, []config.Peer{{ID: "peer"}}, desktop.New(config.Default("local", config.RoleController), "local"))
 	c.geometry, c.geometryErr = nil, nil
 	return c, ctx
+}
+
+func TestAutomaticEdgeCrossingNeedsNoControlCommand(t *testing.T) {
+	c, ctx := testDesktopCapture(t, func(context.Context, string) error { return nil }, true)
+	var x atomic.Int32
+	x.Store(30)
+	inside := make(chan struct{})
+	var observed atomic.Bool
+	c.geometry = &desktopTestPointer{restored: make(chan struct{}), warped: make(chan pointer.Point, 1), position: func() pointer.Point {
+		if x.Load() == 30 && observed.CompareAndSwap(false, true) {
+			close(inside)
+		}
+		return pointer.Point{X: int(x.Load()), Y: 40}
+	}}
+	backend := &desktopTestCapturer{}
+	c.create = func() (common.Capturer, error) { return backend, nil }
+	c.edgeDelay = 0
+	edgeCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	ended := make(chan error, 1)
+	go func() { ended <- c.runEdges(edgeCtx) }()
+	select {
+	case <-inside:
+	case <-ctx.Done():
+		t.Fatal("未自动监测本机指针")
+	}
+	for !c.links[0].RemoteScreen().Screen.Valid() {
+		select {
+		case <-time.After(time.Millisecond):
+		case <-ctx.Done():
+			t.Fatal("没有收到屏幕能力")
+		}
+	}
+	x.Store(99)
+	for !backend.started.Load() {
+		select {
+		case <-time.After(time.Millisecond):
+		case <-ctx.Done():
+			t.Fatal("移过边缘后仍要求控制按钮")
+		}
+	}
+	if err := c.stop(ctx); err != nil {
+		t.Fatal(err)
+	}
+	cancel()
+	<-ended
+}
+
+func TestLayoutAndPausePreserveAutomaticCrossingIntent(t *testing.T) {
+	c, ctx := testDesktopCapture(t, func(context.Context, string) error { return nil })
+	unbind := bindDesktop(desktop.WithSession(ctx, c.state), nil, nil, c, nil)
+	defer unbind()
+	commands := []desktop.Command{
+		{Action: "pause", Enabled: true},
+		{Action: "layout", Enabled: true, Layout: map[string]string{"peer": "left"}},
+		{Action: "pause", Enabled: false},
+		{Action: "layout", Enabled: true, Layout: map[string]string{"peer": "right"}},
+		{Action: "stop_control"},
+		{Action: "layout", Enabled: false, Layout: map[string]string{"peer": "left"}},
+	}
+	for index, command := range commands {
+		command.Version = desktop.Version
+		command.ID = uint64(index + 1)
+		if err := c.state.Apply(ctx, command); err != nil {
+			t.Fatal(err)
+		}
+		snapshot := c.state.Sharing()
+		if index == 1 && (!snapshot.Paused || snapshot.EdgeEnabled) {
+			t.Fatal("位置更新覆盖了主动暂停")
+		}
+		if (index == 2 || index == 3) && !snapshot.EdgeEnabled {
+			t.Fatal("恢复共享或保存位置后还要求开启跨屏")
+		}
+		if index == 5 && snapshot.EdgeEnabled {
+			t.Fatal("位置更新覆盖了紧急停止意图")
+		}
+	}
 }
 
 func TestCursorRestoresBeforeRemoteAcknowledgement(t *testing.T) {

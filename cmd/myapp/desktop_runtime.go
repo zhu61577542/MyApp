@@ -139,7 +139,12 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 			if err := apply(command.Enabled, current.Text, current.Files, current.Accepting); err != nil {
 				return err
 			}
-			state.Update(func(s *desktop.Snapshot) { s.Paused = command.Enabled })
+			state.Update(func(s *desktop.Snapshot) {
+				s.Paused = command.Enabled
+				if !command.Enabled && capture != nil {
+					s.EdgeEnabled = true
+				}
+			})
 		case "edge":
 			if capture == nil {
 				return errors.New("只有主电脑可以启用跨屏切换")
@@ -165,7 +170,11 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 			if err := capture.stop(commandCtx); err != nil {
 				return err
 			}
-			return capture.updateLayout(command.Layout)
+			if err := capture.updateLayout(command.Layout); err != nil {
+				return err
+			}
+			state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = command.Enabled && !s.Paused })
+			return nil
 		case "text":
 			if text == nil {
 				return errors.New("文字剪贴板后端不可用，请查看诊断")

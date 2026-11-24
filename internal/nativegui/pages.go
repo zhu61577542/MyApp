@@ -50,25 +50,7 @@ func (v *desktopView) devicesPage() fyne.CanvasObject {
 	}
 	positionHeader := container.NewBorder(nil, nil, nil, layoutAction, sectionTitle(fmt.Sprintf("电脑位置 · %d / %d 台，包含本机", len(v.records)+1, v.cfg.MaxDevices)))
 	position := container.NewVBox(positionHeader, board, secondary("按电脑位置跨越主屏幕边缘；从对端的反向边缘返回本机。控制期间也可用 "+targetShortcut()+" 切换目标。"))
-	if v.cfg.Role == config.RoleController {
-		edge := widget.NewCheck("像扩展屏幕一样跨机切换（主屏幕）", nil)
-		running, _ := v.services.snapshot()
-		value := v.cfg.Switch.EdgeEnabled
-		if running {
-			value = v.view.EdgeEnabled
-		}
-		edge.SetChecked(value)
-		capable := false
-		for _, peer := range v.view.Peers {
-			capable = capable || peer.Status == "connected" && peer.Edge && peer.Control
-		}
-		if !running || !capable || v.busy || v.view.Paused || v.layoutEditing {
-			edge.Disable()
-		}
-		edge.OnChanged = v.changeEdge
-		position.Add(edge)
-		position.Add(secondary("两端需支持跨屏能力。启用后在边缘短暂停留即可进入，源端光标会隐藏；紧急键会结束控制并暂停自动切换。"))
-	}
+	position.Add(secondary("建立信任后自动跨屏，无需点击控制按钮或启用开关。"))
 	if v.layoutEditing {
 		controls := container.NewVBox(secondary("拖动电脑屏幕，或使用位置选项。编辑期间键鼠留在本机。"))
 		for _, peer := range v.cfg.Peers {
@@ -84,7 +66,14 @@ func (v *desktopView) devicesPage() fyne.CanvasObject {
 			}
 			controls.Add(container.NewVBox(sectionTitle(peerName(peer.ID, v.view.Peers, v.records)), choices))
 		}
-		controls.Add(quiet("取消位置调整", func() { v.layoutEditing = false; v.layoutDraft = make(map[string]string); v.refresh(true) }))
+		controls.Add(quiet("取消位置调整", func() {
+			v.layoutEditing = false
+			v.layoutDraft = make(map[string]string)
+			if running, _ := v.services.snapshot(); running && v.layoutResumeEdge && !v.view.Paused {
+				v.send(desktop.Command{Action: "edge", Enabled: true}, "正在恢复跨屏切换…")
+			}
+			v.refresh(true)
+		}))
 		position.Add(controls)
 	}
 	textValue, filesValue := v.cfg.Clipboard.TextEnabled, v.cfg.Files.Enabled
@@ -124,7 +113,7 @@ func (v *desktopView) controlSummary() (title, copy, action string, enabled bool
 	running, _ := v.services.snapshot()
 	if !running {
 		if v.cfg.Role == config.RoleController && len(v.cfg.Peers) == 0 {
-			return "添加你的另一台电脑", "两端核对配对码后建立连接，不会自动捕获键鼠。", "添加电脑", true
+			return "添加你的另一台电脑", "两端核对配对码后自动连接，鼠标移过相邻边缘即可切换。", "添加电脑", true
 		}
 		return "共享连接尚未启动", "键鼠留在本机，文字与文件尚未同步。", "建立连接", true
 	}
@@ -142,22 +131,29 @@ func (v *desktopView) controlSummary() (title, copy, action string, enabled bool
 		if v.view.Phase == "listening" {
 			return "等待主电脑连接", "连接只接受已配对的电脑。添加新电脑时，请打开配对。", "允许配对", true
 		}
-		return phaseLabel(v.view.Phase), "键鼠保留在本机。连接成功后可开始控制。", "正在连接", false
+		return phaseLabel(v.view.Phase), "键鼠保留在本机。连接后自动准备跨屏切换。", "正在连接", false
 	}
 	if v.cfg.Role == config.RoleAgent {
 		if !v.view.Accepting {
 			return "已暂停接受控制", "文字与文件共享仍按你的设置运行。", "允许接受控制", true
 		}
-		return "等待主电脑开始控制", "连接已就绪，主电脑需要主动开始控制。", "暂停接受控制", true
+		return "跨屏连接已就绪", "主电脑的鼠标移入这台电脑后，键盘随之切换。", "暂停接受控制", true
 	}
+	if !v.view.EdgeEnabled {
+		return "跨屏切换已暂停", "紧急退出或主动停止后，鼠标保留在本机。", "恢复跨屏", true
+	}
+	var missing []string
 	for _, permission := range v.permissions {
 		if permission.State == "denied" || permission.State == "unavailable" {
-			return "还差一项系统权限", "文字和文件可独立共享；开始键鼠控制需要系统授权。", "查看权限", true
+			missing = append(missing, permission.Name)
 		}
+	}
+	if len(missing) > 0 {
+		return "跨屏等待系统授权", "权限预检提示：" + strings.Join(missing, "、") + "。授权可用后，直接移过屏幕边缘即可切换。", "查看权限", true
 	}
 	for _, peer := range v.view.Peers {
 		if peer.Status == "connected" && peer.Control {
-			return "正在操作本机", "已连接 " + peerName(peer.ID, v.view.Peers, v.records) + "。开始控制前，键鼠始终留在本机。", "开始控制", !v.layoutEditing
+			return "跨屏切换已就绪", "已连接 " + peerName(peer.ID, v.view.Peers, v.records) + "。鼠标越过相邻屏幕边缘即可切换，键盘自动跟随。", "调整位置", !v.layoutEditing
 		}
 	}
 	return "连接已建立", "对端尚未声明安全控制能力。请两端均使用新版桌面界面，并将另一台设为子电脑。", "等待对端就绪", false
@@ -182,6 +178,10 @@ func (v *desktopView) performMainAction() {
 		v.send(desktop.Command{Action: "accept", Enabled: false}, "正在停止接受键鼠控制…")
 	case "允许接受控制":
 		v.send(desktop.Command{Action: "accept", Enabled: true}, "正在恢复接受控制…")
+	case "调整位置":
+		v.toggleLayout()
+	case "恢复跨屏":
+		v.send(desktop.Command{Action: "edge", Enabled: true}, "正在恢复跨屏切换…")
 	case "开始控制":
 		for _, peer := range v.view.Peers {
 			if peer.Status == "connected" && peer.Control {
@@ -379,14 +379,6 @@ func (v *desktopView) showPeerDetails(id string) {
 	var popup dialog.Dialog
 	buttons := container.NewHBox(widget.NewButton("撤销信任", func() { popup.Hide(); v.revokePeer(id) }))
 	if v.cfg.Role == config.RoleController {
-		for _, peer := range v.view.Peers {
-			if peer.ID == id && peer.Status == "connected" && peer.Control {
-				buttons.Add(primary("控制这台电脑", func() {
-					popup.Hide()
-					v.send(desktop.Command{Action: "start_control", Target: id}, "正在启动键鼠控制…")
-				}))
-			}
-		}
 		buttons.Add(widget.NewButton("修改连接地址", func() { popup.Hide(); v.editPeerAddress(id, address) }))
 	}
 	box.Add(buttons)
@@ -475,7 +467,11 @@ func (v *desktopView) changeSharing(kind string, enabled bool) {
 }
 
 func (v *desktopView) toggleLayout() {
+	if v.busy {
+		return
+	}
 	if !v.layoutEditing {
+		v.layoutResumeEdge = v.view.EdgeEnabled
 		begin := func() {
 			v.layoutDraft = make(map[string]string)
 			for i, peer := range v.cfg.Peers {
@@ -524,14 +520,15 @@ func (v *desktopView) toggleLayout() {
 	v.layoutEditing = false
 	if running, _ := v.services.snapshot(); running {
 		positions := make(map[string]string)
+		resumeEdge := v.layoutResumeEdge
 		for _, peer := range cfg.Peers {
 			positions[peer.ID] = peer.Position
 		}
 		v.perform("正在应用电脑位置…", func(ctx context.Context) error {
-			return v.services.command(ctx, desktop.Command{Action: "layout", Layout: positions})
+			return v.services.command(ctx, desktop.Command{Action: "layout", Layout: positions, Enabled: resumeEdge})
 		}, nil)
 	} else {
-		v.notice.SetText("电脑位置已保存，请连接两端后启用跨屏切换。")
+		v.notice.SetText("电脑位置已保存，连接后自动跨屏切换。")
 	}
 	v.refresh(true)
 }

@@ -426,7 +426,9 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 		c.state.Update(func(s *desktop.Snapshot) {
 			s.Target = ""
 			if result != nil {
-				s.EdgeEnabled = false
+				if cursorErr != nil {
+					s.EdgeEnabled = false
+				}
 				s.Error = result.Error()
 			}
 		})

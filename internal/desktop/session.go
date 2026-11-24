@@ -91,7 +91,7 @@ type Session struct {
 }
 
 func New(cfg config.Config, id string) *Session {
-	s := &Session{state: Snapshot{Phase: "starting", DeviceID: id, Role: cfg.Role, Text: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Accepting: true, EdgeEnabled: cfg.Switch.EdgeEnabled}, tasks: make(map[string]Task), taskActions: make(map[string]Handler), senders: make(map[string]func([]string) error)}
+	s := &Session{state: Snapshot{Phase: "starting", DeviceID: id, Role: cfg.Role, Text: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Accepting: true, EdgeEnabled: cfg.Role == config.RoleController}, tasks: make(map[string]Task), taskActions: make(map[string]Handler), senders: make(map[string]func([]string) error)}
 	for _, p := range cfg.Peers {
 		s.state.Peers = append(s.state.Peers, Peer{ID: p.ID, Address: p.Address, Name: p.ID, Status: "offline"})
 	}
@@ -291,7 +291,6 @@ func taskStillActive(state Snapshot, id string) bool {
 func (s *Session) Disconnected(reason string) {
 	s.Update(func(state *Snapshot) {
 		state.Target = ""
-		state.EdgeEnabled = false
 		state.Phase = "reconnecting"
 		state.Error = reason
 		for i := range state.Peers {

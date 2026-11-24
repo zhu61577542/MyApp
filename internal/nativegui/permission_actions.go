@@ -11,10 +11,10 @@ import (
 )
 
 func (v *desktopView) requestPermissions(automatic bool) {
-	if runtime.GOOS != "darwin" || !v.ready || (automatic && v.prefs.PermissionRequestVersion >= 1) {
+	if runtime.GOOS != "darwin" || !v.ready || (automatic && v.prefs.PermissionRequestVersion >= 2) {
 		return
 	}
-	v.prefs.PermissionRequestVersion = 1
+	v.prefs.PermissionRequestVersion = 2
 	if err := savePreferences(v.options, v.prefs); err != nil {
 		v.showError(err)
 		return
@@ -24,6 +24,7 @@ func (v *desktopView) requestPermissions(automatic bool) {
 		return
 	}
 	v.permissionTime = time.Time{}
+	v.wantConnect = true
 	v.notice.SetText("已向系统请求 MyApp 授权，请在系统提示中确认；无需手动选择应用文件。已拒绝的项目可通过权限行打开设置重新允许。")
 	v.refresh(true)
 }

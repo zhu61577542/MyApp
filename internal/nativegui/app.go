@@ -41,40 +41,43 @@ type Options struct {
 }
 
 type desktopView struct {
-	application    fyne.App
-	window         fyne.Window
-	options        Options
-	notified       map[string]bool
-	reconnectSince time.Time
-	services       *serviceManager
-	pairings       *pairingManager
-	prefs          preferences
-	root           *fyne.Container
-	main           *fyne.Container
-	nav            *widget.List
-	settingsButton *widget.Button
-	notice         *widget.Label
-	footer         *widget.Label
-	page           string
-	ready          bool
-	state          state
-	cfg            config.Config
-	view           desktop.Snapshot
-	records        []trust.Record
-	permissions    []permission
-	permissionTime time.Time
-	signature      string
-	wantConnect    bool
-	autoAttempted  bool
-	busy           bool
-	closing        bool
-	setupStep      int
-	setupName      string
-	setupRole      config.Role
-	layoutEditing  bool
-	layoutDraft    map[string]string
-	settingsWindow fyne.Window
-	tray           *fyne.Menu
+	application      fyne.App
+	window           fyne.Window
+	options          Options
+	notified         desktop.NotificationGate
+	reconnectSince   time.Time
+	services         *serviceManager
+	pairings         *pairingManager
+	prefs            preferences
+	root             *fyne.Container
+	main             *fyne.Container
+	nav              *widget.List
+	settingsButton   *widget.Button
+	notice           *widget.Label
+	footer           *widget.Label
+	page             string
+	ready            bool
+	state            state
+	cfg              config.Config
+	view             desktop.Snapshot
+	records          []trust.Record
+	permissions      []permission
+	permissionTime   time.Time
+	signature        string
+	wantConnect      bool
+	autoAttempted    bool
+	nextAutoConnect  time.Time
+	servicePeers     string
+	busy             bool
+	closing          bool
+	setupStep        int
+	setupName        string
+	setupRole        config.Role
+	layoutEditing    bool
+	layoutResumeEdge bool
+	layoutDraft      map[string]string
+	settingsWindow   fyne.Window
+	tray             *fyne.Menu
 }
 
 func Run(ctx context.Context, options Options) error {
@@ -135,7 +138,7 @@ func newDesktopView(application fyne.App, window fyne.Window, options Options, s
 	if err != nil {
 		prefs = preferences{Appearance: "system", ConnectAutomatically: true}
 	}
-	view := &desktopView{application: application, window: window, options: options, services: services, pairings: pairings, prefs: prefs, page: "devices", wantConnect: prefs.ConnectAutomatically, setupStep: 1, setupName: options.DefaultDeviceName, layoutDraft: make(map[string]string)}
+	view := &desktopView{application: application, window: window, options: options, services: services, pairings: pairings, prefs: prefs, page: "devices", wantConnect: true, setupStep: 1, setupName: options.DefaultDeviceName, layoutDraft: make(map[string]string)}
 	if current, _ := loadState(options); current.Ready {
 		if _, err := os.Stat(preferencesPath(options)); errors.Is(err, os.ErrNotExist) {
 			view.prefs.OnboardingDone = true
@@ -175,7 +178,17 @@ func (v *desktopView) refresh(force bool) {
 		}
 		records, err := trust.New(v.options.TrustDirectory).List()
 		if err == nil {
+			if len(records) > len(v.records) {
+				v.wantConnect = true
+				v.autoAttempted = false
+			}
 			v.records = records
+			if len(records) > 0 && !v.prefs.OnboardingDone {
+				v.prefs.OnboardingDone = true
+				if e := savePreferences(v.options, v.prefs); e != nil {
+					v.notice.SetText(e.Error())
+				}
+			}
 		} else {
 			v.notice.SetText("无法读取信任列表：" + err.Error())
 		}
@@ -183,16 +196,37 @@ func (v *desktopView) refresh(force bool) {
 	view, serviceError := v.services.snapshotState()
 	v.view = view
 	running, status := v.services.snapshot()
+	peerKey := string(v.cfg.Role)
+	for _, peer := range v.cfg.Peers {
+		peerKey += "\x00" + peer.ID + "\x00" + peer.Address
+	}
+	if running && v.servicePeers == "" {
+		v.servicePeers = peerKey
+	}
+	if running && v.wantConnect && !view.Paused && !v.busy && !v.layoutEditing && !v.pairings.snapshot().Running && v.servicePeers != peerKey && !time.Now().Before(v.nextAutoConnect) {
+		cfg := v.cfg
+		v.nextAutoConnect = time.Now().Add(3 * time.Second)
+		v.perform("正在自动连接新信任的电脑…", func(ctx context.Context) error {
+			if err := v.services.stopGracefully(ctx); err != nil {
+				return err
+			}
+			return v.services.start(v.options, cfg)
+		}, func() { v.servicePeers = peerKey })
+		return
+	}
 	if time.Since(v.permissionTime) > 3*time.Second || force {
 		v.permissions = checkPermissions(v.cfg.Role)
 		v.permissionTime = time.Now()
 	}
 	v.notifyProblems(running)
-	if v.ready && v.prefs.OnboardingDone && v.wantConnect && !running && !v.autoAttempted && !v.busy {
+	if v.ready && v.prefs.OnboardingDone && v.wantConnect && !running && !v.busy && !v.layoutEditing && !v.pairings.snapshot().Running && !time.Now().Before(v.nextAutoConnect) {
 		v.autoAttempted = true
+		v.nextAutoConnect = time.Now().Add(3 * time.Second)
 		if v.cfg.Role == config.RoleAgent || len(v.cfg.Peers) > 0 {
 			if err := v.services.start(v.options, v.cfg); err != nil {
 				v.notice.SetText(err.Error())
+			} else {
+				v.servicePeers = peerKey
 			}
 		}
 	}

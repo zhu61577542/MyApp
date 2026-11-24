@@ -1,0 +1,13 @@
+=== RUN   TestTrustedControllerAutomaticallyPreparesCrossingWithLegacyConfig
+--- PASS: TestTrustedControllerAutomaticallyPreparesCrossingWithLegacyConfig (0.00s)
+=== RUN   TestPermissionPreflightNeverCreatesOSNotification
+--- PASS: TestPermissionPreflightNeverCreatesOSNotification (0.00s)
+=== RUN   TestReconnectPreservesAutomaticAndEmergencyIntent
+--- PASS: TestReconnectPreservesAutomaticAndEmergencyIntent (0.00s)
+=== RUN   TestOldBindingCannotClearNewHandler
+--- PASS: TestOldBindingCannotClearNewHandler (0.00s)
+=== RUN   TestPrepareStopWaitsForTaskConfirmation
+--- PASS: TestPrepareStopWaitsForTaskConfirmation (0.03s)
+=== RUN   TestDisconnectClearsControlAndActiveTasks
+--- PASS: TestDisconnectClearsControlAndActiveTasks (0.00s)
+PASS

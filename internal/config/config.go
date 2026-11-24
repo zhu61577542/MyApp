@@ -79,7 +79,8 @@ func Default(deviceName string, role Role) Config {
 		MaxDevices:    3,
 		Switch: SwitchConfig{
 			Mode:        "edge",
-			EdgeDelayMS: 150,
+			EdgeDelayMS: 0,
+			EdgeEnabled: true,
 		},
 		Clipboard: ClipboardConfig{TextEnabled: true},
 		Files:     FileConfig{Enabled: true, Cache: "cache/files"},

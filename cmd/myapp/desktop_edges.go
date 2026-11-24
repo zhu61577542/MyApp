@@ -34,7 +34,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 				c.run.cancel()
 			}
 			c.mu.Unlock()
-			c.state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = false; s.Error = err.Error() })
+			c.state.Update(func(s *desktop.Snapshot) { s.Error = err.Error() })
 			continue
 		}
 		c.mu.Lock()
@@ -51,7 +51,6 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		if currentScreen != "" && currentScreen != screen.Key() {
 			c.remoteStopped(run.peer)
 			c.state.Update(func(s *desktop.Snapshot) {
-				s.EdgeEnabled = false
 				s.Error = "本机主屏幕变化，已停止跨屏控制"
 			})
 		}
@@ -78,7 +77,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		err = c.startAt(request, id, &entry)
 		done()
 		if err != nil {
-			c.state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = false; s.Error = err.Error() })
+			c.state.Update(func(s *desktop.Snapshot) { s.Error = err.Error() })
 		}
 	}
 }
