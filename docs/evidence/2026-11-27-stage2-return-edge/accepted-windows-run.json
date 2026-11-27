@@ -1,0 +1,55 @@
+{
+  "time": "2026-11-28T00:12:53.4542283+08:00",
+  "logPath": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile\\AppData\\Roaming\\MyApp\\logs\\myapp.log",
+  "from": 36401,
+  "to": 39724,
+  "rotated": false,
+  "truncated": false,
+  "lines": [
+    "2026-11-28T00:06:17.5207185+08:00 [error] 对等控制状态：local:  ->",
+    "2026-11-28T00:06:19.9211501+08:00 [error] 对等控制状态：active: [device-id] -> [device-id]",
+    "2026-11-28T00:06:35.6206881+08:00 [error] 对等控制状态：local:  ->",
+    "2026-11-28T00:06:37.9213602+08:00 [error] 对等控制状态：preparing: [device-id] -> [device-id]",
+    "2026-11-28T00:06:38.021057+08:00 [error] 对等控制状态：active: [device-id] -> [device-id]",
+    "2026-11-28T00:06:49.4035105+08:00 [info] 启动命令: desktop-service",
+    "2026-11-28T00:06:49.4061338+08:00 [error] MyApp agent 正在监听 [::]:24800",
+    "2026-11-28T00:06:55.8451654+08:00 [info] 启动命令: 默认 GUI",
+    "2026-11-28T00:06:56.2357769+08:00 [info] 启动命令: desktop-service",
+    "2026-11-28T00:06:56.2384339+08:00 [error] MyApp agent 正在监听 [::]:24800",
+    "2026-11-28T00:07:00.3686314+08:00 [error] 已连接控制端 [device-id]",
+    "2026-11-28T00:07:00.4374093+08:00 [error] 对等控制状态：local:  ->",
+    "2026-11-28T00:07:08.181053+08:00 [error] 会话结束: EOF",
+    "2026-11-28T00:07:19.2440181+08:00 [error] 已连接控制端 [device-id]",
+    "2026-11-28T00:07:22.0575286+08:00 [error] 会话结束: EOF",
+    "2026-11-28T00:07:44.4020288+08:00 [error] 已连接控制端 [device-id]",
+    "2026-11-28T00:08:13.9945601+08:00 [error] 会话结束: EOF",
+    "2026-11-28T00:08:15.8774744+08:00 [error] 已连接控制端 [device-id]",
+    "2026-11-28T00:08:19.4766435+08:00 [error] 会话结束: EOF",
+    "2026-11-28T00:08:22.9562341+08:00 [error] 已连接控制端 [device-id]",
+    "2026-11-28T00:08:38.4375638+08:00 [error] 对等控制状态：preparing: [device-id] -> [device-id]",
+    "2026-11-28T00:08:38.5375545+08:00 [error] 对等控制状态：local:  ->",
+    "2026-11-28T00:08:46.3385623+08:00 [error] 对等控制状态：preparing: [device-id] -> [device-id]",
+    "2026-11-28T00:08:46.4378291+08:00 [error] 对等控制状态：local:  ->",
+    "2026-11-28T00:09:16.1525287+08:00 [error] 会话结束: EOF",
+    "2026-11-28T00:09:19.8313692+08:00 [error] 已连接控制端 [device-id]",
+    "2026-11-28T00:09:23.5376245+08:00 [error] 对等控制状态：active: [device-id] -> [device-id]",
+    "2026-11-28T00:09:48.8378924+08:00 [error] 对等控制状态：local:  ->",
+    "2026-11-28T00:10:39.4376143+08:00 [error] 对等控制状态：preparing: [device-id] -> [device-id]",
+    "2026-11-28T00:10:39.5377265+08:00 [error] 对等控制状态：active: [device-id] -> [device-id]",
+    "2026-11-28T00:10:58.6377554+08:00 [error] 对等控制状态：local:  ->"
+  ],
+  "processes": [
+    {
+      "pid": 8688,
+      "path": "E:\\test\\MyApp-0.1.12-alpha-stage2\\app\\MyApp.exe",
+      "service": false,
+      "cursorGuard": false
+    },
+    {
+      "pid": 16368,
+      "path": "E:\\test\\MyApp-0.1.12-alpha-stage2\\app\\MyApp.exe",
+      "service": true,
+      "cursorGuard": false
+    }
+  ]
+}
