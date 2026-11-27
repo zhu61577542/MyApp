@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-27",
+  "stage": 2,
+  "status": "user requested actual GUI program testing; preparing native GUI packages",
+  "currentCheck": "GUI startup, version and connection",
+  "scope": "manual UI execution of 0.1.10-alpha-stage2; automated backend results remain separate evidence",
+  "checks": [
+    {
+      "id": 1,
+      "name": "Both role directions through desktop commands and runtime assembly",
+      "previousAutomatedEvidence": "passed on Mac and Windows",
+      "userConfirmation": "not requested as backend-only acceptance; superseded by GUI testing request"
+    }
+  ],
+  "stageThreeStarted": false
+}

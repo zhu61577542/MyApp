@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"delivered\":true,\"version\":\"MyApp 0.1.10-alpha-stage2 commit=60543e6b protocol=1.0\",\"sha256\":\"213e1a8483b613d369a8f77024a751e583a162b982319812d6b5aa8f51d1d8db\",\"exeSha256\":\"ab8d805969b15da145812f0351c5160b763dfa93a572d1b4f4d29e0fd3837445\",\"guiSubsystem\":2,\"guiStarted\":false,\"launcher\":\"E:\\\\test\\\\MyApp-0.1.10-alpha-stage2\\\\app\\\\Launch-in-E-test.ps1\",\"profile\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\",\"programLog\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\\\\AppData\\\\Roaming\\\\MyApp\\\\logs\\\\myapp.log\",\"logBytes\":15044,\"existingProcesses\":[{\"ProcessId\":12660,\"ExecutablePath\":\"E:\\\\test\\\\MyApp-0.1.9-alpha-instance\\\\app\\\\MyApp.exe\"},{\"ProcessId\":25272,\"ExecutablePath\":\"E:\\\\test\\\\MyApp-0.1.9-alpha-instance\\\\app\\\\MyApp.exe\"}]}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "131-stage2-gui-delivery-20261127",
+  "timedOut": false
+}

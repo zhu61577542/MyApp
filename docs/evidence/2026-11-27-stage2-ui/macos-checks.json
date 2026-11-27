@@ -1,0 +1,10 @@
+{
+  "version": "MyApp 0.1.10-alpha-stage2 commit=60543e6b protocol=1.0",
+  "bundleVersion": "0.1.10",
+  "bundleIdentifier": "local.myapp.client",
+  "nativeGUIBuild": true,
+  "adhocSignatureVerified": true,
+  "plistLintPassed": true,
+  "archiveIntegrityPassed": true,
+  "guiStartedByAssistant": false
+}
