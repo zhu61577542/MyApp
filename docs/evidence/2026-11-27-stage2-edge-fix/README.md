@@ -10,4 +10,6 @@
 
 Windows反向触边未开放的原因是agent未注册runEdges，属于阶段3既定边界。本次不跳过阶段3过滤、实体接管和源端多屏外边界，不将Windows无触边动作标为已修复。第三阶段尚未开始。
 
-待交付0.1.11-alpha-stage2的原生GUI包后，由用户再次核查Mac进入Windows、返回Mac以及连接是否稳定。未经用户实测，不标记GUI验收通过。
+0.1.11-alpha-stage2的原生GUI包已构建，源码04929e86。Mac签名与版本检查通过、6项原生适配回归通过；Windows两组原生回归通过，GUI包已核对ZIP/EXE校验值、GUI子系统与实际版本，并送至E:\test\MyApp-0.1.11-alpha-stage2\app。两端均未由助手启动新GUI。
+
+用户接下来核查Mac进入Windows、用同一只Mac鼠标返回Mac以及连接是否稳定。日志起点见session.json；未经用户实测，不标记GUI验收通过。Windows本机自动触边仍未接入，明确保留为阶段3工作。
