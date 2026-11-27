@@ -1,0 +1,61 @@
+{
+  "userObservation": "Mac鼠标进入Windows显示器1，接近左上方触到显示器1左边缘时返回Mac；显示器2位于显示器1左侧。",
+  "windowsVersion": "0.1.11-alpha-stage2",
+  "topology": {
+    "bounds": {
+      "id": "desktop-194f603a5c6d9b01c79db5c9",
+      "x": -1080,
+      "y": -493,
+      "width": 3640,
+      "height": 1933
+    },
+    "displays": [
+      {
+        "id": "10034",
+        "x": 0,
+        "y": 0,
+        "width": 2560,
+        "height": 1440
+      },
+      {
+        "id": "20001",
+        "x": -1080,
+        "y": -493,
+        "width": 1080,
+        "height": 1920
+      }
+    ]
+  },
+  "primaryScreen": {
+    "id": "10034",
+    "x": 0,
+    "y": 0,
+    "width": 2560,
+    "height": 1440
+  },
+  "windowsLogRange": {
+    "from": 18622,
+    "to": 29003
+  },
+  "observedProcesses": [
+    {
+      "pid": 19936,
+      "path": "E:\\test\\MyApp-0.1.11-alpha-stage2\\app\\MyApp.exe",
+      "service": false,
+      "cursorGuard": false
+    },
+    {
+      "pid": 19312,
+      "path": "E:\\test\\MyApp-0.1.11-alpha-stage2\\app\\MyApp.exe",
+      "service": true,
+      "cursorGuard": false
+    }
+  ],
+  "limitation": "程序日志未记录每次返回的原因，无法逐次对应用户动作。使用实际布局的几何测试已复现凹口误触发；实机修复效果待用户复测。",
+  "excluded": [
+    "原始键鼠轨迹",
+    "按键内容",
+    "剪贴板内容",
+    "录屏"
+  ]
+}
