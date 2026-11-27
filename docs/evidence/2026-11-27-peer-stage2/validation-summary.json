@@ -1,0 +1,30 @@
+{
+  "date": "2026-11-27",
+  "stage": 2,
+  "status": "implementation and automated verification complete; awaiting user acceptance",
+  "sourceSHA256": "d0f2b58192cdf459ce7a210ede90a566cad2beb26534a25ff554a961de231d0c",
+  "checks": {
+    "fullRace": "passed",
+    "vet": "passed",
+    "guiCompileOnly": "passed",
+    "macosNativeTests": 5,
+    "windowsNativeTests": 24,
+    "macosCGOBuild": "passed after SDK search-path correction",
+    "windowsBuild": "passed",
+    "liveMacWindowsTLS": "passed, both sent and received 2 synthetic events, restoration barrier completed",
+    "physicalInput": "not tested",
+    "guiAutomation": "not performed",
+    "finalFormattingAndRegression": "passed"
+  },
+  "stageThreeStarted": false,
+  "existingGUIVersion": "0.1.9, unchanged",
+  "artifacts": {
+    "desktop-darwin.test": "0dab5be152d058b3e823202a5a2ea54ac110aefc8377307f710f80492c002ed1",
+    "desktop-windows.test.exe": "93d46f5a26f7a70af737230b850eea2c4b6abf42d825f85f06494b86b79ae5bc",
+    "app-windows.test.exe": "ac2fac345307cfce4493096fc59e30f54c17fbbd465a69cfeffc3e6002a3d8e6",
+    "peercontrol-windows.test.exe": "c071d5c87bd3aebcda24fd169b6b54c3c78df86bbbadbdc84791b53a4050cc6d",
+    "peerlinkprobe-mac": "60cf1e9fb66826a5329018f30ce720ae3d58393ee8a8b78dd371ef061aca71f6",
+    "peerlinkprobe-windows.exe": "da8fe89518f4aac00870f6b22664e8bd9176219c828ceef424e851a77b810bae",
+    "Backend-Stage2-Windows.zip": "a09a629e40ad53df3d5d0ed2e5ca85bfb36a188a15160fbbb2d2b061da9ac142"
+  }
+}

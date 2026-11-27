@@ -12,6 +12,7 @@ import (
 	"myapp/internal/config"
 	"myapp/internal/desktop"
 	"myapp/internal/fileclipboard"
+	"myapp/internal/ownership"
 	"myapp/internal/pointer"
 	"myapp/internal/transfer"
 	"myapp/internal/trust"
@@ -25,10 +26,10 @@ func peerView(store trust.Store, id, address string) desktop.Peer {
 	return peer
 }
 
-func enableDesktopLink(ctx context.Context, link *app.Link, cfg config.Config, peer desktop.Peer, gate *desktopInjector) {
+func enableDesktopLink(ctx context.Context, link *app.Link, cfg config.Config, peer desktop.Peer, gate *desktopInjector) error {
 	state := desktop.From(ctx)
 	if state == nil {
-		return
+		return nil
 	}
 	state.Peer(peer)
 	state.SetSender(peer.ID, func(paths []string) error {
@@ -57,11 +58,11 @@ func enableDesktopLink(ctx context.Context, link *app.Link, cfg config.Config, p
 		})
 	}, func() bool { current := state.Snapshot(); return current.Files && !current.Paused })
 	var control func(context.Context, string) error
-	if gate != nil {
+	if gate != nil && cfg.Role == config.RoleAgent {
 		control = gate.control
 		gate.onBlocked = func() error { return link.NotifyControlEnded(ctx) }
 	}
-	link.EnableDesktop(app.Capabilities{Name: cfg.DeviceName, OS: runtime.GOOS, SoftwareVersion: version, Control: gate != nil, FileResults: true}, func(caps app.Capabilities) {
+	link.EnableDesktop(app.Capabilities{Name: cfg.DeviceName, OS: runtime.GOOS, SoftwareVersion: version, Control: gate != nil && cfg.Role == config.RoleAgent, FileResults: true}, func(caps app.Capabilities) {
 		state.UpdatePeer(peer.ID, func(update *desktop.Peer) {
 			update.OS = caps.OS
 			update.Version = caps.SoftwareVersion
@@ -95,6 +96,7 @@ func enableDesktopLink(ctx context.Context, link *app.Link, cfg config.Config, p
 		}
 		return pointer.TopologyFor(geometry)
 	})
+	return enablePeerDesktop(ctx, link, cfg, peer.ID, state)
 }
 
 func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *fileclipboard.Synchronizer, capture *desktopCapture, gate *desktopInjector) func() {
@@ -134,6 +136,11 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 			}
 			return nil
 		case "pause":
+			if peer := desktopPeerFrom(ctx); peer != nil {
+				if err := peer.pause(commandCtx, command.Enabled); err != nil {
+					return err
+				}
+			}
 			if command.Enabled {
 				state.Update(func(s *desktop.Snapshot) { s.Paused = true })
 			}
@@ -199,6 +206,13 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 			}
 			if err := gate.block(current.Paused || !command.Enabled); err != nil {
 				return err
+			}
+			if !command.Enabled {
+				if peer := desktopPeerFrom(ctx); peer != nil {
+					if err := peer.stop(commandCtx, ownership.PermissionLost); err != nil {
+						return err
+					}
+				}
 			}
 			state.Update(func(s *desktop.Snapshot) { s.Accepting = command.Enabled })
 		default:

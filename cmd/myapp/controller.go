@@ -137,7 +137,9 @@ func runControllerOnce(ctx context.Context, cfg config.Config, local identity.Id
 			return err
 		}
 		link.SetDisconnectHandler(cancel)
-		enableDesktopLink(ctx, link, cfg, peerView(store, peer.ID, peer.Address), nil)
+		if err := enableDesktopLink(ctx, link, cfg, peerView(store, peer.ID, peer.Address), nil); err != nil {
+			return err
+		}
 		desktopLinks = append(desktopLinks, link)
 		if textSync != nil {
 			link.SetTextReceiver(func(ctx context.Context, entry clipboard.Entry) error {

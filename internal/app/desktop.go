@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"myapp/internal/ownership"
 	"myapp/internal/pointer"
 	"myapp/internal/protocol"
 	"myapp/internal/transport"
@@ -93,6 +94,17 @@ func (l *Link) RequestEdgeControl(ctx context.Context, entry pointer.Entry) erro
 }
 
 func (l *Link) requestControl(ctx context.Context, action string, entry *pointer.Entry) error {
+	if node, err := l.PeerControl(ctx); err != nil {
+		return err
+	} else if node != nil {
+		if action == "begin" {
+			return node.Request(ctx, entry)
+		}
+		if action == "end" {
+			return node.Stop(ownership.Returned)
+		}
+		return ownership.ErrInvalid
+	}
 	state := l.desktop
 	if state == nil {
 		return errors.New("对端未声明桌面控制能力，请两端均使用新版桌面界面后重新连接")

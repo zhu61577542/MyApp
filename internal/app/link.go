@@ -12,6 +12,7 @@ import (
 
 	"myapp/internal/clipboard"
 	common "myapp/internal/input"
+	"myapp/internal/ownership"
 	"myapp/internal/protocol"
 	"myapp/internal/transfer"
 	"myapp/internal/transport"
@@ -33,6 +34,7 @@ type Link struct {
 	desktop      *linkDesktop
 	tasks        *linkTransfers
 	screen       *linkScreen
+	peer         *linkPeer
 }
 
 // 仅在启动 Run 前设置。
@@ -82,6 +84,11 @@ func (l *Link) EnableTransfers(cacheRoot string, filesReady func(context.Context
 }
 
 func (l *Link) SendInput(ctx context.Context, event common.Event) error {
+	if node, err := l.PeerControl(ctx); err != nil {
+		return err
+	} else if node != nil {
+		return node.SendInput(event)
+	}
 	if err := event.Validate(); err != nil {
 		return err
 	}
@@ -93,6 +100,11 @@ func (l *Link) SendInput(ctx context.Context, event common.Event) error {
 }
 
 func (l *Link) SendReleaseAll(ctx context.Context) error {
+	if node, err := l.PeerControl(ctx); err != nil {
+		return err
+	} else if node != nil {
+		return node.Stop(ownership.Returned)
+	}
 	return l.enqueue(ctx, transport.PriorityRealtime, protocol.TypeReleaseAll, nil)
 }
 
@@ -201,6 +213,12 @@ func (l *Link) RunChannels(ctx context.Context, realtime, bulk io.ReadWriteClose
 func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	if l.peer != nil {
+		if err := l.peer.start(ctx); err != nil {
+			return err
+		}
+		defer l.peer.close()
+	}
 	if l.screen != nil {
 		done := make(chan struct{})
 		go func() { defer close(done); l.publishScreens(ctx) }()
@@ -210,9 +228,13 @@ func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) err
 	if err != nil {
 		return err
 	}
-	errorsChannel := make(chan error, 4)
+	errorsChannel := make(chan error, 5)
 	bulkErrors := make(chan error, 2)
 	realtimeRemaining, bulkRemaining := 3, 0
+	if l.peer != nil {
+		realtimeRemaining++
+		go func() { errorsChannel <- l.peer.run(ctx) }()
+	}
 	if l.tasks != nil {
 		realtimeRemaining++
 		go func() { errorsChannel <- l.runFileResults(ctx) }()
@@ -239,6 +261,9 @@ func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) err
 		realtimeRemaining--
 	case err = <-bulkErrors:
 		bulkRemaining--
+	}
+	if l.peer != nil {
+		l.peer.close()
 	}
 	if l.disconnected != nil {
 		l.disconnected(err)
@@ -275,12 +300,21 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 		if err != nil {
 			return err
 		}
-		realtime := frame.Type == protocol.TypeInput || frame.Type == protocol.TypeReleaseAll || frame.Type == protocol.TypeHeartbeat || frame.Type == protocol.TypeCapabilities || frame.Type == protocol.TypeControlRequest || frame.Type == protocol.TypeControlResult
+		realtime := frame.Type == protocol.TypeInput || frame.Type == protocol.TypeReleaseAll || frame.Type == protocol.TypeHeartbeat || frame.Type == protocol.TypeCapabilities || frame.Type == protocol.TypeControlRequest || frame.Type == protocol.TypeControlResult || frame.Type == protocol.TypePeerControl || frame.Type == protocol.TypePeerInput
 		if channel == transport.ChannelRealtime && !realtime || channel == transport.ChannelBulk && realtime {
 			return errors.New("消息类型与会话通道不匹配")
 		}
 		switch frame.Type {
+		case protocol.TypePeerOffer, protocol.TypePeerControl, protocol.TypePeerInput:
+			if err := l.handlePeerFrame(ctx, frame); err != nil {
+				return err
+			}
 		case protocol.TypeCapabilities, protocol.TypeControlRequest, protocol.TypeControlResult:
+			if frame.Type != protocol.TypeCapabilities && l.peer != nil {
+				if err := l.peer.legacy(); err != nil {
+					return err
+				}
+			}
 			if err := l.handleDesktopFrame(ctx, frame); err != nil {
 				return err
 			}
@@ -290,6 +324,11 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 			}
 			monitor.Observe(time.Now())
 		case protocol.TypeInput:
+			if l.peer != nil {
+				if err := l.peer.legacy(); err != nil {
+					return err
+				}
+			}
 			if len(frame.Payload) != common.WireSize {
 				return errors.New("输入事件长度无效")
 			}
@@ -308,6 +347,11 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 				return err
 			}
 		case protocol.TypeReleaseAll:
+			if l.peer != nil {
+				if err := l.peer.legacy(); err != nil {
+					return err
+				}
+			}
 			if len(frame.Payload) != 0 || l.injector == nil {
 				return errors.New("释放全部输入消息无效")
 			}

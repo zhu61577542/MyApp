@@ -123,7 +123,17 @@ func serveConnection(ctx context.Context, connection *tls.Conn, listener *net.TC
 	}
 	var injector common.Injector
 	if state := desktop.From(ctx); state != nil {
-		injector = &desktopInjector{state: state, peer: peerID, create: platform.NewInjector}
+		gate := &desktopInjector{state: state, peer: peerID, create: platform.NewInjector}
+		if peer := desktopPeerFrom(ctx); peer != nil {
+			gate.onRecoveryError = peer.device.BlockRecovery
+			gate.create = func() (common.Injector, error) {
+				if err := peer.device.RecoveryError(); err != nil {
+					return nil, err
+				}
+				return platform.NewInjector()
+			}
+		}
+		injector = gate
 	} else {
 		injector, err = platform.NewInjector()
 		if err != nil {
@@ -191,8 +201,15 @@ func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteClo
 				break
 			}
 		}
-		enableDesktopLink(ctx, link, cfg, peer, gate)
-		unbind := bindDesktop(ctx, clipboardSync, fileSync, nil, gate)
+		if err := enableDesktopLink(ctx, link, cfg, peer, gate); err != nil {
+			return err
+		}
+		var capture *desktopCapture
+		if desktopPeerFrom(ctx) != nil {
+			capture = newDesktopCapture(ctx, nil, []*app.Link{link}, []config.Peer{{ID: peer.ID, Address: peer.Address}}, state)
+			defer finishDesktopCapture(capture)
+		}
+		unbind := bindDesktop(ctx, clipboardSync, fileSync, capture, gate)
 		defer unbind()
 	}
 	if err := withHandshakeDeadline(ctx, connection, 20*time.Second, func() error {

@@ -44,6 +44,9 @@ const (
 	TypeFileResult
 	TypeScreenInfo
 	TypeScreenTopology
+	TypePeerOffer
+	TypePeerControl
+	TypePeerInput
 )
 
 type Flags byte
@@ -140,7 +143,7 @@ func (d Decoder) Decode(reader io.Reader) (Frame, error) {
 }
 
 func knownType(messageType MessageType) bool {
-	return messageType >= TypeHello && messageType <= TypeScreenTopology
+	return messageType >= TypeHello && messageType <= TypePeerInput
 }
 
 func writeFull(writer io.Writer, data []byte) error {

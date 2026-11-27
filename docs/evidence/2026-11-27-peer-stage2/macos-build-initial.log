@@ -1,0 +1,4 @@
+# myapp/cmd/myapp.test
+/usr/local/go/pkg/tool/linux_arm64/link: running /tmp/zig-aarch64-linux-0.14.1/zig failed: exit status 1
+/tmp/zig-aarch64-linux-0.14.1/zig cc -target aarch64-macos.13.0 -isysroot /src/work/desktop-ui-validation/MacOSX15.2.sdk -arch arm64 -Wl,-headerpad,1144 -o $WORK/b001/myapp.test /tmp/go-link-3853171002/go.o /tmp/go-link-3853171002/000000.o /tmp/go-link-3853171002/000001.o /tmp/go-link-3853171002/000002.o /tmp/go-link-3853171002/000003.o /tmp/go-link-3853171002/000004.o /tmp/go-link-3853171002/000005.o /tmp/go-link-3853171002/000006.o /tmp/go-link-3853171002/000007.o /tmp/go-link-3853171002/000008.o /tmp/go-link-3853171002/000009.o -lresolv -framework CoreFoundation -framework Security -O2 -g -framework CoreFoundation
+error: unable to find dynamic system library 'resolv' using strategy 'paths_first'. searched paths: none

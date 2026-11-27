@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -48,6 +49,9 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 	}
 	state := desktop.New(cfg, local.DeviceID)
 	ctx = desktop.WithSession(ctx, state)
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+		ctx = withDesktopPeer(ctx, state)
+	}
 	responses := make(chan desktop.Message, 16)
 	var output sync.WaitGroup
 	output.Add(1)
@@ -112,6 +116,11 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 			}
 			requestCtx, done := context.WithTimeout(ctx, 10*time.Second)
 			result = state.Apply(requestCtx, command)
+			if result == nil && command.Action == "pause" {
+				if peer := desktopPeerFrom(ctx); peer != nil {
+					peer.device.SetPaused(command.Enabled)
+				}
+			}
 			done()
 			message := desktop.Message{Version: desktop.Version, RequestID: command.ID, Snapshot: state.Snapshot()}
 			if result != nil {

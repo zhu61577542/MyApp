@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"exitCode\":0,\"stdout\":\"{\\\"success\\\":true,\\\"os\\\":\\\"windows\\\",\\\"Sent\\\":2,\\\"Received\\\":2,\\\"mode\\\":\\\"connect\\\",\\\"physical_input\\\":false}\\n\",\"stderr\":\"\",\"physicalInput\":false}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "130-stage2-lan-roundtrip-20261127",
+  "timedOut": false
+}

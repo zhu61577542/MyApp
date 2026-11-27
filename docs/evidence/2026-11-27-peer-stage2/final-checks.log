@@ -1,0 +1,35 @@
+?   	myapp/build/icon	[no test files]
+ok  	myapp/build/macpermissions	(cached)
+?   	myapp/build/release	[no test files]
+ok  	myapp/cmd/myapp	(cached)
+ok  	myapp/internal/app	(cached)
+ok  	myapp/internal/clipboard	(cached)
+ok  	myapp/internal/config	(cached)
+ok  	myapp/internal/desktop	(cached)
+ok  	myapp/internal/device	(cached)
+ok  	myapp/internal/discovery	(cached)
+ok  	myapp/internal/fileclipboard	(cached)
+ok  	myapp/internal/gui	(cached)
+ok  	myapp/internal/identity	(cached)
+ok  	myapp/internal/input	(cached)
+ok  	myapp/internal/instance	(cached)
+ok  	myapp/internal/layout	(cached)
+ok  	myapp/internal/logging	(cached)
+ok  	myapp/internal/ownership	(cached)
+ok  	myapp/internal/pairing	(cached)
+ok  	myapp/internal/peercontrol	(cached)
+?   	myapp/internal/platform	[no test files]
+?   	myapp/internal/platform/linux/clipboard	[no test files]
+?   	myapp/internal/platform/linux/input	[no test files]
+ok  	myapp/internal/pointer	(cached)
+ok  	myapp/internal/protocol	(cached)
+ok  	myapp/internal/transfer	(cached)
+ok  	myapp/internal/transport	(cached)
+ok  	myapp/internal/trust	(cached)
+?   	myapp/tests/discoveryprobe	[no test files]
+?   	myapp/tests/inputcaptureprobe	[no test files]
+ok  	myapp/tests/integration	(cached)
+?   	myapp/tests/peerlinkprobe	[no test files]
+?   	myapp/tests/x11probe	[no test files]
+ok  	myapp/internal/nativegui	(cached) [no tests to run]
+ok  	myapp/cmd/myapp	(cached) [no tests to run]

@@ -1,0 +1,21 @@
+{
+  "macAddress": "192.168.1.8",
+  "windowsAddress": "192.168.1.5",
+  "mac": {
+    "success": true,
+    "os": "darwin",
+    "Sent": 2,
+    "Received": 2,
+    "mode": "serve",
+    "physical_input": false
+  },
+  "windows": {
+    "success": true,
+    "os": "windows",
+    "Sent": 2,
+    "Received": 2,
+    "mode": "connect",
+    "physical_input": false
+  },
+  "scope": "Live TCP/TLS peer-control protocol and restoration barriers with isolated test identities and counting drivers; no OS capture or injection"
+}

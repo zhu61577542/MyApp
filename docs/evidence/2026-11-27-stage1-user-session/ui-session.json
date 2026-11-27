@@ -4,8 +4,8 @@
   "scope": "existing desktop UI baseline; stage-one ownership library is not integrated",
   "macLogPath": "/Users/zhuguoqing/Library/Application Support/MyApp/logs/myapp.log",
   "macLogBytes": 46976,
-  "status": "waiting for UI application startup and user observations",
-  "stageOneAcceptanceConfirmed": false,
+  "status": "UI baseline checklist not executed; user accepted stage-one backend rules and authorized stage two",
+  "stageOneAcceptanceConfirmed": true,
   "recording": [
     "program status and errors",
     "user-reported UI operations and observations"

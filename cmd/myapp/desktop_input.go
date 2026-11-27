@@ -12,23 +12,26 @@ import (
 	"myapp/internal/config"
 	"myapp/internal/desktop"
 	common "myapp/internal/input"
+	"myapp/internal/ownership"
 	"myapp/internal/platform"
 	"myapp/internal/pointer"
 )
 
 type desktopInjector struct {
-	mu         sync.Mutex
-	inner      common.Injector
-	active     bool
-	begun      bool
-	blocked    bool
-	state      *desktop.Session
-	peer       string
-	create     func() (common.Injector, error)
-	onBlocked  func() error
-	geometry   pointer.Backend
-	edgeScreen string
-	nextCheck  time.Time
+	mu              sync.Mutex
+	inner           common.Injector
+	active          bool
+	begun           bool
+	blocked         bool
+	state           *desktop.Session
+	peer            string
+	create          func() (common.Injector, error)
+	onBlocked       func() error
+	geometry        pointer.Backend
+	edgeScreen      string
+	nextCheck       time.Time
+	recoveryErr     error
+	onRecoveryError func(error)
 }
 
 func (i *desktopInjector) control(_ context.Context, action string) error {
@@ -36,6 +39,9 @@ func (i *desktopInjector) control(_ context.Context, action string) error {
 	defer i.mu.Unlock()
 	if action == "end" {
 		return i.endLocked()
+	}
+	if i.recoveryErr != nil {
+		return i.recoveryErr
 	}
 	state := i.state.Sharing()
 	if i.blocked || state.Paused || !state.Accepting {
@@ -62,6 +68,9 @@ func (i *desktopInjector) controlEdge(ctx context.Context, action string, entry 
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	if i.recoveryErr != nil {
+		return i.recoveryErr
+	}
 	if i.geometry == nil || !entry.Valid() {
 		return errors.New("本机尚不支持跨屏入口")
 	}
@@ -111,6 +120,12 @@ func (i *desktopInjector) endLocked() error {
 	if i.inner != nil {
 		err = i.inner.ReleaseAll()
 	}
+	if err != nil {
+		i.recoveryErr = errors.Join(i.recoveryErr, err)
+		if i.onRecoveryError != nil {
+			i.onRecoveryError(err)
+		}
+	}
 	i.state.Update(func(s *desktop.Snapshot) { s.Target = "" })
 	return err
 }
@@ -153,6 +168,9 @@ func (i *desktopInjector) Close() error {
 	if i.inner != nil {
 		err = errors.Join(err, i.inner.Close())
 	}
+	if err != nil && i.onRecoveryError != nil {
+		i.onRecoveryError(err)
+	}
 	return err
 }
 func (i *desktopInjector) block(blocked bool) error {
@@ -183,13 +201,24 @@ type captureRun struct {
 
 func (c *desktopCapture) remoteStopped(peer string) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.stopped == nil {
 		c.stopped = make(map[string]uint64)
 	}
 	c.stopped[peer]++
 	if c.run != nil && c.run.peer == peer {
 		c.run.cancel()
+	}
+	c.mu.Unlock()
+	if desktopPeerFrom(c.ctx) != nil {
+		for index, target := range c.peers {
+			if target.ID == peer {
+				if node := c.links[index].CurrentPeerControl(); node != nil {
+					if token := node.Snapshot().Lease; token != nil {
+						go node.StopToken(*token, ownership.LayoutChanged)
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -212,18 +241,37 @@ type desktopCapture struct {
 	stopEpoch    uint64
 	positions    map[string]string
 	edgeDelay    time.Duration
+	peerCancel   context.CancelFunc
 }
 
 func (c *desktopCapture) stop(ctx context.Context) error {
 	c.mu.Lock()
 	c.stopEpoch++
+	if c.peerCancel != nil {
+		c.peerCancel()
+	}
 	if c.run != nil {
 		c.run.cancel()
 	}
 	c.mu.Unlock()
+	var peerErr error
+	if peer := desktopPeerFrom(c.ctx); peer != nil {
+		peerErr = peer.stop(ctx, ownership.Returned)
+	}
 	c.op.Lock()
 	defer c.op.Unlock()
-	return c.stopLocked(ctx)
+	result := errors.Join(peerErr, c.stopLocked(ctx))
+	if result != nil {
+		c.mu.Lock()
+		unresolved := c.run != nil || c.recoveryErr != nil
+		c.mu.Unlock()
+		if unresolved {
+			if peer := desktopPeerFrom(c.ctx); peer != nil {
+				peer.device.BlockRecovery(result)
+			}
+		}
+	}
+	return result
 }
 func (c *desktopCapture) stopLocked(ctx context.Context) error {
 	c.mu.Lock()
@@ -249,6 +297,11 @@ func (c *desktopCapture) start(ctx context.Context, id string) error {
 func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.Entry) error {
 	c.op.Lock()
 	defer c.op.Unlock()
+	if peer := desktopPeerFrom(c.ctx); peer != nil {
+		if err := peer.device.RecoveryError(); err != nil {
+			return err
+		}
+	}
 	c.mu.Lock()
 	recoveryErr := c.recoveryErr
 	startEpoch := c.stopEpoch
@@ -275,6 +328,31 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 	}
 	if index < 0 {
 		return errors.New("没有找到目标电脑")
+	}
+	request, cancelRequest := context.WithCancel(ctx)
+	c.mu.Lock()
+	if startEpoch != c.stopEpoch {
+		c.mu.Unlock()
+		cancelRequest()
+		return context.Canceled
+	}
+	c.peerCancel = cancelRequest
+	c.mu.Unlock()
+	node, peerErr := c.links[index].PeerControl(request)
+	if node != nil || peerErr != nil {
+		defer cancelRequest()
+		defer func() { c.mu.Lock(); c.peerCancel = nil; c.mu.Unlock() }()
+		if peerErr != nil {
+			return peerErr
+		}
+		return node.Request(request, entry)
+	}
+	cancelRequest()
+	c.mu.Lock()
+	c.peerCancel = nil
+	c.mu.Unlock()
+	if c.hub == nil {
+		return errors.New("对端未协商双向能力，请更新两端软件")
 	}
 	if err := c.stopLocked(ctx); err != nil {
 		return err
@@ -411,14 +489,21 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 			}
 		}
 		cancel()
-		result = errors.Join(result, capturer.Close())
+		localErr := capturer.Close()
 		if c.geometry != nil && run.returnPoint != nil {
-			result = errors.Join(result, c.geometry.Warp(*run.returnPoint))
+			localErr = errors.Join(localErr, c.geometry.Warp(*run.returnPoint))
 		}
 		var cursorErr error
 		if run.restoreCursor != nil {
 			cursorErr = run.restoreCursor()
 			result = errors.Join(result, cursorErr)
+		}
+		localErr = errors.Join(localErr, cursorErr)
+		result = errors.Join(result, localErr)
+		if localErr != nil {
+			if peer := desktopPeerFrom(c.ctx); peer != nil {
+				peer.device.BlockRecovery(localErr)
+			}
 		}
 		c.state.Update(func(s *desktop.Snapshot) { s.Target = "" })
 		cleanup, done := context.WithTimeout(c.ctx, time.Second)
@@ -429,7 +514,7 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 			result = errors.Join(result, releaseErr, endErr)
 		}
 		c.mu.Lock()
-		c.recoveryErr = cursorErr
+		c.recoveryErr = localErr
 		if result != nil {
 			c.captureError = result.Error()
 			c.state.ReportEdge(false, "跨屏控制已结束", c.captureError)

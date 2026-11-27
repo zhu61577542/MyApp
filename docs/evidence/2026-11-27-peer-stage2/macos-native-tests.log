@@ -1,0 +1,12 @@
+=== RUN   TestPeerTargetPrepareDoesNotMoveCursorAndChecksPermission
+--- PASS: TestPeerTargetPrepareDoesNotMoveCursorAndChecksPermission (0.00s)
+=== RUN   TestPeerSourceBuffersUntilActivatedAndRestores
+--- PASS: TestPeerSourceBuffersUntilActivatedAndRestores (0.01s)
+=== RUN   TestPeerCaptureErrorRemainsVisible
+--- PASS: TestPeerCaptureErrorRemainsVisible (0.00s)
+=== RUN   TestPeerDesktopAssemblySupportsBothRoleDirections
+    desktop_peer_test.go:257: 原生适配工厂通过真实Link连接双向装配；测试替身未操作实体键鼠
+--- PASS: TestPeerDesktopAssemblySupportsBothRoleDirections (0.03s)
+=== RUN   TestPeerLegacyReleaseFailureBlocksSubsequentControl
+--- PASS: TestPeerLegacyReleaseFailureBlocksSubsequentControl (0.00s)
+PASS
