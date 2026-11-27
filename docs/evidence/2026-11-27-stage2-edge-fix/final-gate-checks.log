@@ -1,0 +1,4 @@
+ok  	myapp/internal/peercontrol	1.142s
+ok  	myapp/internal/app	4.207s
+ok  	myapp/cmd/myapp	1.309s
+ok  	myapp/internal/desktop	1.038s

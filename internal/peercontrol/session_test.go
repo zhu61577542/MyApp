@@ -489,7 +489,11 @@ func TestEmergencyDuringRecoveryClearsWaitingRequest(t *testing.T) {
 func TestLegacyRecoveryFailureCannotBeClearedByPeerDriver(t *testing.T) {
 	p := newPair(t, true)
 	p.request(t, 0)
+	token := *p.nodes[0].Snapshot().Lease
 	p.devices[0].BlockRecovery(errors.New("旧控制路径光标恢复失败"))
+	if err := p.devices[0].activate(p.ctx, token, p.now().Add(LeaseTime), p.now()); err == nil {
+		t.Fatal("失败屏障仍允许重新激活旧准备")
+	}
 	p.nodes[0].Close()
 	waitFor(t, func() bool {
 		p.devices[0].mu.Lock()

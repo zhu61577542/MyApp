@@ -120,7 +120,7 @@ func (d *Device) prepare(ctx context.Context, token ownership.Token, source bool
 func (d *Device) activate(ctx context.Context, token ownership.Token, until time.Time, now time.Time) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if d.owner != token.Session || d.closed || d.token != token || d.paused || d.restoring != nil || !now.Before(until) {
+	if d.owner != token.Session || d.closed || d.token != token || d.paused || d.err != nil || d.restoring != nil || !now.Before(until) {
 		return ownership.ErrStale
 	}
 	select {
