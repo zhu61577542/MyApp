@@ -1,0 +1,6 @@
+fuzz: elapsed: 0s, gathering baseline coverage: 0/236 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 236/236 completed, now fuzzing with 2 workers
+fuzz: elapsed: 3s, execs: 182092 (60693/sec), new interesting: 18 (total: 254)
+fuzz: elapsed: 5s, execs: 334311 (69378/sec), new interesting: 30 (total: 266)
+PASS
+ok  	myapp/internal/ownership	5.212s

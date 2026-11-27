@@ -1,0 +1,28 @@
+=== RUN   TestStageOneAcceptance
+=== RUN   TestStageOneAcceptance/01_Mac发起
+    acceptance_test.go:15: 通过：双方就绪后，Mac发送、Windows接收；准备期间不能输入
+=== RUN   TestStageOneAcceptance/02_Windows发起
+    acceptance_test.go:23: 通过：Windows同样可以成为来源；控制角色不取决于系统或旧主副配置
+=== RUN   TestStageOneAcceptance/03_同时申请
+    acceptance_test.go:34: 通过：准备期按稳定设备标识裁决；旧准备先恢复，双方确认后只有一个来源
+=== RUN   TestStageOneAcceptance/04_本地接管
+    acceptance_test.go:44: 通过：Windows本地恢复不等Mac网络确认；旧输入立即拒绝，新跨屏等待双方恢复
+=== RUN   TestStageOneAcceptance/05_急停与恢复
+    acceptance_test.go:55: 通过：急停立即失效；恢复开关不重放旧申请，需新的触边申请
+=== RUN   TestStageOneAcceptance/06_断线与超时
+    acceptance_test.go:72: 通过：断线或任一端不再续租，旧控制失效；不能靠迟到消息续上
+=== RUN   TestStageOneAcceptance/07_迟到消息
+    acceptance_test.go:84: 通过：新方向生效后，旧释放无副作用，旧输入及旧确认被拒绝
+=== RUN   TestStageOneAcceptance/08_取消申请
+    acceptance_test.go:97: 通过：取消可以先于申请到达；旧申请不复活，迟到取消不影响新控制
+--- PASS: TestStageOneAcceptance (0.00s)
+    --- PASS: TestStageOneAcceptance/01_Mac发起 (0.00s)
+    --- PASS: TestStageOneAcceptance/02_Windows发起 (0.00s)
+    --- PASS: TestStageOneAcceptance/03_同时申请 (0.00s)
+    --- PASS: TestStageOneAcceptance/04_本地接管 (0.00s)
+    --- PASS: TestStageOneAcceptance/05_急停与恢复 (0.00s)
+    --- PASS: TestStageOneAcceptance/06_断线与超时 (0.00s)
+    --- PASS: TestStageOneAcceptance/07_迟到消息 (0.00s)
+    --- PASS: TestStageOneAcceptance/08_取消申请 (0.00s)
+PASS
+ok  	myapp/internal/ownership	(cached)

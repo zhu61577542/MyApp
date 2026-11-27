@@ -1,0 +1,6 @@
+{
+  "baseline": "0.1.9-alpha",
+  "runtimeImportsOwnership": false,
+  "method": "go list -deps -tags \"gui ci\" ./cmd/myapp",
+  "stage": "backend component only; no new desktop package"
+}
