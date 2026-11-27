@@ -1,0 +1,242 @@
+{
+  "collectedAt": "2026-11-27T21:06:59.1990981+08:00",
+  "journalExists": true,
+  "entries": [
+    {
+      "time": "2026-11-27T21:04:57.5091017+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210457-509-f1106e",
+      "scenario": 1,
+      "label": "Mac发起"
+    },
+    {
+      "time": "2026-11-27T21:04:57.8818682+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210457-509-f1106e",
+      "scenario": 1,
+      "label": "Mac发起",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 377.7667,
+      "stdout": "20261127-210457-509-f1106e-case1.stdout.log",
+      "stderr": "20261127-210457-509-f1106e-case1.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:03.9816386+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210503-981-927328",
+      "scenario": 2,
+      "label": "Windows发起"
+    },
+    {
+      "time": "2026-11-27T21:05:04.2854553+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210503-981-927328",
+      "scenario": 2,
+      "label": "Windows发起",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 303.8167,
+      "stdout": "20261127-210503-981-927328-case2.stdout.log",
+      "stderr": "20261127-210503-981-927328-case2.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:19.7728335+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210519-772-575df6",
+      "scenario": 3,
+      "label": "同时申请"
+    },
+    {
+      "time": "2026-11-27T21:05:20.0596054+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210519-772-575df6",
+      "scenario": 3,
+      "label": "同时申请",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 286.7719,
+      "stdout": "20261127-210519-772-575df6-case3.stdout.log",
+      "stderr": "20261127-210519-772-575df6-case3.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:23.7486105+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210523-748-856a79",
+      "scenario": 4,
+      "label": "本地接管"
+    },
+    {
+      "time": "2026-11-27T21:05:24.0587790+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210523-748-856a79",
+      "scenario": 4,
+      "label": "本地接管",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 310.1685,
+      "stdout": "20261127-210523-748-856a79-case4.stdout.log",
+      "stderr": "20261127-210523-748-856a79-case4.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:25.4287360+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210525-428-140c94",
+      "scenario": 5,
+      "label": "急停与恢复"
+    },
+    {
+      "time": "2026-11-27T21:05:25.7179009+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210525-428-140c94",
+      "scenario": 5,
+      "label": "急停与恢复",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 289.1649,
+      "stdout": "20261127-210525-428-140c94-case5.stdout.log",
+      "stderr": "20261127-210525-428-140c94-case5.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:26.8567109+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210526-856-cf1451",
+      "scenario": 6,
+      "label": "断线与超时"
+    },
+    {
+      "time": "2026-11-27T21:05:27.1833737+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210526-856-cf1451",
+      "scenario": 6,
+      "label": "断线与超时",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 326.6628,
+      "stdout": "20261127-210526-856-cf1451-case6.stdout.log",
+      "stderr": "20261127-210526-856-cf1451-case6.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:28.7903011+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210528-790-7f77e6",
+      "scenario": 7,
+      "label": "迟到消息"
+    },
+    {
+      "time": "2026-11-27T21:05:29.1096294+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210528-790-7f77e6",
+      "scenario": 7,
+      "label": "迟到消息",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 319.3283,
+      "stdout": "20261127-210528-790-7f77e6-case7.stdout.log",
+      "stderr": "20261127-210528-790-7f77e6-case7.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:30.4083928+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210530-408-49264c",
+      "scenario": 8,
+      "label": "取消申请"
+    },
+    {
+      "time": "2026-11-27T21:05:30.7133527+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210530-408-49264c",
+      "scenario": 8,
+      "label": "取消申请",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 305.9596,
+      "stdout": "20261127-210530-408-49264c-case8.stdout.log",
+      "stderr": "20261127-210530-408-49264c-case8.stderr.log"
+    },
+    {
+      "time": "2026-11-27T21:05:34.8714128+08:00",
+      "type": "scenario_started",
+      "runId": "20261127-210534-871-09af74",
+      "scenario": 9,
+      "label": "全部八项后台场景"
+    },
+    {
+      "time": "2026-11-27T21:05:35.2619861+08:00",
+      "type": "scenario_finished",
+      "runId": "20261127-210534-871-09af74",
+      "scenario": 9,
+      "label": "全部八项后台场景",
+      "passed": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 390.5733,
+      "stdout": "20261127-210534-871-09af74-case9.stdout.log",
+      "stderr": "20261127-210534-871-09af74-case9.stderr.log"
+    }
+  ],
+  "logs": [
+    {
+      "runId": "20261127-210457-509-f1106e",
+      "scenario": 1,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/01_Mac发起\n    acceptance_test.go:27: 通过：双方就绪后，Mac发送、Windows接收；准备期间不能输入\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/01_Mac发起 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210503-981-927328",
+      "scenario": 2,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/02_Windows发起\n    acceptance_test.go:35: 通过：Windows同样可以成为来源；控制角色不取决于系统或旧主副配置\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/02_Windows发起 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210519-772-575df6",
+      "scenario": 3,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/03_同时申请\n    acceptance_test.go:46: 通过：准备期按稳定设备标识裁决；旧准备先恢复，双方确认后只有一个来源\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/03_同时申请 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210523-748-856a79",
+      "scenario": 4,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/04_本地接管\n    acceptance_test.go:59: 通过：Windows本地恢复不等Mac网络确认；旧输入立即拒绝，新跨屏等待双方恢复\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/04_本地接管 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210525-428-140c94",
+      "scenario": 5,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/05_急停与恢复\n    acceptance_test.go:70: 通过：急停立即失效；恢复开关不重放旧申请，需新的触边申请\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/05_急停与恢复 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210526-856-cf1451",
+      "scenario": 6,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/06_断线与超时\n    acceptance_test.go:88: 通过：断线或任一端不再续租，旧控制失效；不能靠迟到消息续上\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/06_断线与超时 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210528-790-7f77e6",
+      "scenario": 7,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/07_迟到消息\n    acceptance_test.go:106: 通过：新方向生效后，旧释放无副作用，旧输入及旧确认被拒绝\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/07_迟到消息 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210530-408-49264c",
+      "scenario": 8,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/08_取消申请\n    acceptance_test.go:119: 通过：取消可以先于申请到达；旧申请不复活，迟到取消不影响新控制\n--- PASS: TestStageOneAcceptance (0.06s)\n    --- PASS: TestStageOneAcceptance/08_取消申请 (0.03s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "runId": "20261127-210534-871-09af74",
+      "scenario": 9,
+      "stdout": "=== RUN   TestStageOneAcceptance\n=== RUN   TestStageOneAcceptance/01_Mac发起\n    acceptance_test.go:27: 通过：双方就绪后，Mac发送、Windows接收；准备期间不能输入\n=== RUN   TestStageOneAcceptance/02_Windows发起\n    acceptance_test.go:35: 通过：Windows同样可以成为来源；控制角色不取决于系统或旧主副配置\n=== RUN   TestStageOneAcceptance/03_同时申请\n    acceptance_test.go:46: 通过：准备期按稳定设备标识裁决；旧准备先恢复，双方确认后只有一个来源\n=== RUN   TestStageOneAcceptance/04_本地接管\n    acceptance_test.go:59: 通过：Windows本地恢复不等Mac网络确认；旧输入立即拒绝，新跨屏等待双方恢复\n=== RUN   TestStageOneAcceptance/05_急停与恢复\n    acceptance_test.go:70: 通过：急停立即失效；恢复开关不重放旧申请，需新的触边申请\n=== RUN   TestStageOneAcceptance/06_断线与超时\n    acceptance_test.go:88: 通过：断线或任一端不再续租，旧控制失效；不能靠迟到消息续上\n=== RUN   TestStageOneAcceptance/07_迟到消息\n    acceptance_test.go:106: 通过：新方向生效后，旧释放无副作用，旧输入及旧确认被拒绝\n=== RUN   TestStageOneAcceptance/08_取消申请\n    acceptance_test.go:119: 通过：取消可以先于申请到达；旧申请不复活，迟到取消不影响新控制\n--- PASS: TestStageOneAcceptance (0.21s)\n    --- PASS: TestStageOneAcceptance/01_Mac发起 (0.03s)\n    --- PASS: TestStageOneAcceptance/02_Windows发起 (0.03s)\n    --- PASS: TestStageOneAcceptance/03_同时申请 (0.03s)\n    --- PASS: TestStageOneAcceptance/04_本地接管 (0.00s)\n    --- PASS: TestStageOneAcceptance/05_急停与恢复 (0.00s)\n    --- PASS: TestStageOneAcceptance/06_断线与超时 (0.00s)\n    --- PASS: TestStageOneAcceptance/07_迟到消息 (0.00s)\n    --- PASS: TestStageOneAcceptance/08_取消申请 (0.00s)\nPASS\n",
+      "stderr": ""
+    }
+  ]
+}

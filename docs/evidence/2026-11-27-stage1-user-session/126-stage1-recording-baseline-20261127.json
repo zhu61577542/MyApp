@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"time\":\"2026-11-27T20:59:12.4781438+08:00\",\"logPath\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\\\\AppData\\\\Roaming\\\\MyApp\\\\logs\\\\myapp.log\",\"logBytes\":14315,\"journalPath\":\"E:\\\\test\\\\MyApp-stage1-acceptance-20261127\\\\tools\\\\logs\\\\operations.jsonl\",\"journalBytes\":0,\"processes\":[],\"guiLauncherExists\":true,\"acceptanceLauncherExists\":true}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "126-stage1-recording-baseline-20261127",
+  "timedOut": false
+}

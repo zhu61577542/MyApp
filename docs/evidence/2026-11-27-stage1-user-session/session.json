@@ -1,0 +1,104 @@
+{
+  "date": "2026-11-27",
+  "stage": 1,
+  "status": "stage one accepted by user; stage two authorized",
+  "scope": "user-selected stage-one backend scenarios; 0.1.9 GUI baseline only",
+  "recording": [
+    "scenario selections and timestamps",
+    "program status and errors",
+    "user-reported observations"
+  ],
+  "excluded": [
+    "raw keystrokes",
+    "clipboard content",
+    "screenshots"
+  ],
+  "macAddress": "192.168.1.8",
+  "windowsExpectedAddress": "192.168.1.5",
+  "packagesReady": true,
+  "deliveryQueued": true,
+  "macLogOffset": 46976,
+  "windowsConfirmedAddress": "192.168.1.5",
+  "windowsAddressSource": "user confirmed both new addresses and mutual ping",
+  "delivered": true,
+  "windowsPreflight": "PowerShell syntax, E:\\test path, compiled ownership readiness test passed",
+  "guiStartedByAssistant": false,
+  "windowsRecordingBaseline": {
+    "time": "2026-11-27T20:59:12.4781438+08:00",
+    "logPath": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile\\AppData\\Roaming\\MyApp\\logs\\myapp.log",
+    "logBytes": 14315,
+    "journalPath": "E:\\test\\MyApp-stage1-acceptance-20261127\\tools\\logs\\operations.jsonl",
+    "journalBytes": 0,
+    "processes": [],
+    "guiLauncherExists": true,
+    "acceptanceLauncherExists": true
+  },
+  "windowsUserRuns": [
+    {
+      "scenario": 1,
+      "label": "Mac发起",
+      "time": "2026-11-27T21:04:57.8818682+08:00",
+      "passed": true,
+      "runId": "20261127-210457-509-f1106e"
+    },
+    {
+      "scenario": 2,
+      "label": "Windows发起",
+      "time": "2026-11-27T21:05:04.2854553+08:00",
+      "passed": true,
+      "runId": "20261127-210503-981-927328"
+    },
+    {
+      "scenario": 3,
+      "label": "同时申请",
+      "time": "2026-11-27T21:05:20.0596054+08:00",
+      "passed": true,
+      "runId": "20261127-210519-772-575df6"
+    },
+    {
+      "scenario": 4,
+      "label": "本地接管",
+      "time": "2026-11-27T21:05:24.0587790+08:00",
+      "passed": true,
+      "runId": "20261127-210523-748-856a79"
+    },
+    {
+      "scenario": 5,
+      "label": "急停与恢复",
+      "time": "2026-11-27T21:05:25.7179009+08:00",
+      "passed": true,
+      "runId": "20261127-210525-428-140c94"
+    },
+    {
+      "scenario": 6,
+      "label": "断线与超时",
+      "time": "2026-11-27T21:05:27.1833737+08:00",
+      "passed": true,
+      "runId": "20261127-210526-856-cf1451"
+    },
+    {
+      "scenario": 7,
+      "label": "迟到消息",
+      "time": "2026-11-27T21:05:29.1096294+08:00",
+      "passed": true,
+      "runId": "20261127-210528-790-7f77e6"
+    },
+    {
+      "scenario": 8,
+      "label": "取消申请",
+      "time": "2026-11-27T21:05:30.7133527+08:00",
+      "passed": true,
+      "runId": "20261127-210530-408-49264c"
+    },
+    {
+      "scenario": 9,
+      "label": "全部八项后台场景",
+      "time": "2026-11-27T21:05:35.2619861+08:00",
+      "passed": true,
+      "runId": "20261127-210534-871-09af74"
+    }
+  ],
+  "userAcceptanceConfirmed": true,
+  "stageTwoStarted": true,
+  "userAcceptanceStatement": "好，现在第一阶段结束。你可以继续完成后续的开发。"
+}

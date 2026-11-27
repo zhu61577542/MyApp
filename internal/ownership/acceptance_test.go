@@ -8,7 +8,19 @@ import (
 func TestStageOneAcceptance(t *testing.T) {
 	t.Run("01_Mac发起", func(t *testing.T) {
 		m := newMachine(t)
-		token := activate(t, m, "mac", 1, baseTime)
+		s, err := m.Request("mac", 1, baseTime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		token := *s.Lease
+		if m.AcceptInput("mac", token, 1, baseTime) == nil {
+			t.Fatal("未就绪就接受输入")
+		}
+		m.Ready("mac", token, baseTime)
+		if m.AcceptInput("mac", token, 1, baseTime) == nil {
+			t.Fatal("单方就绪就接受输入")
+		}
+		m.Ready("windows", token, baseTime)
 		if m.AcceptInput("mac", token, 1, baseTime) != nil {
 			t.Fatal("合法来源被拒绝")
 		}
@@ -41,6 +53,9 @@ func TestStageOneAcceptance(t *testing.T) {
 		if m.AcceptInput("mac", token, 1, baseTime) == nil || m.Snapshot().Nodes[1].State != NodeLocal || m.Snapshot().Phase != Recovering {
 			t.Fatal("本地收回或恢复屏障不成立")
 		}
+		if _, err := m.Request("windows", 1, baseTime); err == nil {
+			t.Fatal("恢复未确认就接受新申请")
+		}
 		t.Log("通过：Windows本地恢复不等Mac网络确认；旧输入立即拒绝，新跨屏等待双方恢复")
 	})
 	t.Run("05_急停与恢复", func(t *testing.T) {
@@ -62,6 +77,7 @@ func TestStageOneAcceptance(t *testing.T) {
 			if disconnected {
 				m.Disconnect(now)
 			} else {
+				m.Renew("mac", token, 1, now.Add(time.Second))
 				now = now.Add(2 * time.Second)
 				m.Tick(now)
 			}
@@ -74,10 +90,16 @@ func TestStageOneAcceptance(t *testing.T) {
 	t.Run("07_迟到消息", func(t *testing.T) {
 		m := newMachine(t)
 		old := activate(t, m, "mac", 1, baseTime)
-		m.Release("mac", old, Returned, baseTime)
+		recovery, _ := m.Release("mac", old, Returned, baseTime)
 		restore(t, m, baseTime)
 		next := activate(t, m, "windows", 1, baseTime)
 		m.Release("mac", old, Returned, baseTime)
+		if _, err := m.Ready("mac", old, baseTime); err == nil {
+			t.Fatal("旧就绪被接受")
+		}
+		if _, err := m.Restored("mac", recovery.Fence, baseTime); err == nil {
+			t.Fatal("旧恢复确认被接受")
+		}
 		if m.AcceptInput("mac", old, 99, baseTime) == nil || m.AcceptInput("windows", next, 1, baseTime) != nil {
 			t.Fatal("旧消息影响新方向")
 		}

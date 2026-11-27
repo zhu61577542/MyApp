@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"time\":\"2026-11-27T21:10:41.4133910+08:00\",\"exeExists\":true,\"launcherExists\":true,\"processes\":[],\"logPath\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\\\\AppData\\\\Roaming\\\\MyApp\\\\logs\\\\myapp.log\",\"logBytes\":14315}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "128-ui-baseline-status-20261127",
+  "timedOut": false
+}
