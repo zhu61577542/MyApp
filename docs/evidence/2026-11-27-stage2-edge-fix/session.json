@@ -2,7 +2,7 @@
   "date": "2026-11-27",
   "version": "0.1.11-alpha-stage2",
   "sourceCommit": "04929e86",
-  "status": "native GUI fix delivered; waiting for user to quit 0.1.10 and start 0.1.11",
+  "status": "user confirmed Mac to Windows works; premature return at staggered screen corner reported; 0.1.12 delivered awaiting UI retest",
   "macApp": "/Users/zhuguoqing/MyApp/work/peer-stage2-fix/MyApp.app",
   "macLogPath": "/Users/zhuguoqing/Library/Application Support/MyApp/logs/myapp.log",
   "macLogOffset": 59787,

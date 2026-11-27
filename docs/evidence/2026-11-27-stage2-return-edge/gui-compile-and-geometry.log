@@ -1,0 +1,36 @@
+=== RUN   TestFourDirectionsAndReturnWithNegativeOrigin
+--- PASS: TestFourDirectionsAndReturnWithNegativeOrigin (0.00s)
+=== RUN   TestEdgeDelayAndReentryHysteresis
+--- PASS: TestEdgeDelayAndReentryHysteresis (0.00s)
+=== RUN   TestInvalidGeometryAndEntryRejected
+--- PASS: TestInvalidGeometryAndEntryRejected (0.00s)
+=== RUN   TestWindowsPortraitSecondDisplayAndInternalSeam
+--- PASS: TestWindowsPortraitSecondDisplayAndInternalSeam (0.00s)
+=== RUN   TestStaggeredDisplayNotchesDoNotReturnToSource
+=== RUN   TestStaggeredDisplayNotchesDoNotReturnToSource/primary-upper-left
+=== RUN   TestStaggeredDisplayNotchesDoNotReturnToSource/primary-lower-left
+=== RUN   TestStaggeredDisplayNotchesDoNotReturnToSource/upper-display-notch
+=== RUN   TestStaggeredDisplayNotchesDoNotReturnToSource/lower-display-notch
+--- PASS: TestStaggeredDisplayNotchesDoNotReturnToSource (0.00s)
+    --- PASS: TestStaggeredDisplayNotchesDoNotReturnToSource/primary-upper-left (0.00s)
+    --- PASS: TestStaggeredDisplayNotchesDoNotReturnToSource/primary-lower-left (0.00s)
+    --- PASS: TestStaggeredDisplayNotchesDoNotReturnToSource/upper-display-notch (0.00s)
+    --- PASS: TestStaggeredDisplayNotchesDoNotReturnToSource/lower-display-notch (0.00s)
+=== RUN   TestInternalSeamNearPrimaryCornersKeepsTargetControl
+--- PASS: TestInternalSeamNearPrimaryCornersKeepsTargetControl (0.00s)
+=== RUN   TestTopologyValidationAndStableKey
+--- PASS: TestTopologyValidationAndStableKey (0.00s)
+=== RUN   TestTopologyOuterEdgesKeepReturning
+=== RUN   TestTopologyOuterEdgesKeepReturning/left
+=== RUN   TestTopologyOuterEdgesKeepReturning/right
+=== RUN   TestTopologyOuterEdgesKeepReturning/up
+=== RUN   TestTopologyOuterEdgesKeepReturning/down
+--- PASS: TestTopologyOuterEdgesKeepReturning (0.00s)
+    --- PASS: TestTopologyOuterEdgesKeepReturning/left (0.00s)
+    --- PASS: TestTopologyOuterEdgesKeepReturning/right (0.00s)
+    --- PASS: TestTopologyOuterEdgesKeepReturning/up (0.00s)
+    --- PASS: TestTopologyOuterEdgesKeepReturning/down (0.00s)
+PASS
+ok  	myapp/internal/pointer	0.001s
+ok  	myapp/internal/nativegui	(cached) [no tests to run]
+ok  	myapp/cmd/myapp	0.017s [no tests to run]

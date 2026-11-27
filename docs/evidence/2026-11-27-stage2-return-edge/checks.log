@@ -1,0 +1,4 @@
+ok  	myapp/internal/pointer	1.010s
+ok  	myapp/cmd/myapp	(cached)
+ok  	myapp/internal/peercontrol	(cached)
+ok  	myapp/internal/app	(cached)

@@ -9,3 +9,5 @@
 验证覆盖左右两个入口、靠近主屏上下角的接缝往返、四方向凹口和四方向最外侧返回。受影响包 race/vet 通过，GUI 编译与检查记录另存。测试不捕获或注入用户实体键鼠。
 
 程序日志缺少逐次返回原因，因此几何缺陷已复现不等于每次用户动作都已归因。新原生 GUI 包交付后，仍需用户验证显示器 1 左上附近不误返、可进入显示器 2 以及正常外边缘返程。第二阶段尚未验收，第三阶段未开始。
+
+0.1.12-alpha-stage2 原生 GUI 已交付，源码 2d06ee76。Mac 签名/版本检查通过，Windows 校验 ZIP、EXE、x64 GUI 子系统、启动脚本语法及实际版本通过；两端原生几何测试均通过，见 macos-native-tests.log 与 140 回执。Mac 新路径为 work/peer-stage2-return-fix/MyApp.app，Windows 为 E:\test\MyApp-0.1.12-alpha-stage2\app\Launch-in-E-test.ps1，沿用已有身份/信任配置，未自动启动新 GUI。新日志起点见 session.json。临时 Windows 编译容器和资源对象已清理。

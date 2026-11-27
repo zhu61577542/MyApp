@@ -1,0 +1,50 @@
+{
+  "version": "0.1.12-alpha-stage2",
+  "sourceCommit": "2d06ee76",
+  "status": "delivered, awaiting user UI retest",
+  "macApp": "/Users/zhuguoqing/MyApp/work/peer-stage2-return-fix/MyApp.app",
+  "macLogPath": "/Users/zhuguoqing/Library/Application Support/MyApp/logs/myapp.log",
+  "macLogOffset": 85784,
+  "windows": {
+    "delivered": true,
+    "version": "MyApp 0.1.12-alpha-stage2 commit=2d06ee76 protocol=1.0",
+    "sha256": "b9bbb52981f151fce36a213e82da9101432724c50f847197a0d3e6e368ad8296",
+    "exeSha256": "90d1b0aeeaadaf0c52c88469fb5750a681d95d6f0100a9e41fb66244299a6e02",
+    "guiSubsystem": 2,
+    "guiStarted": false,
+    "launcher": "E:\\test\\MyApp-0.1.12-alpha-stage2\\app\\Launch-in-E-test.ps1",
+    "profile": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile",
+    "programLog": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile\\AppData\\Roaming\\MyApp\\logs\\myapp.log",
+    "logBytes": 36401,
+    "existingProcesses": [
+      {
+        "ProcessId": 19936,
+        "ExecutablePath": "E:\\test\\MyApp-0.1.11-alpha-stage2\\app\\MyApp.exe"
+      },
+      {
+        "ProcessId": 19312,
+        "ExecutablePath": "E:\\test\\MyApp-0.1.11-alpha-stage2\\app\\MyApp.exe"
+      }
+    ]
+  },
+  "checks": {
+    "affectedPackagesRaceVet": "passed",
+    "guiCompileVet": "passed",
+    "macNativeGeometrySuite": "passed",
+    "windowsNativeGeometrySuite": "passed",
+    "macSignature": "verified",
+    "archiveIntegrity": "passed"
+  },
+  "userAcceptanceConfirmed": false,
+  "stageThreeStarted": false,
+  "recording": [
+    "user observations",
+    "startup, connection, control state and error logs"
+  ],
+  "excluded": [
+    "raw input trajectory",
+    "keystroke content",
+    "clipboard content",
+    "screen recording"
+  ]
+}

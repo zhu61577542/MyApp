@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"delivered\":true,\"version\":\"MyApp 0.1.12-alpha-stage2 commit=2d06ee76 protocol=1.0\",\"sha256\":\"b9bbb52981f151fce36a213e82da9101432724c50f847197a0d3e6e368ad8296\",\"exeSha256\":\"90d1b0aeeaadaf0c52c88469fb5750a681d95d6f0100a9e41fb66244299a6e02\",\"guiSubsystem\":2,\"guiStarted\":false,\"launcher\":\"E:\\\\test\\\\MyApp-0.1.12-alpha-stage2\\\\app\\\\Launch-in-E-test.ps1\",\"profile\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\",\"programLog\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\\\\AppData\\\\Roaming\\\\MyApp\\\\logs\\\\myapp.log\",\"logBytes\":36401,\"existingProcesses\":[{\"ProcessId\":19936,\"ExecutablePath\":\"E:\\\\test\\\\MyApp-0.1.11-alpha-stage2\\\\app\\\\MyApp.exe\"},{\"ProcessId\":19312,\"ExecutablePath\":\"E:\\\\test\\\\MyApp-0.1.11-alpha-stage2\\\\app\\\\MyApp.exe\"}]}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "139-stage2-return-fix-gui-delivery-20261128",
+  "timedOut": false
+}
