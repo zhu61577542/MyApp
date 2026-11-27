@@ -44,30 +44,32 @@ type pendingRequest struct {
 }
 
 type Session struct {
-	mu         sync.Mutex
-	config     Config
-	ctx        context.Context
-	cancel     context.CancelFunc
-	machine    *ownership.Machine
-	state      ownership.Snapshot
-	revision   uint64
-	request    uint64
-	pending    *pendingRequest
-	entries    map[string]*pointer.Entry
-	preparing  ownership.Token
-	blocked    ownership.Token
-	restoring  ownership.Fence
-	readyAt    time.Time
-	validUntil time.Time
-	renewals   map[uint64]time.Time
-	renewSeq   uint64
-	lastRenew  time.Time
-	lastInput  uint64
-	inputSeq   uint64
-	inputToken ownership.Token
-	granted    ownership.Token
-	closed     bool
-	err        error
+	mu           sync.Mutex
+	config       Config
+	ctx          context.Context
+	cancel       context.CancelFunc
+	machine      *ownership.Machine
+	state        ownership.Snapshot
+	revision     uint64
+	request      uint64
+	pending      *pendingRequest
+	entries      map[string]*pointer.Entry
+	preparing    ownership.Token
+	blocked      ownership.Token
+	restoring    ownership.Fence
+	readyAt      time.Time
+	validUntil   time.Time
+	renewals     map[uint64]time.Time
+	renewSeq     uint64
+	lastRenew    time.Time
+	lastInput    uint64
+	inputSeq     uint64
+	inputToken   ownership.Token
+	granted      ownership.Token
+	closed       bool
+	err          error
+	controlErr   error
+	failureToken ownership.Token
 }
 
 func New(ctx context.Context, config Config) (*Session, error) {
@@ -115,6 +117,8 @@ func (s *Session) Snapshot() ownership.Snapshot {
 
 func (s *Session) Err() error { s.mu.Lock(); defer s.mu.Unlock(); return s.err }
 
+func (s *Session) ControlError() error { s.mu.Lock(); defer s.mu.Unlock(); return s.controlErr }
+
 func (s *Session) Request(ctx context.Context, entry *pointer.Entry) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -133,6 +137,7 @@ func (s *Session) Request(ctx context.Context, entry *pointer.Entry) error {
 		return ownership.ErrExhausted
 	}
 	s.request++
+	s.controlErr, s.failureToken = nil, ownership.Token{}
 	pending := &pendingRequest{id: s.request, done: make(chan error, 1), ctx: ctx}
 	s.pending = pending
 	err := s.actionLocked(s.config.Local, Packet{Kind: "request", RequestID: pending.id, Entry: entry})
@@ -280,6 +285,14 @@ func (s *Session) Handle(packet Packet) error {
 		if err := s.validateState(*packet.State); err != nil {
 			return err
 		}
+		if packet.Error != "" {
+			if len(packet.Error) > 1024 || packet.Token == nil || !failureMatches(*packet.State, *packet.Token) {
+				return ownership.ErrInvalid
+			}
+			s.recordFailureLocked(*packet.Token, errors.New(packet.Error))
+		} else if packet.State.Phase == ownership.Preparing && packet.State.Lease != nil && *packet.State.Lease != s.failureToken {
+			s.controlErr, s.failureToken = nil, ownership.Token{}
+		}
 		if packet.Entry != nil && !packet.Entry.Valid() {
 			return ownership.ErrInvalid
 		}
@@ -408,6 +421,7 @@ func (s *Session) actionLocked(actor string, p Packet) error {
 		}
 		_, err = s.machine.Request(actor, p.RequestID, now)
 		if err == nil {
+			s.controlErr, s.failureToken = nil, ownership.Token{}
 			if p.Entry != nil {
 				entry := *p.Entry
 				s.entries[actor] = &entry
@@ -431,7 +445,14 @@ func (s *Session) actionLocked(actor string, p Packet) error {
 		if p.Token == nil {
 			return ownership.ErrInvalid
 		}
+		if len(p.Error) > 1024 {
+			return ownership.ErrInvalid
+		}
+		matched := failureMatches(s.machine.Snapshot(), *p.Token)
 		_, err = s.machine.Release(actor, *p.Token, p.Reason, now)
+		if err == nil && matched && p.Error != "" {
+			s.recordFailureLocked(*p.Token, errors.New(p.Error))
+		}
 	case "pause":
 		_, err = s.machine.Pause(actor, p.Reason == ownership.Emergency, now)
 	case "resume":
@@ -474,7 +495,13 @@ func (s *Session) publishLocked() error {
 	if wire.Lease != nil {
 		entry = s.entries[wire.Lease.Source]
 	}
-	if err := s.sendLocked(Packet{Kind: "state", State: &wire, Revision: s.revision, Entry: entry}); err != nil {
+	packet := Packet{Kind: "state", State: &wire, Revision: s.revision, Entry: entry}
+	if s.controlErr != nil && failureMatches(wire, s.failureToken) {
+		token := s.failureToken
+		packet.Token = &token
+		packet.Error = s.controlErr.Error()
+	}
+	if err := s.sendLocked(packet); err != nil {
 		return err
 	}
 	return s.applyLocked()
@@ -492,12 +519,13 @@ func (s *Session) applyLocked() error {
 			return nil
 		}
 		s.preparing, s.readyAt, s.validUntil, s.lastInput = token, time.Time{}, time.Time{}, 0
+		if token != s.failureToken {
+			s.controlErr, s.failureToken = nil, ownership.Token{}
+		}
 		s.granted = ownership.Token{}
 		err := s.config.Device.prepare(s.ctx, token, token.Source == s.config.Local, s.entries[token.Source], s.SendInput, func(emergency bool) { go s.nativeStopped(token, emergency) }, func(err error) { s.prepared(token, err) })
 		if err != nil {
-			s.err = err
-			s.blocked = token
-			go s.StopToken(token, ownership.PermissionLost)
+			s.failControlLocked(token, err)
 		}
 		return nil
 	}
@@ -520,9 +548,7 @@ func (s *Session) applyLocked() error {
 			s.validUntil = s.readyAt.Add(LeaseTime)
 		}
 		if err := s.config.Device.activate(s.ctx, token, s.validUntil, s.config.Now()); err != nil {
-			s.err = err
-			s.blocked = token
-			go s.StopToken(token, ownership.Returned)
+			s.failControlLocked(token, err)
 			return nil
 		}
 		if token.Source == s.config.Local {
@@ -560,9 +586,7 @@ func (s *Session) prepared(token ownership.Token, err error) {
 		return
 	}
 	if err != nil {
-		s.err = err
-		s.blocked = token
-		_ = s.actionLocked(s.config.Local, Packet{Kind: "release", Token: &token, Reason: ownership.PermissionLost})
+		s.failControlLocked(token, err)
 		return
 	}
 	if token.Source == s.config.Local && (s.pending == nil || s.pending.id != token.RequestID || s.pending.ctx.Err() != nil) {
@@ -576,6 +600,32 @@ func (s *Session) prepared(token ownership.Token, err error) {
 	}
 	s.readyAt = s.config.Now()
 	_ = s.actionLocked(s.config.Local, Packet{Kind: "ready", Token: &token})
+}
+
+func failureMatches(state ownership.Snapshot, token ownership.Token) bool {
+	return state.Lease != nil && *state.Lease == token || state.Phase == ownership.Recovering && state.Previous != nil && *state.Previous == token
+}
+
+func (s *Session) recordFailureLocked(token ownership.Token, err error) {
+	s.controlErr, s.failureToken = err, token
+	if s.pending != nil && token.Source == s.config.Local && token.RequestID == s.pending.id {
+		s.finishRequestLocked(err)
+	}
+}
+
+func (s *Session) failControlLocked(token ownership.Token, err error) {
+	if s.closed || err == nil || !failureMatches(s.state, token) {
+		return
+	}
+	text := err.Error()
+	if len(text) > 1024 {
+		text = "键鼠控制准备或执行失败"
+	}
+	s.recordFailureLocked(token, errors.New(text))
+	s.blocked = token
+	s.config.Device.revoke(s.config.Session)
+	s.localRestoreLocked()
+	_ = s.actionLocked(s.config.Local, Packet{Kind: "release", Token: &token, Reason: ownership.PermissionLost, Error: text})
 }
 
 func (s *Session) nativeStopped(token ownership.Token, emergency bool) {
@@ -653,6 +703,7 @@ func (s *Session) inputLocked(p Packet) error {
 		return err
 	}
 	now := s.config.Now()
+	var injectionErr error
 	err := s.config.Device.input(*p.Token, now, func() error {
 		if s.machine != nil {
 			if err := s.machine.AcceptInput(s.config.Remote, *p.Token, p.Event.Sequence, now); err != nil {
@@ -662,8 +713,13 @@ func (s *Session) inputLocked(p Packet) error {
 			return ownership.ErrReplay
 		}
 		s.lastInput = p.Event.Sequence
-		return s.config.Device.driver.Inject(*p.Event)
+		injectionErr = s.config.Device.driver.Inject(*p.Event)
+		return injectionErr
 	})
+	if injectionErr != nil {
+		s.failControlLocked(*p.Token, injectionErr)
+		return nil
+	}
 	if err != nil && !errors.Is(err, ownership.ErrReplay) {
 		_ = s.stopLocked(ownership.Returned)
 	}

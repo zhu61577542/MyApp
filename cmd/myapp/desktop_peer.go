@@ -61,7 +61,14 @@ func enablePeerDesktop(ctx context.Context, link *app.Link, cfg config.Config, i
 	if state.Sharing().Paused {
 		p.device.SetPaused(true)
 	}
+	lastControlError := ""
 	return link.EnablePeerControl(app.PeerOptions{LocalID: state.Snapshot().DeviceID, RemoteID: id, Device: p.device, Changed: func(control ownership.Snapshot) {
+		problem := ""
+		if node := link.CurrentPeerControl(); node != nil {
+			if err := node.ControlError(); err != nil {
+				problem = err.Error()
+			}
+		}
 		source, target := "", ""
 		if control.Lease != nil {
 			source, target = control.Lease.Source, control.Lease.Target
@@ -75,7 +82,7 @@ func enablePeerDesktop(ctx context.Context, link *app.Link, cfg config.Config, i
 		if control.Phase != ownership.Local {
 			activeTarget = id
 		}
-		if current.PeerMode && current.ControlPhase == phase && current.ControlSource == source && current.ControlTarget == target && current.Target == activeTarget && current.Paused == paused {
+		if current.PeerMode && current.ControlPhase == phase && current.ControlSource == source && current.ControlTarget == target && current.Target == activeTarget && current.Paused == paused && problem == lastControlError && (problem == "" || current.Error == problem) {
 			return
 		}
 		state.Update(func(s *desktop.Snapshot) {
@@ -85,7 +92,13 @@ func enablePeerDesktop(ctx context.Context, link *app.Link, cfg config.Config, i
 			s.ControlTarget = target
 			s.Target = activeTarget
 			s.Paused = paused
+			if problem != "" {
+				s.Error = problem
+			} else if lastControlError != "" && s.Error == lastControlError {
+				s.Error = ""
+			}
 		})
+		lastControlError = problem
 	}})
 }
 

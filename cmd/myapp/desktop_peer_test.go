@@ -17,10 +17,17 @@ import (
 	"myapp/internal/pointer"
 )
 
-type peerNativePointer struct{ hidden, restored, warped atomic.Int64 }
+type peerNativePointer struct {
+	hidden, restored, warped atomic.Int64
+	id                       string
+}
 
-func (*peerNativePointer) Screen() (pointer.Screen, error) {
-	return pointer.Screen{ID: "native-test", Width: 100, Height: 100}, nil
+func (p *peerNativePointer) Screen() (pointer.Screen, error) {
+	id := p.id
+	if id == "" {
+		id = "native-test"
+	}
+	return pointer.Screen{ID: id, Width: 100, Height: 100}, nil
 }
 func (*peerNativePointer) Position() (pointer.Point, error) { return pointer.Point{X: 40, Y: 50}, nil }
 func (p *peerNativePointer) Warp(pointer.Point) error       { p.warped.Add(1); return nil }
@@ -277,5 +284,64 @@ func TestPeerLegacyReleaseFailureBlocksSubsequentControl(t *testing.T) {
 	}
 	if peer.device.RecoveryError() == nil {
 		t.Fatal("恢复失败未保留在连接之外")
+	}
+}
+
+func TestPeerEdgeUsesTargetScreenKey(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var contexts [2]context.Context
+	var links [2]*app.Link
+	var states [2]*desktop.Session
+	var injectors [2]*peerNativeInjector
+	geometry := [2]*peerNativePointer{{id: "mac-source"}, {id: "windows-target"}}
+	ids := [2]string{"a-mac", "b-windows"}
+	for i := range links {
+		cfg := config.Default(ids[i], []config.Role{config.RoleController, config.RoleAgent}[i])
+		cfg.Peers = []config.Peer{{ID: ids[1-i], Position: "left"}}
+		states[i] = desktop.New(cfg, ids[i])
+		contexts[i] = withDesktopPeer(desktop.WithSession(ctx, states[i]), states[i])
+		peer := desktopPeerFrom(contexts[i])
+		injectors[i] = &peerNativeInjector{}
+		peer.driver.geometry = func() (pointer.Backend, error) { return geometry[i], nil }
+		peer.driver.createCapture = func() (common.Capturer, error) { return &peerNativeCapture{events: make(chan common.Event, 8)}, nil }
+		peer.driver.createInjector = func() (common.Injector, error) { return injectors[i], nil }
+		links[i], _ = app.NewSplitLink(nil, nil)
+		if err := enableDesktopLink(contexts[i], links[i], cfg, desktop.Peer{ID: ids[1-i]}, nil); err != nil {
+			t.Fatal(err)
+		}
+		links[i].EnableScreen(geometry[i].Screen, nil)
+	}
+	a, b := net.Pipe()
+	x, y := net.Pipe()
+	ended := make(chan error, 2)
+	go func() { ended <- links[0].RunChannels(ctx, a, x) }()
+	go func() { ended <- links[1].RunChannels(ctx, b, y) }()
+	t.Cleanup(func() {
+		cancel()
+		for range 2 {
+			select {
+			case <-ended:
+			case <-time.After(time.Second):
+				t.Error("跨屏测试连接未退出")
+			}
+		}
+	})
+	nativeWait(t, func() bool { return links[0].RemoteScreen().Screen.Valid() })
+	screen, _ := geometry[0].Screen()
+	entry := pointer.Entry{Side: "left", Position: 0.5, ScreenKey: screen.Key()}
+	capture := &desktopCapture{ctx: contexts[0], state: states[0], links: []*app.Link{links[0]}, peers: []config.Peer{{ID: ids[1]}}}
+	if err := capture.startAt(ctx, ids[1], &entry); err != nil {
+		t.Fatalf("两端不同屏幕标识导致触边失败: %v", err)
+	}
+	if entry.ScreenKey != screen.Key() {
+		t.Fatal("修改了来源屏幕快照")
+	}
+	if err := links[0].SendInput(ctx, common.Event{Kind: common.KeyDown, Sequence: 1, Code: 4}); err != nil {
+		t.Fatal(err)
+	}
+	nativeWait(t, func() bool { return injectors[1].events.Load() == 2 })
+	if err := capture.stop(ctx); err != nil {
+		t.Fatal(err)
 	}
 }

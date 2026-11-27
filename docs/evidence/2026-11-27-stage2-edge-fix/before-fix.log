@@ -1,0 +1,16 @@
+=== RUN   TestPeerEdgeUsesTargetScreenKey
+    desktop_peer_test.go:335: 两端不同屏幕标识导致触边失败: 控制代次或会话已经失效
+--- FAIL: TestPeerEdgeUsesTargetScreenKey (0.00s)
+FAIL
+FAIL	myapp/cmd/myapp	0.015s
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry/coordinator-source
+    session_test.go:510: 未保留实际准备错误: 控制代次或会话已经失效
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry/follower-source
+    session_test.go:510: 未保留实际准备错误: 控制代次或会话已经失效
+--- FAIL: TestPrepareFailureKeepsConnectionAndCanRetry (0.00s)
+    --- FAIL: TestPrepareFailureKeepsConnectionAndCanRetry/coordinator-source (0.00s)
+    --- FAIL: TestPrepareFailureKeepsConnectionAndCanRetry/follower-source (0.00s)
+FAIL
+FAIL	myapp/internal/peercontrol	0.012s
+FAIL

@@ -1,0 +1,12 @@
+=== RUN   TestPeerEdgeUsesTargetScreenKey
+--- PASS: TestPeerEdgeUsesTargetScreenKey (0.01s)
+PASS
+ok  	myapp/cmd/myapp	1.018s
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry/coordinator-source
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry/follower-source
+--- PASS: TestPrepareFailureKeepsConnectionAndCanRetry (0.01s)
+    --- PASS: TestPrepareFailureKeepsConnectionAndCanRetry/coordinator-source (0.01s)
+    --- PASS: TestPrepareFailureKeepsConnectionAndCanRetry/follower-source (0.00s)
+PASS
+ok  	myapp/internal/peercontrol	1.023s

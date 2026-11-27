@@ -62,6 +62,7 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 		defer ticker.Stop()
 		var revision uint64
 		var edgeDiagnostic string
+		var controlDiagnostic string
 		write := func(message desktop.Message) bool {
 			if err := encoder.Encode(message); err != nil {
 				cancel()
@@ -81,6 +82,11 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 				if snapshot.EdgeStatus != "" && diagnostic != edgeDiagnostic {
 					fmt.Fprintln(stderr, "跨屏状态："+diagnostic)
 					edgeDiagnostic = diagnostic
+				}
+				control := snapshot.ControlPhase + ": " + snapshot.ControlSource + " -> " + snapshot.ControlTarget
+				if snapshot.PeerMode && control != controlDiagnostic {
+					fmt.Fprintln(stderr, "对等控制状态："+control)
+					controlDiagnostic = control
 				}
 				if snapshot.Revision != revision || revision == 0 {
 					revision = snapshot.Revision

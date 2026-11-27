@@ -20,6 +20,9 @@ type testDriver struct {
 	inputs                        []common.Event
 	prepares, activates, restores int
 	restoreErr, activateErr       error
+	prepareErr                    error
+	restoreOnceErr                error
+	injectErr                     error
 	restoreGate                   <-chan struct{}
 	injecting, allowInject        chan struct{}
 }
@@ -30,7 +33,9 @@ func (d *testDriver) Prepare(ctx context.Context, _ ownership.Token, _ bool, _ *
 	d.mu.Unlock()
 	select {
 	case <-d.ready:
-		return nil
+		d.mu.Lock()
+		defer d.mu.Unlock()
+		return d.prepareErr
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -52,6 +57,9 @@ func (d *testDriver) Restore(ctx context.Context) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.restores++
+	if d.restores == 1 && d.restoreOnceErr != nil {
+		return d.restoreOnceErr
+	}
 	return d.restoreErr
 }
 func (d *testDriver) Inject(e common.Event) error {
@@ -64,6 +72,9 @@ func (d *testDriver) Inject(e common.Event) error {
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if d.injectErr != nil {
+		return d.injectErr
+	}
 	d.inputs = append(d.inputs, e)
 	return nil
 }
@@ -492,4 +503,135 @@ func TestLegacyRecoveryFailureCannotBeClearedByPeerDriver(t *testing.T) {
 	if !errors.Is(err, ErrRecovery) {
 		t.Fatal("切换新协议绕过旧路径恢复屏障")
 	}
+}
+
+func TestPrepareFailureKeepsConnectionAndCanRetry(t *testing.T) {
+	for source := range 2 {
+		t.Run([]string{"coordinator-source", "follower-source"}[source], func(t *testing.T) {
+			p := newPair(t, true)
+			p.drivers[1-source].mu.Lock()
+			p.drivers[1-source].prepareErr = errors.New("目标布局不匹配")
+			p.drivers[1-source].mu.Unlock()
+			ctx, cancel := context.WithTimeout(p.ctx, 2*time.Second)
+			defer cancel()
+			if err := p.nodes[source].Request(ctx, nil); err == nil || err.Error() != "目标布局不匹配" {
+				t.Fatalf("未保留实际准备错误: %v", err)
+			}
+			p.local(t)
+			for _, node := range p.nodes {
+				if node.Err() != nil || !node.Snapshot().Connected {
+					t.Fatal("可恢复的准备错误断开了连接")
+				}
+			}
+			old := *p.nodes[source].Snapshot().Previous
+			p.drivers[1-source].mu.Lock()
+			p.drivers[1-source].prepareErr = nil
+			p.drivers[1-source].mu.Unlock()
+			p.request(t, source)
+			if err := p.nodes[0].Handle(Packet{Kind: "release", Session: old.Session, Token: &old, Reason: ownership.PermissionLost, Error: "迟到的旧错误"}); err != nil {
+				t.Fatal(err)
+			}
+			for _, node := range p.nodes {
+				if node.ControlError() != nil || node.Snapshot().Phase != ownership.Active {
+					t.Fatal("旧错误污染了新控制")
+				}
+			}
+		})
+	}
+}
+
+func TestInjectionFailureKeepsConnection(t *testing.T) {
+	for source := range 2 {
+		t.Run([]string{"coordinator-source", "follower-source"}[source], func(t *testing.T) {
+			p := newPair(t, true)
+			p.request(t, source)
+			p.drivers[1-source].mu.Lock()
+			p.drivers[1-source].injectErr = errors.New("实际注入权限失效")
+			p.drivers[1-source].mu.Unlock()
+			if err := p.nodes[source].SendInput(common.Event{Kind: common.KeyDown, Code: 4}); err != nil {
+				t.Fatal(err)
+			}
+			p.local(t)
+			for _, node := range p.nodes {
+				if node.Err() != nil || !node.Snapshot().Connected || node.ControlError() == nil {
+					t.Fatal("注入失败丢失诊断或断开连接")
+				}
+			}
+			p.drivers[1-source].mu.Lock()
+			p.drivers[1-source].injectErr = nil
+			p.drivers[1-source].mu.Unlock()
+			p.request(t, source)
+		})
+	}
+}
+
+func TestAutomaticCloseCannotClearFirstRestoreFailure(t *testing.T) {
+	p := newPair(t, true)
+	p.request(t, 0)
+	driver := p.drivers[1]
+	driver.mu.Lock()
+	driver.restoreOnceErr = errors.New("首次实际释放失败")
+	driver.mu.Unlock()
+	if err := p.nodes[0].Stop(ownership.Returned); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool { return p.nodes[1].Err() != nil })
+	p.nodes[1].Close()
+	waitFor(t, func() bool {
+		driver.mu.Lock()
+		count := driver.restores
+		driver.mu.Unlock()
+		p.devices[1].mu.Lock()
+		done := p.devices[1].restoring == nil
+		p.devices[1].mu.Unlock()
+		return count >= 2 && done
+	})
+	_, err := New(p.ctx, Config{Local: "b-windows", Remote: "a-mac", Session: "1123456789abcdef0123456789abcdef", Device: p.devices[1], Send: func(context.Context, Packet) error { return nil }})
+	if !errors.Is(err, ErrRecovery) {
+		t.Fatal("Close的空释放结果清除了首次恢复失败")
+	}
+}
+
+func TestQueuedWinnerDoesNotKeepOldControlError(t *testing.T) {
+	p := newPair(t, false)
+	gate := make(chan struct{})
+	var once sync.Once
+	defer once.Do(func() { close(gate) })
+	for _, driver := range p.drivers {
+		driver.restoreGate = gate
+	}
+	high, low := make(chan error, 1), make(chan error, 1)
+	go func() { high <- p.nodes[1].Request(p.ctx, nil) }()
+	waitFor(t, func() bool { return p.nodes[0].Snapshot().Lease != nil })
+	old := *p.nodes[0].Snapshot().Lease
+	go func() { low <- p.nodes[0].Request(p.ctx, nil) }()
+	waitFor(t, func() bool { return p.nodes[0].Snapshot().Waiting != nil })
+	if err := p.nodes[0].Handle(Packet{Kind: "release", Session: old.Session, Token: &old, Reason: ownership.Returned, Error: "旧代次返回错误"}); err != nil {
+		t.Fatal(err)
+	}
+	if p.nodes[0].ControlError() == nil {
+		t.Fatal("未构造旧诊断")
+	}
+	once.Do(func() { close(gate) })
+	close(p.drivers[0].ready)
+	close(p.drivers[1].ready)
+	select {
+	case err := <-low:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("胜者申请未完成")
+	}
+	if err := <-high; err == nil {
+		t.Fatal("落败方仍被激活")
+	}
+	waitFor(t, func() bool {
+		for _, node := range p.nodes {
+			if node.Snapshot().Phase != ownership.Active || node.ControlError() != nil {
+				return false
+			}
+		}
+		return true
+	})
 }

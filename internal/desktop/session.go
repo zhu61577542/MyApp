@@ -140,7 +140,7 @@ func (s *Session) ReportEdge(ready bool, status, failure string) {
 func (s *Session) Sharing() Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return Snapshot{Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting, EdgeEnabled: s.state.EdgeEnabled, Target: s.state.Target, PeerMode: s.state.PeerMode, ControlPhase: s.state.ControlPhase, ControlSource: s.state.ControlSource, ControlTarget: s.state.ControlTarget}
+	return Snapshot{Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting, EdgeEnabled: s.state.EdgeEnabled, Target: s.state.Target, PeerMode: s.state.PeerMode, ControlPhase: s.state.ControlPhase, ControlSource: s.state.ControlSource, ControlTarget: s.state.ControlTarget, Error: s.state.Error}
 }
 
 func (s *Session) UpdatePeer(id string, update func(*Peer)) {

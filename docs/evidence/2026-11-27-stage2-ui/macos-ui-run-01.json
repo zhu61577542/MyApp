@@ -1,0 +1,10 @@
+{
+  "collectedAt": "2026-11-27T14:38:35.926Z",
+  "from": 51583,
+  "to": 56283,
+  "rotated": false,
+  "truncated": false,
+  "matchedLines": 45,
+  "newGUIProcessObserved": true,
+  "log": "macos-ui-run-01.log"
+}

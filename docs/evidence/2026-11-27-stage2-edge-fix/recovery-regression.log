@@ -1,0 +1,22 @@
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry/coordinator-source
+=== RUN   TestPrepareFailureKeepsConnectionAndCanRetry/follower-source
+--- PASS: TestPrepareFailureKeepsConnectionAndCanRetry (0.01s)
+    --- PASS: TestPrepareFailureKeepsConnectionAndCanRetry/coordinator-source (0.00s)
+    --- PASS: TestPrepareFailureKeepsConnectionAndCanRetry/follower-source (0.00s)
+=== RUN   TestInjectionFailureKeepsConnection
+=== RUN   TestInjectionFailureKeepsConnection/coordinator-source
+=== RUN   TestInjectionFailureKeepsConnection/follower-source
+--- PASS: TestInjectionFailureKeepsConnection (0.01s)
+    --- PASS: TestInjectionFailureKeepsConnection/coordinator-source (0.01s)
+    --- PASS: TestInjectionFailureKeepsConnection/follower-source (0.00s)
+=== RUN   TestAutomaticCloseCannotClearFirstRestoreFailure
+--- PASS: TestAutomaticCloseCannotClearFirstRestoreFailure (0.01s)
+=== RUN   TestQueuedWinnerDoesNotKeepOldControlError
+--- PASS: TestQueuedWinnerDoesNotKeepOldControlError (0.01s)
+PASS
+ok  	myapp/internal/peercontrol	1.049s
+=== RUN   TestPeerEdgeUsesTargetScreenKey
+--- PASS: TestPeerEdgeUsesTargetScreenKey (0.01s)
+PASS
+ok  	myapp/cmd/myapp	1.023s

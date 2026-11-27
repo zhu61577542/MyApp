@@ -345,6 +345,15 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 		if peerErr != nil {
 			return peerErr
 		}
+		if entry != nil {
+			info := c.links[index].RemoteScreen()
+			if info.Version != 1 || !info.Screen.Valid() || !entry.Valid() {
+				return errors.New("对端显示器信息尚未就绪")
+			}
+			targetEntry := *entry
+			targetEntry.ScreenKey = info.Screen.Key()
+			return node.Request(request, &targetEntry)
+		}
 		return node.Request(request, entry)
 	}
 	cancelRequest()
@@ -589,12 +598,16 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 
 func newDesktopCapture(ctx context.Context, hub *app.Hub, links []*app.Link, peers []config.Peer, state *desktop.Session) *desktopCapture {
 	geometry, err := pointer.New()
-	backend, backendErr := platform.NewCapturer()
+	var backend common.Capturer
 	create := func() (common.Capturer, error) {
 		if backend == nil {
-			backend, backendErr = platform.NewCapturer()
+			created, err := platform.NewCapturer()
+			if err != nil {
+				return nil, err
+			}
+			backend = created
 		}
-		return backend, backendErr
+		return backend, nil
 	}
 	positions := make(map[string]string)
 	for index, peer := range peers {
@@ -607,9 +620,5 @@ func newDesktopCapture(ctx context.Context, hub *app.Hub, links []*app.Link, pee
 		}
 		positions[peer.ID] = position
 	}
-	captureError := ""
-	if backendErr != nil {
-		captureError = backendErr.Error()
-	}
-	return &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: create, geometry: geometry, geometryErr: err, captureError: captureError, positions: positions, edgeDelay: 0}
+	return &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: create, geometry: geometry, geometryErr: err, positions: positions, edgeDelay: 0}
 }

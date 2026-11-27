@@ -23,20 +23,21 @@ type Driver interface {
 
 // Device在重连之间保留恢复屏障和暂停意图。
 type Device struct {
-	mu          sync.Mutex
-	driver      Driver
-	owner       string
-	closed      bool
-	clean       bool
-	paused      bool
-	token       ownership.Token
-	active      bool
-	until       time.Time
-	cancel      context.CancelFunc
-	prepared    chan struct{}
-	restoring   chan struct{}
-	err         error
-	externalErr error
+	mu             sync.Mutex
+	driver         Driver
+	owner          string
+	closed         bool
+	clean          bool
+	paused         bool
+	token          ownership.Token
+	active         bool
+	until          time.Time
+	cancel         context.CancelFunc
+	prepared       chan struct{}
+	restoring      chan struct{}
+	err            error
+	externalErr    error
+	restoreFailure error
 }
 
 func NewDevice(driver Driver) *Device { return &Device{driver: driver, clean: true} }
@@ -221,6 +222,12 @@ func (d *Device) restore(session string, closed bool, restored func(error)) {
 		defer cancel()
 		err := d.driver.Restore(ctx)
 		d.mu.Lock()
+		if err != nil && d.restoreFailure == nil {
+			d.restoreFailure = err
+		}
+		if err == nil {
+			err = d.restoreFailure
+		}
 		err = errors.Join(err, d.externalErr)
 		d.err, d.clean = err, err == nil
 		d.token, d.prepared, d.cancel = ownership.Token{}, nil, nil
