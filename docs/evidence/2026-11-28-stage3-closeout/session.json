@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-28",
+  "completedAt": "2026-11-28T06:59:31.276Z",
+  "applicationVersion": "0.1.17-alpha-stage3",
+  "applicationSourceCommit": "b00a2722",
+  "baseBeforeCloseout": "2a121dd0",
+  "productionCodeChanged": false,
+  "newPackageRequired": false,
+  "stageThree": "accepted",
+  "stageFourStarted": false,
+  "userAcceptanceConfirmed": true,
+  "userFeedback": "四项均通过",
+  "manualChecks": {
+    "settingsRestartAndReset": "user_confirmed",
+    "physicalTakeoverBothDirections": "user_confirmed",
+    "emergencyPauseResume": "user_confirmed",
+    "displayChangeRecovery": "user_confirmed"
+  },
+  "automatedChecks": {
+    "dockerRace": "passed",
+    "dockerVet": "passed",
+    "guiHeadlessChecks": "passed",
+    "repeatedLinkScenarios": 24,
+    "settingsFreshProcessCasesPerOS": 3,
+    "macNativeTestDoubles": "passed",
+    "windowsNativeTestDoubles": "passed"
+  },
+  "runtimeVerified": {
+    "macVersion": "0.1.17-alpha-stage3",
+    "windowsVersion": "0.1.17-alpha-stage3",
+    "windowsSettings": {
+      "pointerPercent": 100,
+      "scrollPercent": 100
+    },
+    "settingsNote": "只读采样时的值，不替代后续用户调节结果"
+  },
+  "scopeLimits": [
+    "没有执行GUI自动化或助手操作的实体输入",
+    "收尾回归采用真实Link与原生后端替身，不把替身当作OS实体效果",
+    "完整故障与长期运行验收保留至第五阶段"
+  ],
+  "handoff": "../../NEXT-SESSION.md"
+}

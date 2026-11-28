@@ -1,0 +1,62 @@
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause
+--- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion (1.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency (0.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause (0.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency (0.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause (0.33s)
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout
+--- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections (4.35s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout (1.08s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout (1.11s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout (1.11s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout (1.06s)
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause
+--- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion (1.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency (0.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause (0.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency (0.33s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause (0.33s)
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout
+--- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections (4.39s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout (1.08s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout (1.11s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout (1.11s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout (1.08s)
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency
+=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause
+--- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion (1.08s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency (0.28s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause (0.23s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency (0.23s)
+    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause (0.33s)
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout
+=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout
+--- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections (4.38s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout (1.08s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout (1.11s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout (1.11s)
+    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout (1.08s)
+PASS
+ok  	myapp/cmd/myapp	17.872s

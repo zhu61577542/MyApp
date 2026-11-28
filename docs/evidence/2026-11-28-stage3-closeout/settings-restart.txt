@@ -1,0 +1,6 @@
+=== RUN   TestInputSettingsSurviveFreshProcessAndDefaultReset
+--- PASS: TestInputSettingsSurviveFreshProcessAndDefaultReset (3.06s)
+=== RUN   TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected
+--- PASS: TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected (0.00s)
+PASS
+ok  	myapp/internal/desktop	4.071s

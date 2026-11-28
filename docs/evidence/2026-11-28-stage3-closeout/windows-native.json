@@ -1,0 +1,20 @@
+{
+  "physicalInput": false,
+  "passed": true,
+  "results": [
+    {
+      "suite": "desktop-after.test.exe",
+      "timedOut": false,
+      "exitCode": 0,
+      "stdout": "=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion\n=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency\n=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause\n=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency\n=== RUN   TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause\n--- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion (1.34s)\n    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/emergency (0.31s)\n    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/mac/pause (0.33s)\n    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/emergency (0.30s)\n    --- PASS: TestStage3CloseoutEmergencyAndPauseRestoreThenRequireFreshMotion/windows/pause (0.30s)\n=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections\n=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout\n=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout\n=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout\n=== RUN   TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout\n--- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections (4.26s)\n    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/mac-layout (1.05s)\n    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/mac-source/windows-layout (1.08s)\n    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/mac-layout (1.08s)\n    --- PASS: TestStage3CloseoutActiveGeometryChangeRestoresBothDirections/windows-source/windows-layout (1.05s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "suite": "session-after.test.exe",
+      "timedOut": false,
+      "exitCode": 0,
+      "stdout": "=== RUN   TestInputSettingsSurviveFreshProcessAndDefaultReset\n--- PASS: TestInputSettingsSurviveFreshProcessAndDefaultReset (0.33s)\n=== RUN   TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected\n--- PASS: TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected (0.16s)\nPASS\n",
+      "stderr": ""
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+=== RUN   TestInputSettingsSurviveFreshProcessAndDefaultReset
+--- PASS: TestInputSettingsSurviveFreshProcessAndDefaultReset (0.03s)
+=== RUN   TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected
+--- PASS: TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected (0.00s)
+PASS
