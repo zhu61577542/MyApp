@@ -1,12 +1,23 @@
 # 第三阶段人工核查
 
-日期：2026-11-28。状态：0.1.13-alpha-stage3（源码dbaa0cbb）首轮人工核查未通过，待修复复测；第四阶段未开始。
+日期：2026-11-28。状态：0.1.13首轮未通过；修复版0.1.14-alpha-stage3（源码a73c3244）后台通过，待用户复测；第四阶段未开始。
 
 首轮人工核查未通过：用户反馈Windows→Mac鼠标不稳定，Windows实体键盘中英文及数字均无法输入。已复现远程落点靠近边缘时无法直接重新待命的缺陷，键盘失败具体环节尚未定位。日志与复现见docs/evidence/2026-11-28-stage3-ui-trial/ANALYSIS.md；第三阶段未验收，不进入第四阶段。
 
-Mac启动路径：/Users/zhuguoqing/MyApp/work/peer-stage3-ui/MyApp.app。
+Mac启动路径：/Users/zhuguoqing/MyApp/work/peer-stage3-fix-ui/MyApp.app。
 
-Windows启动脚本：E:\test\MyApp-0.1.13-alpha-stage3\app\Launch-in-E-test.ps1。沿用原身份/信任/配置，不需要重新配对。助手未启动新GUI或操作实体键鼠，程序日志起点见证据目录session.json。
+Windows启动脚本：E:\test\MyApp-0.1.14-alpha-stage3\app\Launch-in-E-test.ps1。沿用原身份/信任/配置，不需要重新配对。助手未启动新GUI或操作实体键鼠，程序日志起点见 docs/evidence/2026-11-28-stage3-repair/session.json。
+
+## 首轮修复与重点复测
+
+修复远程落点距边缘2像素、却必须先退回6像素内部才能再次触边的限制；实体鼠标接管后保留一次朝外移动意图，允许直接接续。远程注入、程序恢复光标和停用期间移动仍不得触发自动反弹。就绪状态合并更新，避免反复刷新。
+
+新增会话摘要/代次、阶段/停止原因与键盘捕获、发送、接收、注入、拒绝、失败数量；每2秒及结束时汇总，不记录键码或内容。后台逐条核对双向字母、数字、Shift组合的按下与释放；键盘实际文本框输入仍待用户确认，尚不认定实机问题全部解决。修复证据见 docs/evidence/2026-11-28-stage3-repair/。
+
+重点先验两项：
+
+1. Mac鼠标进入Windows后，拿起Windows实体鼠标，直接从整组桌面最右侧进入Mac，无需先移回中央；反复执行观察是否稳定。
+2. 全程使用Windows实体鼠标点击Mac普通文本框，再用Windows实体键盘输入英文、数字与Shift组合，期间不要操作Mac本机键鼠，以免触发本机接管。随后反馈结果和大致时间，助手读取计数区分具体环节。
 
 ## 本轮可感知的变化
 
@@ -19,7 +30,7 @@ Windows启动脚本：E:\test\MyApp-0.1.13-alpha-stage3\app\Launch-in-E-test.ps1
 
 ## 请逐项人工验收
 
-1. 两端退出旧版后启动0.1.13，沿用身份、配对和位置；检查连接和权限就绪。
+1. 两端退出旧版后启动0.1.14，沿用身份、配对和位置；检查连接和权限就绪。
 2. 用Mac鼠标进入Windows，在显示器1、2之间往返，再用同一只Mac鼠标返回。
 3. 用Windows实体鼠标移向Mac相邻方向的整组桌面最外侧，进入Mac后再返回Windows。当前若Windows位于Mac左侧，应从Windows整组桌面的最右边缘进入Mac。
 4. Mac鼠标控制Windows时，操作Windows实体键鼠；反向再做一次。应恢复被控端本机，旧来源光标恢复，两端保持连接。

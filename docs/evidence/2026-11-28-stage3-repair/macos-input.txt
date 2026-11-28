@@ -1,0 +1,11 @@
+=== RUN   TestUnsupportedKeyDoesNotRevealCode
+--- PASS: TestUnsupportedKeyDoesNotRevealCode (0.00s)
+=== RUN   TestMyAppInjectionPassesThroughWithoutCaptureOrModifierChanges
+--- PASS: TestMyAppInjectionPassesThroughWithoutCaptureOrModifierChanges (0.00s)
+=== RUN   TestObservePhysicalEventDoesNotSuppressIt
+--- PASS: TestObservePhysicalEventDoesNotSuppressIt (0.00s)
+=== RUN   TestAllInjectedKindsAndReleasesCarryMarker
+--- PASS: TestAllInjectedKindsAndReleasesCarryMarker (0.00s)
+=== RUN   TestHeldModifiersSeedCorrectReleaseWithoutTypingOrdinaryKeys
+--- PASS: TestHeldModifiersSeedCorrectReleaseWithoutTypingOrdinaryKeys (0.00s)
+PASS

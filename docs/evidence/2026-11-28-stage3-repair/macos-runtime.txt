@@ -1,0 +1,52 @@
+=== RUN   TestTargetShortcutConsumesDigitAndRepeat
+--- PASS: TestTargetShortcutConsumesDigitAndRepeat (0.00s)
+=== RUN   TestActivityObserverFailureClosesGateAndIsJoined
+--- PASS: TestActivityObserverFailureClosesGateAndIsJoined (0.01s)
+=== RUN   TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey
+--- PASS: TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey (0.00s)
+=== RUN   TestTargetCannotAttachAfterReadinessDisappears
+--- PASS: TestTargetCannotAttachAfterReadinessDisappears (0.00s)
+=== RUN   TestHeldPhysicalModifierBeforeReceivingIsNotReleased
+--- PASS: TestHeldPhysicalModifierBeforeReceivingIsNotReleased (0.00s)
+=== RUN   TestTakeoverMotionSurvivesRecoveryOnce
+=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/false
+=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/true
+--- PASS: TestTakeoverMotionSurvivesRecoveryOnce (0.00s)
+    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/false (0.00s)
+    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/true (0.00s)
+=== RUN   TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure
+--- PASS: TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure (0.00s)
+=== RUN   TestPeerTargetPrepareDoesNotMoveCursorAndChecksPermission
+--- PASS: TestPeerTargetPrepareDoesNotMoveCursorAndChecksPermission (0.00s)
+=== RUN   TestPeerSourceBuffersUntilActivatedAndRestores
+--- PASS: TestPeerSourceBuffersUntilActivatedAndRestores (0.01s)
+=== RUN   TestPeerCaptureErrorRemainsVisible
+--- PASS: TestPeerCaptureErrorRemainsVisible (0.00s)
+=== RUN   TestPeerDesktopAssemblySupportsBothRoleDirections
+    desktop_peer_test.go:265: 原生适配工厂通过真实Link连接双向装配；测试替身未操作实体键鼠
+--- PASS: TestPeerDesktopAssemblySupportsBothRoleDirections (0.04s)
+=== RUN   TestPeerLegacyReleaseFailureBlocksSubsequentControl
+--- PASS: TestPeerLegacyReleaseFailureBlocksSubsequentControl (0.00s)
+=== RUN   TestPeerEdgeUsesTargetScreenKey
+--- PASS: TestPeerEdgeUsesTargetScreenKey (0.00s)
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right
+--- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover (0.60s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left (0.30s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right (0.30s)
+=== RUN   TestStage3ReceivedCursorCannotTriggerAutomaticBounce
+--- PASS: TestStage3ReceivedCursorCannotTriggerAutomaticBounce (0.30s)
+=== RUN   TestStage3FinalPhysicalPositionIsSampledAfterHookReturns
+--- PASS: TestStage3FinalPhysicalPositionIsSampledAfterHookReturns (0.21s)
+=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay
+=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/left
+=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/right
+--- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay (0.50s)
+    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/left (0.25s)
+    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/right (0.25s)
+=== RUN   TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge
+--- PASS: TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge (0.28s)
+=== RUN   TestStage3ReenableDoesNotReplayDisabledMovement
+--- PASS: TestStage3ReenableDoesNotReplayDisabledMovement (0.27s)
+PASS

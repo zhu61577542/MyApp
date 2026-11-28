@@ -1,0 +1,7 @@
+{
+  "MyApp-Windows-x64.zip": "d293c960f3307654fa8012645407cf3c9cd45e0880187e7c1b0afed27b711864",
+  "MyApp-macOS-arm64.zip": "bd4379f063f41aa5f235becf1c05d6189954aa1456c6cc2cc3f3a48f5ad40673",
+  "windows/MyApp.exe": "a94d7c6bef9b7196d26467ad948d9fb09835a475688a8ab10b2ed9212fcc036b",
+  "MyApp.app/Contents/MacOS/myapp": "6103b7dcba6111fadd4da86ea091c9fd1bbc0f223cc3efc3f94d0914fc0f819e",
+  "Regression-Windows.zip": "08a041b85fc0bde3e7bae7d152e7c01a13bb61b3b429f8dea9da29f3d35db9a0"
+}

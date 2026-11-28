@@ -1,0 +1,20 @@
+{
+  "physicalInput": false,
+  "passed": true,
+  "results": [
+    {
+      "suite": "desktop-windows.test.exe",
+      "timedOut": false,
+      "exitCode": 0,
+      "stdout": "=== RUN   TestActivityObserverFailureClosesGateAndIsJoined\n--- PASS: TestActivityObserverFailureClosesGateAndIsJoined (0.00s)\n=== RUN   TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey\n--- PASS: TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey (0.00s)\n=== RUN   TestTargetCannotAttachAfterReadinessDisappears\n--- PASS: TestTargetCannotAttachAfterReadinessDisappears (0.00s)\n=== RUN   TestHeldPhysicalModifierBeforeReceivingIsNotReleased\n--- PASS: TestHeldPhysicalModifierBeforeReceivingIsNotReleased (0.00s)\n=== RUN   TestTakeoverMotionSurvivesRecoveryOnce\n=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/false\n=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/true\n--- PASS: TestTakeoverMotionSurvivesRecoveryOnce (0.03s)\n    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/false (0.00s)\n    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/true (0.00s)\n=== RUN   TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure\n--- PASS: TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure (0.00s)\n=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover\n=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left\n=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right\n--- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover (0.61s)\n    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left (0.30s)\n    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right (0.30s)\n=== RUN   TestStage3ReceivedCursorCannotTriggerAutomaticBounce\n--- PASS: TestStage3ReceivedCursorCannotTriggerAutomaticBounce (0.30s)\n=== RUN   TestStage3FinalPhysicalPositionIsSampledAfterHookReturns\n--- PASS: TestStage3FinalPhysicalPositionIsSampledAfterHookReturns (0.21s)\n=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay\n=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/left\n=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/right\n--- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay (0.40s)\n    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/left (0.15s)\n    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/right (0.25s)\n=== RUN   TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge\n--- PASS: TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge (0.28s)\n=== RUN   TestStage3ReenableDoesNotReplayDisabledMovement\n--- PASS: TestStage3ReenableDoesNotReplayDisabledMovement (0.27s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "suite": "input-windows.test.exe",
+      "timedOut": false,
+      "exitCode": 0,
+      "stdout": "=== RUN   TestUnsupportedKeyDoesNotRevealCode\n--- PASS: TestUnsupportedKeyDoesNotRevealCode (0.00s)\n=== RUN   TestPhysicalObservationFiltersInjectedEvents\n--- PASS: TestPhysicalObservationFiltersInjectedEvents (0.00s)\n=== RUN   TestPhysicalMotionTracksInjectedLandingAndFiltersWarp\n--- PASS: TestPhysicalMotionTracksInjectedLandingAndFiltersWarp (0.00s)\n=== RUN   TestFirstUnseededPhysicalMotionOnlyEstablishesBaseline\n--- PASS: TestFirstUnseededPhysicalMotionOnlyEstablishesBaseline (0.00s)\nPASS\n",
+      "stderr": ""
+    }
+  ]
+}
