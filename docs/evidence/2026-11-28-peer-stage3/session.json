@@ -2,7 +2,7 @@
   "date": "2026-11-28",
   "version": "0.1.13-alpha-stage3",
   "sourceCommit": "dbaa0cbb",
-  "status": "native GUI delivered; awaiting user manual acceptance",
+  "status": "first manual trial not accepted: unstable reverse crossing and keyboard input failure; edge reentry defect reproduced",
   "macApp": "/Users/zhuguoqing/MyApp/work/peer-stage3-ui/MyApp.app",
   "macLogPath": "/Users/zhuguoqing/Library/Application Support/MyApp/logs/myapp.log",
   "macLogOffset": 395181,
@@ -39,5 +39,8 @@
     "keystroke content",
     "clipboard content",
     "screen recording"
-  ]
+  ],
+  "latestTrialEvidence": "docs/evidence/2026-11-28-stage3-ui-trial",
+  "macLogNextOffset": 430941,
+  "windowsLogNextOffset": 70706
 }

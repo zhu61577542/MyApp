@@ -1,6 +1,8 @@
 # 第三阶段人工核查
 
-日期：2026-11-28。状态：代码与后台验证完成，0.1.13-alpha-stage3原生GUI已交付Windows，源码dbaa0cbb；用户人工验收尚未开始，第四阶段未开始。
+日期：2026-11-28。状态：0.1.13-alpha-stage3（源码dbaa0cbb）首轮人工核查未通过，待修复复测；第四阶段未开始。
+
+首轮人工核查未通过：用户反馈Windows→Mac鼠标不稳定，Windows实体键盘中英文及数字均无法输入。已复现远程落点靠近边缘时无法直接重新待命的缺陷，键盘失败具体环节尚未定位。日志与复现见docs/evidence/2026-11-28-stage3-ui-trial/ANALYSIS.md；第三阶段未验收，不进入第四阶段。
 
 Mac启动路径：/Users/zhuguoqing/MyApp/work/peer-stage3-ui/MyApp.app。
 

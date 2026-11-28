@@ -1,0 +1,38 @@
+{
+  "version": "0.1.13-alpha-stage3",
+  "sourceCommit": "dbaa0cbb",
+  "window": {
+    "macFirstStart": "2026-11-28T09:47:02+08:00",
+    "macLatestProcessStart": "2026-11-28T09:48:47+08:00",
+    "collectionEnd": "2026-11-28T10:02:49.9334231+08:00"
+  },
+  "facts": {
+    "macToWindowsActiveRecords": 15,
+    "windowsToMacActiveRecords": 0,
+    "observedPhysicalTakeoverRecords": 1,
+    "windowsHeartbeatTimeoutRecords": 3,
+    "initialMacPermissionDenied": true,
+    "subsequentBilateralReadinessObserved": true
+  },
+  "userFeedback": {
+    "windowsPhysicalMouseToMac": "尝试过，未成功",
+    "restartContext": "我退出过程序，然后重新启动",
+    "centerThenRight": "鼠标可进入Mac，但反向成功不稳定",
+    "keyboard": "全程Windows实体键鼠测试，中英文与数字均无法输入"
+  },
+  "reproduction": {
+    "entryInsetPixels": 2,
+    "rearmNeedsInteriorPixels": 6,
+    "directOutwardCrossing": false,
+    "moveInsideThenOutwardCrossing": true
+  },
+  "limits": [
+    "Active记录不等于所有实体输入效果已验收",
+    "状态日志没有每次恢复的完整原因或原始位置",
+    "两端时钟未同步，不用跨端日志时间差计算切换延迟",
+    "主动重启背景已记录，心跳异常的具体触发未单独归因",
+    "用户反向鼠标反馈与控制方向日志不一致，不能据当前日志确认稳定反向控制",
+    "日志未记录键盘捕获/转发/注入计数，键盘失败具体环节尚未定位"
+  ],
+  "acceptancePassed": false
+}

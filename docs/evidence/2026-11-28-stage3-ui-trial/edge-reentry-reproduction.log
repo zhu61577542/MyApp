@@ -1,0 +1,6 @@
+Mac进入Windows的实际落点: triggered=false
+接管后直接向右: triggered=false
+到达最右边缘: triggered=false
+持续停留在右边缘: triggered=false
+先移向内部: triggered=false
+再移向右边缘: triggered=true
