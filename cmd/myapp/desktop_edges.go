@@ -187,6 +187,10 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 					diagnostic.positionDifferences++
 				}
 				point = physicalPoint
+			} else if screen.Contains(point) {
+				// Hook可先给出越界拟落点，系统随后把光标夹紧到真实桌面。
+				diagnostic.positionSource = "system-after-physical-clipping"
+				diagnostic.record("physical-position-clipped")
 			} else {
 				diagnostic.record("physical-position-outside-screen")
 				watcher.Reset()

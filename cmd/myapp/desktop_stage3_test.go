@@ -373,3 +373,36 @@ func TestStage3LocalResolutionChangeDoesNotReuseOldMovement(t *testing.T) {
 		return p.geometry[1].hidden.Load() == 1 && p.states[1].Sharing().ControlPhase == string(ownership.Active)
 	})
 }
+
+func TestStage3WindowsOutwardOvershootWaitsForClippedSystemPosition(t *testing.T) {
+	p := newStage3Pair(t, "left")
+	before := pointer.Point{X: 2557, Y: 500}
+	p.geometry[1].point.Store(&before)
+	overshoot := pointer.Point{X: 2568, Y: 500}
+	p.activity[1].physicalPoint.Store(&overshoot)
+	p.controllers[1].activity.observe(common.Event{Kind: common.MouseRelative, X: 11})
+	nativeWait(t, func() bool { return p.geometry[1].observed.Load() == &before })
+	if p.geometry[1].hidden.Load() != 0 {
+		t.Fatal("系统尚未到边缘就启动")
+	}
+	// 不再追加实体事件，等待系统在Hook返回后更新到合法边缘。
+	p.geometry[1].point.Store(&pointer.Point{X: 2559, Y: 500})
+	nativeWait(t, func() bool {
+		return p.geometry[1].hidden.Load() == 1 && p.states[1].Sharing().ControlPhase == string(ownership.Active)
+	})
+	p.checkKeyboard(t, 1)
+}
+
+func TestStage3WindowsInvalidHookPositionCannotInventEdge(t *testing.T) {
+	p := newStage3Pair(t, "left")
+	center := pointer.Point{X: 100, Y: 500}
+	p.geometry[1].point.Store(&center)
+	overshoot := pointer.Point{X: 2568, Y: 500}
+	p.activity[1].physicalPoint.Store(&overshoot)
+	p.controllers[1].activity.observe(common.Event{Kind: common.MouseRelative, X: 11})
+	nativeWait(t, func() bool { return p.geometry[1].observed.Load() == &center })
+	time.Sleep(30 * time.Millisecond)
+	if p.geometry[1].hidden.Load() != 0 {
+		t.Fatal("无效Hook点被直接投影成跨屏落点")
+	}
+}
