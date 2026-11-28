@@ -19,7 +19,7 @@
 === RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay
 === RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/left
 === RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/right
---- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay (0.41s)
-    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/left (0.15s)
+--- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay (0.50s)
+    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/left (0.25s)
     --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/right (0.25s)
 PASS

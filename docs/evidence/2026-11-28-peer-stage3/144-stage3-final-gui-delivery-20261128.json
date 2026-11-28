@@ -1,0 +1,7 @@
+{
+  "stdout": "{\"delivered\":true,\"version\":\"MyApp 0.1.13-alpha-stage3 commit=dbaa0cbb protocol=1.0\",\"sha256\":\"a8a55a502e90a4f1a41084fd5b553f5549e2579904cfa605203f62fded139486\",\"exeSha256\":\"482da7d1b2c0d9e4653251adaac26b7388b36ce154f341cac17325739bab0de3\",\"guiSubsystem\":2,\"guiStarted\":false,\"launcher\":\"E:\\\\test\\\\MyApp-0.1.13-alpha-stage3\\\\app\\\\Launch-in-E-test.ps1\",\"profile\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\",\"programLog\":\"E:\\\\test\\\\MyApp-0.1.6-alpha-edge\\\\app\\\\profile\\\\AppData\\\\Roaming\\\\MyApp\\\\logs\\\\myapp.log\",\"logBytes\":39974,\"existingProcesses\":[]}\r\n",
+  "exitCode": 0,
+  "stderr": "",
+  "id": "144-stage3-final-gui-delivery-20261128",
+  "timedOut": false
+}

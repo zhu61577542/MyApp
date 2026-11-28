@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-28",
+  "version": "0.1.13-alpha-stage3",
+  "sourceCommit": "dbaa0cbb",
+  "status": "native GUI delivered; awaiting user manual acceptance",
+  "macApp": "/Users/zhuguoqing/MyApp/work/peer-stage3-ui/MyApp.app",
+  "macLogPath": "/Users/zhuguoqing/Library/Application Support/MyApp/logs/myapp.log",
+  "macLogOffset": 395181,
+  "windows": {
+    "delivered": true,
+    "version": "MyApp 0.1.13-alpha-stage3 commit=dbaa0cbb protocol=1.0",
+    "sha256": "a8a55a502e90a4f1a41084fd5b553f5549e2579904cfa605203f62fded139486",
+    "exeSha256": "482da7d1b2c0d9e4653251adaac26b7388b36ce154f341cac17325739bab0de3",
+    "guiSubsystem": 2,
+    "guiStarted": false,
+    "launcher": "E:\\test\\MyApp-0.1.13-alpha-stage3\\app\\Launch-in-E-test.ps1",
+    "profile": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile",
+    "programLog": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile\\AppData\\Roaming\\MyApp\\logs\\myapp.log",
+    "logBytes": 39974,
+    "existingProcesses": []
+  },
+  "checks": {
+    "raceAndVet": "passed",
+    "guiCompileAndSummaryUnitTests": "passed",
+    "macNativeInputAndRuntimeSuites": "passed",
+    "windowsNativeSuites": 3,
+    "macSignature": "verified",
+    "zipAndExecutableHashes": "verified"
+  },
+  "userAcceptanceConfirmed": false,
+  "stageThreeStarted": true,
+  "stageFourStarted": false,
+  "recording": [
+    "user observations",
+    "startup, connection, control state and error logs"
+  ],
+  "excluded": [
+    "raw pointer trajectory",
+    "keystroke content",
+    "clipboard content",
+    "screen recording"
+  ]
+}

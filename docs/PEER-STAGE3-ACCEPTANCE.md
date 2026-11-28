@@ -1,6 +1,10 @@
 # 第三阶段人工核查
 
-日期：2026-11-28。状态：代码与后台验证完成，0.1.13-alpha-stage3原生GUI交付准备中；用户人工验收尚未开始，第四阶段未开始。
+日期：2026-11-28。状态：代码与后台验证完成，0.1.13-alpha-stage3原生GUI已交付Windows，源码dbaa0cbb；用户人工验收尚未开始，第四阶段未开始。
+
+Mac启动路径：/Users/zhuguoqing/MyApp/work/peer-stage3-ui/MyApp.app。
+
+Windows启动脚本：E:\test\MyApp-0.1.13-alpha-stage3\app\Launch-in-E-test.ps1。沿用原身份/信任/配置，不需要重新配对。助手未启动新GUI或操作实体键鼠，程序日志起点见证据目录session.json。
 
 ## 本轮可感知的变化
 
