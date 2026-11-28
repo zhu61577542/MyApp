@@ -4,7 +4,6 @@ package darwininput
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/ebitengine/purego"
@@ -113,7 +112,7 @@ func (i *Injector) injectLocked(event common.Event) error {
 	case common.KeyDown, common.KeyUp:
 		keyCode, ok := macKeyCodes[event.Code]
 		if !ok {
-			return fmt.Errorf("macOS 暂不支持 HID 键码 %d", event.Code)
+			return errors.New("macOS 暂不支持此按键")
 		}
 		nativeEvent = i.createKeyboard(0, keyCode, event.Kind == common.KeyDown)
 	default:

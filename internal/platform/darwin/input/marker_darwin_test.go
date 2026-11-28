@@ -4,8 +4,17 @@ package darwininput
 
 import (
 	common "myapp/internal/input"
+	"strings"
 	"testing"
 )
+
+func TestUnsupportedKeyDoesNotRevealCode(t *testing.T) {
+	i := &Injector{}
+	err := i.injectLocked(common.Event{Kind: common.KeyDown, Code: 65535})
+	if err == nil || strings.Contains(err.Error(), "65535") {
+		t.Fatal("错误信息包含原始按键码")
+	}
+}
 
 func TestMyAppInjectionPassesThroughWithoutCaptureOrModifierChanges(t *testing.T) {
 	for _, observing := range []bool{false, true} {

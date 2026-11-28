@@ -156,7 +156,7 @@ func (i *Injector) translate(event common.Event) ([]nativeInput, error) {
 	case common.KeyDown, common.KeyUp:
 		scanCode, extended, ok := windowsScanCode(event.Code)
 		if !ok {
-			return nil, fmt.Errorf("Windows 暂不支持 HID 键码 %d", event.Code)
+			return nil, errors.New("Windows 暂不支持此按键")
 		}
 		flags := uint32(keyScanCode)
 		if extended {

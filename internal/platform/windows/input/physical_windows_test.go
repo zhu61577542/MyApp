@@ -4,8 +4,17 @@ package wininput
 
 import (
 	common "myapp/internal/input"
+	"strings"
 	"testing"
 )
+
+func TestUnsupportedKeyDoesNotRevealCode(t *testing.T) {
+	i := &Injector{}
+	_, err := i.translate(common.Event{Kind: common.KeyDown, Code: 65535})
+	if err == nil || strings.Contains(err.Error(), "65535") {
+		t.Fatal("错误信息包含原始按键码")
+	}
+}
 
 func TestPhysicalObservationFiltersInjectedEvents(t *testing.T) {
 	for _, message := range []uint32{wmMouseMove, wmLeftDown, wmLeftUp, wmMouseWheel} {
