@@ -1,0 +1,44 @@
+{
+  "collectedAt": "2026-11-28T10:39:23.6265447+08:00",
+  "from": 83919,
+  "to": 90172,
+  "lines": [
+    "2026-11-28T10:36:02.7772585+08:00 [error] 会话结束: 心跳超时",
+    "2026-11-28T10:36:14.4426113+08:00 [error] 已连接控制端 j6dquz472x6lliea4bsnwqz6wi7cfeaet4zqtghizj4xalxmixla",
+    "2026-11-28T10:36:14.5585182+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:36:14.5433062Z\",\"event\":\"控制权变化\",\"fields\":{\"epoch\":0,\"phase\":\"local\",\"reason\":\"\",\"session\":\"264d63b078d6\",\"source_local\":false}}",
+    "2026-11-28T10:36:14.5585182+08:00 [error] 跨屏状态：等待对端显示器布局: ",
+    "2026-11-28T10:36:14.658705+08:00 [error] 跨屏状态：双向边缘监视已就绪: ",
+    "2026-11-28T10:37:15.9592627+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:15.8688648Z\",\"event\":\"控制权变化\",\"fields\":{\"epoch\":1,\"phase\":\"active\",\"reason\":\"\",\"session\":\"264d63b078d6\",\"source_local\":false}}",
+    "2026-11-28T10:37:15.9593743+08:00 [error] 对等控制状态：active: j6dquz472x6lliea4bsnwqz6wi7cfeaet4zqtghizj4xalxmixla -> 5cvfafal4jhsfhqhmzj77sv74vcwjlsw6hop366dbd2rojrcdmbq",
+    "2026-11-28T10:37:16.9592105+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:16.9592105Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":0,\"keyboard_received\":0,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":72,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:19.0591909+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:19.0591909Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":0,\"keyboard_received\":0,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":154,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:21.1591497+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:21.1591497Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":0,\"keyboard_received\":0,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":203,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:23.2586347+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:23.2585978Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":2,\"keyboard_received\":2,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":203,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:25.2587311+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:25.2587311Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":11,\"keyboard_received\":11,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":203,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:27.3588784+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:27.3588784Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":20,\"keyboard_received\":20,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":203,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:29.3592043+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:29.3592043Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":32,\"keyboard_received\":32,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":203,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:31.4590557+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:31.4589131Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":44,\"keyboard_received\":44,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":203,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:33.4593502+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:33.4593502Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":48,\"keyboard_received\":48,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":225,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:35.5590577+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:35.5590577Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":55,\"keyboard_received\":55,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":239,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:37.6586749+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:37.6586749Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":63,\"keyboard_received\":63,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":239,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:39.6594915+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:39.6594915Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":66,\"keyboard_received\":66,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":378,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:41.7592658+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:41.759105Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":false,\"keyboard_captured\":0,\"keyboard_injected\":66,\"keyboard_received\":66,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":410,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:42.6588894+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:42.6322109Z\",\"event\":\"输入链路计数\",\"fields\":{\"epoch\":1,\"failed\":0,\"final\":true,\"keyboard_captured\":0,\"keyboard_injected\":66,\"keyboard_received\":66,\"keyboard_rejected\":0,\"keyboard_sent\":0,\"mouse_injected\":410,\"mouse_sent\":0,\"session\":\"264d63b078d6\",\"source\":false}}",
+    "2026-11-28T10:37:42.6588894+08:00 [error] 跨屏诊断：{\"time\":\"2026-11-28T02:37:42.6431108Z\",\"event\":\"控制权变化\",\"fields\":{\"epoch\":2,\"phase\":\"local\",\"reason\":\"local-takeover\",\"session\":\"264d63b078d6\",\"source_local\":false}}",
+    "2026-11-28T10:37:42.6588894+08:00 [error] 对等控制状态：local:  -> "
+  ],
+  "processes": [
+    {
+      "pid": 21928,
+      "path": "E:\\test\\MyApp-0.1.14-alpha-stage3\\app\\MyApp.exe",
+      "service": false,
+      "cursorGuard": false
+    },
+    {
+      "pid": 21608,
+      "path": "E:\\test\\MyApp-0.1.14-alpha-stage3\\app\\MyApp.exe",
+      "service": true,
+      "cursorGuard": false
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "version": "0.1.14-alpha-stage3",
+  "sourceCommit": "a73c3244",
+  "preparedAt": "2026-11-28T02:36:01.431Z",
+  "collectionFinishedAt": "2026-11-28T10:39:23.6265447+08:00",
+  "macToWindowsActive": 1,
+  "windowsToMacRequests": 0,
+  "windowsToMacActive": 0,
+  "macFinalCounts": [
+    {
+      "time": "2026-11-28T02:37:42.666248Z",
+      "event": "输入链路计数",
+      "fields": {
+        "epoch": 1,
+        "failed": 0,
+        "final": true,
+        "keyboard_captured": 66,
+        "keyboard_injected": 0,
+        "keyboard_received": 0,
+        "keyboard_rejected": 0,
+        "keyboard_sent": 66,
+        "mouse_injected": 0,
+        "mouse_sent": 410,
+        "session": "264d63b078d6",
+        "source": true
+      }
+    }
+  ],
+  "windowsFinalCounts": [
+    {
+      "time": "2026-11-28T02:37:42.6322109Z",
+      "event": "输入链路计数",
+      "fields": {
+        "epoch": 1,
+        "failed": 0,
+        "final": true,
+        "keyboard_captured": 0,
+        "keyboard_injected": 66,
+        "keyboard_received": 66,
+        "keyboard_rejected": 0,
+        "keyboard_sent": 0,
+        "mouse_injected": 410,
+        "mouse_sent": 0,
+        "session": "264d63b078d6",
+        "source": false
+      }
+    }
+  ],
+  "status": "人工验收未通过或待确认；反向未建立记录，需核对用户实际操作",
+  "userAcceptanceConfirmed": false
+}
