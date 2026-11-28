@@ -124,6 +124,8 @@ func (i *Injector) Close() error {
 	return i.ReleaseAll()
 }
 
+func (i *Injector) PreservePhysical(event common.Event) { i.tracker.PreservePhysical(event) }
+
 func (i *Injector) translate(event common.Event) ([]nativeInput, error) {
 	switch event.Kind {
 	case common.MouseAbsolute:

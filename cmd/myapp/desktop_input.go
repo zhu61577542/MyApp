@@ -32,6 +32,7 @@ type desktopInjector struct {
 	nextCheck       time.Time
 	recoveryErr     error
 	onRecoveryError func(error)
+	guard           *peerTargetGuard
 }
 
 func (i *desktopInjector) control(_ context.Context, action string) error {
@@ -42,6 +43,9 @@ func (i *desktopInjector) control(_ context.Context, action string) error {
 	}
 	if i.recoveryErr != nil {
 		return i.recoveryErr
+	}
+	if i.guard != nil && i.guard.revoked.Load() {
+		return ownership.ErrStale
 	}
 	state := i.state.Sharing()
 	if i.blocked || state.Paused || !state.Accepting {
@@ -68,6 +72,9 @@ func (i *desktopInjector) controlEdge(ctx context.Context, action string, entry 
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	if i.guard != nil && i.guard.revoked.Load() {
+		return ownership.ErrStale
+	}
 	if i.recoveryErr != nil {
 		return i.recoveryErr
 	}
@@ -133,6 +140,9 @@ func (i *desktopInjector) endLocked() error {
 func (i *desktopInjector) Inject(event common.Event) error {
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	if i.guard != nil && i.guard.revoked.Load() {
+		return nil
+	}
 	if !i.active {
 		if i.begun {
 			return nil
@@ -242,6 +252,7 @@ type desktopCapture struct {
 	positions    map[string]string
 	edgeDelay    time.Duration
 	peerCancel   context.CancelFunc
+	activity     *desktopActivity
 }
 
 func (c *desktopCapture) stop(ctx context.Context) error {
@@ -620,5 +631,25 @@ func newDesktopCapture(ctx context.Context, hub *app.Hub, links []*app.Link, pee
 		}
 		positions[peer.ID] = position
 	}
-	return &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: create, geometry: geometry, geometryErr: err, positions: positions, edgeDelay: 0}
+	c := &desktopCapture{ctx: ctx, hub: hub, links: links, peers: peers, state: state, create: create, geometry: geometry, geometryErr: err, positions: positions, edgeDelay: 0}
+	if peer := desktopPeerFrom(ctx); peer != nil && len(links) == 1 {
+		c.activity = &desktopActivity{create: platform.NewPhysicalObserver}
+		peer.mu.Lock()
+		peer.activity = c.activity
+		peer.mu.Unlock()
+		links[0].EnablePeerPosition(state.Snapshot().Role == config.RoleController, func() string {
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			return c.positions[peers[0].ID]
+		}, func() bool {
+			c.activity.mu.Lock()
+			defer c.activity.mu.Unlock()
+			return c.activity.ready
+		})
+		links[0].SetScreenChangeHandler(func() {
+			c.remoteStopped(peers[0].ID)
+			state.Update(func(s *desktop.Snapshot) { s.Error = "对端显示器布局变化，已恢复本机控制" })
+		})
+	}
+	return c
 }

@@ -44,27 +44,28 @@ func (t Task) Active() bool {
 }
 
 type Snapshot struct {
-	Revision      uint64      `json:"revision"`
-	Phase         string      `json:"phase"`
-	DeviceID      string      `json:"device_id"`
-	Role          config.Role `json:"role"`
-	Target        string      `json:"target"`
-	Paused        bool        `json:"paused"`
-	Text          bool        `json:"text"`
-	Files         bool        `json:"files"`
-	Accepting     bool        `json:"accepting"`
-	EdgeEnabled   bool        `json:"edge_enabled"`
-	EdgeReady     bool        `json:"edge_ready"`
-	EdgeStatus    string      `json:"edge_status,omitempty"`
-	EdgeError     string      `json:"edge_error,omitempty"`
-	Attempt       int         `json:"attempt"`
-	Error         string      `json:"error,omitempty"`
-	Peers         []Peer      `json:"peers"`
-	Tasks         []Task      `json:"tasks"`
-	PeerMode      bool        `json:"peer_mode,omitempty"`
-	ControlPhase  string      `json:"control_phase,omitempty"`
-	ControlSource string      `json:"control_source,omitempty"`
-	ControlTarget string      `json:"control_target,omitempty"`
+	PeerEdgesReady bool        `json:"peer_edges_ready,omitempty"`
+	Revision       uint64      `json:"revision"`
+	Phase          string      `json:"phase"`
+	DeviceID       string      `json:"device_id"`
+	Role           config.Role `json:"role"`
+	Target         string      `json:"target"`
+	Paused         bool        `json:"paused"`
+	Text           bool        `json:"text"`
+	Files          bool        `json:"files"`
+	Accepting      bool        `json:"accepting"`
+	EdgeEnabled    bool        `json:"edge_enabled"`
+	EdgeReady      bool        `json:"edge_ready"`
+	EdgeStatus     string      `json:"edge_status,omitempty"`
+	EdgeError      string      `json:"edge_error,omitempty"`
+	Attempt        int         `json:"attempt"`
+	Error          string      `json:"error,omitempty"`
+	Peers          []Peer      `json:"peers"`
+	Tasks          []Task      `json:"tasks"`
+	PeerMode       bool        `json:"peer_mode,omitempty"`
+	ControlPhase   string      `json:"control_phase,omitempty"`
+	ControlSource  string      `json:"control_source,omitempty"`
+	ControlTarget  string      `json:"control_target,omitempty"`
 }
 
 type Command struct {
@@ -140,7 +141,7 @@ func (s *Session) ReportEdge(ready bool, status, failure string) {
 func (s *Session) Sharing() Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return Snapshot{Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting, EdgeEnabled: s.state.EdgeEnabled, Target: s.state.Target, PeerMode: s.state.PeerMode, ControlPhase: s.state.ControlPhase, ControlSource: s.state.ControlSource, ControlTarget: s.state.ControlTarget, Error: s.state.Error}
+	return Snapshot{Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting, EdgeEnabled: s.state.EdgeEnabled, Target: s.state.Target, PeerMode: s.state.PeerMode, PeerEdgesReady: s.state.PeerEdgesReady, ControlPhase: s.state.ControlPhase, ControlSource: s.state.ControlSource, ControlTarget: s.state.ControlTarget, Error: s.state.Error}
 }
 
 func (s *Session) UpdatePeer(id string, update func(*Peer)) {

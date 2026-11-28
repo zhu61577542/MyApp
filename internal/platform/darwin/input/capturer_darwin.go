@@ -52,6 +52,9 @@ type Capturer struct {
 	callbackErr     error
 	sequence        uint64
 	modifierDown    map[uint16]bool
+	observing       bool
+	keyState        func(int32, uint16) bool
+	buttonState     func(int32, uint32) bool
 }
 
 func NewCapturer() (*Capturer, error) {
@@ -68,6 +71,8 @@ func NewCapturer() (*Capturer, error) {
 	purego.RegisterLibFunc(&capturer.enableTap, coreGraphics, "CGEventTapEnable")
 	purego.RegisterLibFunc(&capturer.preflightListen, coreGraphics, "CGPreflightListenEventAccess")
 	purego.RegisterLibFunc(&capturer.getInteger, coreGraphics, "CGEventGetIntegerValueField")
+	purego.RegisterLibFunc(&capturer.keyState, coreGraphics, "CGEventSourceKeyState")
+	purego.RegisterLibFunc(&capturer.buttonState, coreGraphics, "CGEventSourceButtonState")
 	purego.RegisterLibFunc(&capturer.makeSource, coreFoundation, "CFMachPortCreateRunLoopSource")
 	purego.RegisterLibFunc(&capturer.getRunLoop, coreFoundation, "CFRunLoopGetCurrent")
 	purego.RegisterLibFunc(&capturer.addSource, coreFoundation, "CFRunLoopAddSource")
@@ -94,6 +99,11 @@ func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error
 	return c.CaptureWithReady(ctx, handler, nil)
 }
 
+func (c *Capturer) Observe(ctx context.Context, activity func(common.Event), ready func()) error {
+	c.observing = true
+	return c.CaptureWithReady(ctx, func(event common.Event) error { activity(event); return nil }, ready)
+}
+
 func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Event) error, ready func()) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -112,7 +122,11 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 	token := uintptr(capturerToken.Add(1))
 	capturerRegistry.Store(token, c)
 	defer capturerRegistry.Delete(token)
-	tap := c.createTap(0, 0, 0, mask, eventTapCallback, token)
+	options := uint32(0)
+	if c.observing {
+		options = 1
+	}
+	tap := c.createTap(0, 0, options, mask, eventTapCallback, token)
 	if tap == 0 {
 		return errors.New("CGEventTapCreate 失败")
 	}
@@ -138,6 +152,7 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 	c.addSource(runLoop, source, c.commonModes)
 	defer c.removeSource(runLoop, source, c.commonModes)
 	c.enableTap(tap, true)
+	c.seedPhysicalState()
 	if ready != nil {
 		ready()
 	}
@@ -179,13 +194,23 @@ func (c *Capturer) handleEvent(eventType uint32, event uintptr) uintptr {
 		c.stateMu.Unlock()
 		return event
 	}
+	if c.getInteger(event, eventSourceUserData) == myAppEventMarker {
+		c.stateMu.Unlock()
+		return event
+	}
 	handler, sequence := c.handler, c.sequence
 	inputEvent, emit := c.translateLocked(eventType, event, sequence)
+	if c.observing && !emit && (eventType == 10 || eventType == 12) {
+		inputEvent, emit = common.Event{Kind: common.KeyDown}, true
+	}
 	if emit {
 		c.sequence++
 	}
 	c.stateMu.Unlock()
 	if !emit || handler == nil {
+		if c.observing {
+			return event
+		}
 		return 0
 	}
 	if err := handler(inputEvent); err != nil {
@@ -196,6 +221,9 @@ func (c *Capturer) handleEvent(eventType uint32, event uintptr) uintptr {
 		if runLoop != 0 {
 			c.runLoopStop(runLoop)
 		}
+	}
+	if c.observing {
+		return event
 	}
 	return 0
 }
@@ -271,4 +299,25 @@ func eventMask(eventTypes ...uint32) uint64 {
 		}
 	}
 	return mask
+}
+
+func (c *Capturer) seedPhysicalState() {
+	for hid, code := range macKeyCodes {
+		if !c.observing && (hid < 224 || hid > 231) {
+			continue
+		}
+		if c.keyState(1, code) {
+			if hid >= 224 && hid <= 231 {
+				c.modifierDown[code] = true
+			}
+			_ = c.handler(common.Event{Kind: common.KeyDown, Code: hid, Sequence: c.sequence})
+			c.sequence++
+		}
+	}
+	for button := uint16(1); button <= 5; button++ {
+		if c.buttonState(1, uint32(button-1)) {
+			_ = c.handler(common.Event{Kind: common.MouseButtonDown, Code: button, Sequence: c.sequence})
+			c.sequence++
+		}
+	}
 }

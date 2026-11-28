@@ -35,6 +35,7 @@ type Link struct {
 	tasks        *linkTransfers
 	screen       *linkScreen
 	peer         *linkPeer
+	position     *peerPosition
 }
 
 // 仅在启动 Run 前设置。
@@ -224,6 +225,11 @@ func (l *Link) run(ctx context.Context, connection, bulk io.ReadWriteCloser) err
 		go func() { defer close(done); l.publishScreens(ctx) }()
 		defer func() { cancel(); <-done }()
 	}
+	if l.position != nil {
+		done := make(chan struct{})
+		go func() { defer close(done); l.publishPeerPosition(ctx) }()
+		defer func() { cancel(); <-done }()
+	}
 	monitor, err := transport.NewHeartbeatMonitor(750*time.Millisecond, time.Now())
 	if err != nil {
 		return err
@@ -305,6 +311,10 @@ func (l *Link) readChannel(ctx context.Context, connection io.Reader, monitor *t
 			return errors.New("消息类型与会话通道不匹配")
 		}
 		switch frame.Type {
+		case protocol.TypePeerPosition:
+			if err := l.handlePeerPosition(frame); err != nil {
+				return err
+			}
 		case protocol.TypePeerOffer, protocol.TypePeerControl, protocol.TypePeerInput:
 			if err := l.handlePeerFrame(ctx, frame); err != nil {
 				return err

@@ -1,0 +1,38 @@
+=== RUN   TestActivityObserverFailureClosesGateAndIsJoined
+--- PASS: TestActivityObserverFailureClosesGateAndIsJoined (0.01s)
+=== RUN   TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey
+--- PASS: TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey (0.00s)
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right
+--- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover (0.61s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left (0.30s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right (0.31s)
+=== RUN   TestStage3ReceivedCursorCannotTriggerAutomaticBounce
+--- PASS: TestStage3ReceivedCursorCannotTriggerAutomaticBounce (0.31s)
+=== RUN   TestActivityObserverFailureClosesGateAndIsJoined
+--- PASS: TestActivityObserverFailureClosesGateAndIsJoined (0.01s)
+=== RUN   TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey
+--- PASS: TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey (0.00s)
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right
+--- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover (0.61s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left (0.30s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right (0.30s)
+=== RUN   TestStage3ReceivedCursorCannotTriggerAutomaticBounce
+--- PASS: TestStage3ReceivedCursorCannotTriggerAutomaticBounce (0.31s)
+=== RUN   TestActivityObserverFailureClosesGateAndIsJoined
+--- PASS: TestActivityObserverFailureClosesGateAndIsJoined (0.01s)
+=== RUN   TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey
+--- PASS: TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey (0.00s)
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right
+--- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover (0.61s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left (0.30s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right (0.31s)
+=== RUN   TestStage3ReceivedCursorCannotTriggerAutomaticBounce
+--- PASS: TestStage3ReceivedCursorCannotTriggerAutomaticBounce (0.30s)
+PASS
+ok  	myapp/cmd/myapp	3.808s

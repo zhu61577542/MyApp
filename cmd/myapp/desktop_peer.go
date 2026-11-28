@@ -18,13 +18,17 @@ import (
 type desktopPeerKey struct{}
 
 type desktopPeerRuntime struct {
-	mu     sync.Mutex
-	device *peercontrol.Device
-	driver *desktopPeerDriver
-	links  map[string]*app.Link
+	mu       sync.Mutex
+	device   *peercontrol.Device
+	driver   *desktopPeerDriver
+	links    map[string]*app.Link
+	activity *desktopActivity
 }
 
 func withDesktopPeer(ctx context.Context, state *desktop.Session) context.Context {
+	if state.Snapshot().Role == config.RoleAgent && !state.Sharing().Paused {
+		state.Update(func(s *desktop.Snapshot) { s.EdgeEnabled = true })
+	}
 	p := &desktopPeerRuntime{links: make(map[string]*app.Link)}
 	p.driver = &desktopPeerDriver{state: state, createCapture: platform.NewCapturer, createInjector: platform.NewInjector, geometry: pointer.New, remote: func(id string) app.ScreenInfo {
 		p.mu.Lock()
@@ -36,6 +40,27 @@ func withDesktopPeer(ctx context.Context, state *desktop.Session) context.Contex
 		return app.ScreenInfo{}
 	}}
 	p.device = peercontrol.NewDevice(p.driver)
+	p.driver.activity = func() *desktopActivity { p.mu.Lock(); defer p.mu.Unlock(); return p.activity }
+	p.driver.position = func(id string) (string, bool, bool) {
+		p.mu.Lock()
+		link := p.links[id]
+		p.mu.Unlock()
+		if link == nil {
+			return "", false, false
+		}
+		side, confirmed := link.PeerPosition()
+		return side, confirmed, link.PeerPositionKnown()
+	}
+	p.driver.takeover = func(token ownership.Token, reason ownership.Reason) {
+		p.mu.Lock()
+		link := p.links[token.Source]
+		p.mu.Unlock()
+		if link != nil {
+			if node := link.CurrentPeerControl(); node != nil {
+				_ = node.StopToken(token, reason)
+			}
+		}
+	}
 	return context.WithValue(ctx, desktopPeerKey{}, p)
 }
 func desktopPeerFrom(ctx context.Context) *desktopPeerRuntime {
@@ -78,6 +103,14 @@ func enablePeerDesktop(ctx context.Context, link *app.Link, cfg config.Config, i
 		current := state.Sharing()
 		phase := string(control.Phase)
 		paused := p.device.Paused()
+		if current.ControlPhase != phase || current.ControlSource != source || current.ControlTarget != target {
+			p.mu.Lock()
+			activity := p.activity
+			p.mu.Unlock()
+			if activity != nil {
+				activity.resetEdges()
+			}
+		}
 		activeTarget := ""
 		if control.Phase != ownership.Local {
 			activeTarget = id
@@ -150,6 +183,7 @@ type peerCaptureRun struct {
 	geometry           pointer.Backend
 	returnPoint        *pointer.Point
 	restoreCursor      func() error
+	sourceScreen       pointer.Screen
 }
 
 type desktopPeerDriver struct {
@@ -163,6 +197,11 @@ type desktopPeerDriver struct {
 	injector       *desktopInjector
 	targetToken    ownership.Token
 	entry          *pointer.Entry
+	activity       func() *desktopActivity
+	position       func(string) (string, bool, bool)
+	takeover       func(ownership.Token, ownership.Reason)
+	guard          *peerTargetGuard
+	guardActivity  *desktopActivity
 }
 
 func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, source bool, entry *pointer.Entry, emit func(common.Event) error, stopped func(bool)) error {
@@ -170,7 +209,32 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 	if state.Paused {
 		return ownership.ErrPaused
 	}
+	if source && d.activity != nil {
+		activity := d.activity()
+		if activity == nil {
+			return errors.New("实体输入监视器尚未装配")
+		}
+		if err := activity.waitReady(ctx); err != nil {
+			return err
+		}
+	}
 	if !source {
+		if entry != nil && d.position != nil {
+			side, confirmed, known := d.position(token.Source)
+			if known && (!confirmed || entry.Side != pointer.OppositeSide(side)) {
+				return errors.New("跨屏位置已变化，正在等待两端确认")
+			}
+		}
+		var activity *desktopActivity
+		if d.activity != nil {
+			activity = d.activity()
+			if activity == nil {
+				return errors.New("实体输入监视器尚未装配")
+			}
+			if err := activity.waitReady(ctx); err != nil {
+				return err
+			}
+		}
 		geometry, err := d.geometry()
 		if err != nil && entry != nil {
 			return err
@@ -188,6 +252,34 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 		d.mu.Lock()
 		d.injector = i
 		d.targetToken = token
+		guard := &peerTargetGuard{token: token, stopped: func(reason ownership.Reason) {
+			if reason == ownership.LocalTakeover {
+				d.state.ReportEdge(false, "本机实体操作已接管", "")
+			} else {
+				message := "实体输入监听已中断"
+				if activity != nil {
+					activity.mu.Lock()
+					if activity.err != nil {
+						message = activity.err.Error()
+					}
+					activity.mu.Unlock()
+				}
+				d.state.Update(func(s *desktop.Snapshot) { s.Error = message })
+			}
+			if d.takeover != nil {
+				d.takeover(token, reason)
+			} else {
+				stopped(false)
+			}
+		}}
+		d.guard, d.guardActivity = guard, activity
+		i.guard = guard
+		if activity != nil {
+			if err := activity.attachTarget(guard); err != nil {
+				d.mu.Unlock()
+				return err
+			}
+		}
 		if entry != nil {
 			copy := *entry
 			d.entry = &copy
@@ -207,7 +299,7 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 	if err != nil {
 		return err
 	}
-	screen, err := geometry.Screen()
+	screen, err := pointer.SourceScreen(geometry)
 	if err != nil {
 		return err
 	}
@@ -232,13 +324,34 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 		return err
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	run := &peerCaptureRun{token: token, capture: capturer, cancel: cancel, done: make(chan struct{}), ready: make(chan struct{}), start: make(chan struct{}), geometry: geometry, returnPoint: &position}
+	run := &peerCaptureRun{token: token, capture: capturer, cancel: cancel, done: make(chan struct{}), ready: make(chan struct{}), start: make(chan struct{}), geometry: geometry, returnPoint: &position, sourceScreen: screen}
+	var sourceTopology *pointer.Topology
+	if backend, ok := geometry.(pointer.TopologyBackend); ok {
+		topology, err := backend.Topology()
+		if err != nil {
+			cancel()
+			return err
+		}
+		if !topology.Valid() || topology.Bounds.Key() != screen.Key() {
+			cancel()
+			return errors.New("来源显示器布局已经变化")
+		}
+		sourceTopology = &topology
+	}
 	d.mu.Lock()
 	d.run = run
 	d.mu.Unlock()
 	go func() {
 		var once sync.Once
 		emergency := newEmergencyKeys(func() { stopped(true) })
+		filter := func(event common.Event) bool {
+			if d.activity != nil {
+				if activity := d.activity(); activity != nil {
+					activity.observeState(event)
+				}
+			}
+			return emergency(event)
+		}
 		handler := func(_ context.Context, event common.Event) error {
 			if travel != nil && event.Kind == common.MouseRelative {
 				point, back := travel.Move(int(event.X), int(event.Y))
@@ -246,6 +359,9 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 					returnEntry := travel.Entry
 					returnEntry.Position = travel.ReturnRatio()
 					landing, err := pointer.Landing(screen, returnEntry, true)
+					if sourceTopology != nil {
+						landing, err = sourceTopology.Landing(returnEntry, true)
+					}
 					if err != nil {
 						return err
 					}
@@ -259,7 +375,7 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 			}
 			return emit(event)
 		}
-		result := captureQueuedAfter(ctx, capturer, handler, func() { once.Do(func() { close(run.ready) }) }, run.start, emergency)
+		result := captureQueuedAfter(ctx, capturer, handler, func() { once.Do(func() { close(run.ready) }) }, run.start, filter)
 		run.mu.Lock()
 		run.err = result
 		run.mu.Unlock()
@@ -289,8 +405,12 @@ func (d *desktopPeerDriver) Activate(ctx context.Context, token ownership.Token)
 	d.mu.Lock()
 	run := d.run
 	i, targetToken, entry := d.injector, d.targetToken, d.entry
+	guard := d.guard
 	d.mu.Unlock()
 	if run == nil {
+		if guard != nil && guard.revoked.Load() {
+			return ownership.ErrStale
+		}
 		if i == nil || targetToken != token {
 			return ownership.ErrStale
 		}
@@ -338,8 +458,16 @@ func peerInjectorReady(i *desktopInjector) error {
 
 func (d *desktopPeerDriver) Restore(ctx context.Context) error {
 	d.mu.Lock()
-	run, i := d.run, d.injector
+	run, i, guard, activity := d.run, d.injector, d.guard, d.guardActivity
 	d.mu.Unlock()
+	if guard != nil {
+		if activity != nil {
+			activity.detachTarget(guard)
+		} else {
+			guard.closed.Store(true)
+			guard.revoked.Store(true)
+		}
+	}
 	var result error
 	if run != nil {
 		run.cancel()
@@ -359,12 +487,16 @@ func (d *desktopPeerDriver) Restore(ctx context.Context) error {
 		run.mu.Unlock()
 	}
 	if i != nil {
+		if guard != nil {
+			guard.preserve(i.inner)
+		}
 		result = errors.Join(result, i.Close())
 	}
 	if result == nil {
 		d.mu.Lock()
 		d.run, d.injector = nil, nil
 		d.targetToken, d.entry = ownership.Token{}, nil
+		d.guard, d.guardActivity = nil, nil
 		d.mu.Unlock()
 	}
 	return result
@@ -373,7 +505,11 @@ func (d *desktopPeerDriver) Restore(ctx context.Context) error {
 func (d *desktopPeerDriver) Inject(event common.Event) error {
 	d.mu.Lock()
 	i := d.injector
+	guard := d.guard
 	d.mu.Unlock()
+	if guard != nil && guard.revoked.Load() {
+		return nil
+	}
 	if i == nil {
 		return ownership.ErrStale
 	}

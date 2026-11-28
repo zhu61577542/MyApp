@@ -70,8 +70,21 @@ type nativeMessage struct {
 }
 
 var (
-	activeCapturer atomic.Pointer[Capturer]
-	mouseCallback  = syscall.NewCallback(func(code, message, data uintptr) uintptr {
+	activeCapturer        atomic.Pointer[Capturer]
+	activeObserver        atomic.Pointer[Capturer]
+	observerMouseCallback = syscall.NewCallback(func(code, message, data uintptr) uintptr {
+		if observer := activeObserver.Load(); observer != nil {
+			return observer.handleMouse(code, uint32(message), data)
+		}
+		return 0
+	})
+	observerKeyboardCallback = syscall.NewCallback(func(code, message, data uintptr) uintptr {
+		if observer := activeObserver.Load(); observer != nil {
+			return observer.handleKeyboard(code, uint32(message), data)
+		}
+		return 0
+	})
+	mouseCallback = syscall.NewCallback(func(code, message, data uintptr) uintptr {
 		capturer := activeCapturer.Load()
 		if capturer == nil {
 			return 0
@@ -105,6 +118,7 @@ type Capturer struct {
 	sequence                                        uint64
 	lastPoint                                       nativePoint
 	hasLastPoint                                    bool
+	observer                                        func(common.Event)
 }
 
 func NewCapturer() (*Capturer, error) {
@@ -136,6 +150,11 @@ func (c *Capturer) Capture(ctx context.Context, handler func(common.Event) error
 	return c.CaptureWithReady(ctx, handler, nil)
 }
 
+func (c *Capturer) Observe(ctx context.Context, activity func(common.Event), ready func()) error {
+	c.observer = activity
+	return c.CaptureWithReady(ctx, func(common.Event) error { return nil }, ready)
+}
+
 func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Event) error, ready func()) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -143,10 +162,16 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 	if handler == nil {
 		return errors.New("输入处理函数不能为空")
 	}
-	if !activeCapturer.CompareAndSwap(nil, c) {
+	active := &activeCapturer
+	mouseProc, keyboardProc := mouseCallback, keyboardCallback
+	if c.observer != nil {
+		active = &activeObserver
+		mouseProc, keyboardProc = observerMouseCallback, observerKeyboardCallback
+	}
+	if !active.CompareAndSwap(nil, c) {
 		return errors.New("Windows 输入捕获器已在运行")
 	}
-	defer activeCapturer.CompareAndSwap(c, nil)
+	defer active.CompareAndSwap(c, nil)
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	previous, _, _ := c.raw.dpi.Call(^uintptr(3))
@@ -165,16 +190,18 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 		c.threadID, c.handler = 0, nil
 		c.mu.Unlock()
 	}()
-	if err := c.raw.start(); err != nil {
-		return err
+	if c.observer == nil {
+		if err := c.raw.start(); err != nil {
+			return err
+		}
+		defer c.raw.close()
 	}
-	defer c.raw.close()
-	mouseHook, _, mouseErr := c.setHook.Call(whMouseLowLevel, mouseCallback, 0, 0)
+	mouseHook, _, mouseErr := c.setHook.Call(whMouseLowLevel, mouseProc, 0, 0)
 	if mouseHook == 0 {
 		return nativeCallError(mouseErr, "无法安装 Windows 鼠标 Hook")
 	}
 	defer c.unhook.Call(mouseHook)
-	keyboardHook, _, keyboardErr := c.setHook.Call(whKeyboardLowLevel, keyboardCallback, 0, 0)
+	keyboardHook, _, keyboardErr := c.setHook.Call(whKeyboardLowLevel, keyboardProc, 0, 0)
 	if keyboardHook == 0 {
 		return nativeCallError(keyboardErr, "无法安装 Windows 键盘 Hook")
 	}
@@ -187,6 +214,20 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 		case <-stopped:
 		}
 	}()
+	if c.observer != nil {
+		seedWindowsPhysicalState(c.observer)
+	} else {
+		seedWindowsPhysicalState(func(event common.Event) {
+			if event.Kind == common.KeyDown && (event.Code < 224 || event.Code > 231) {
+				return
+			}
+			c.mu.Lock()
+			event.Sequence = c.sequence
+			c.sequence++
+			c.mu.Unlock()
+			c.emit(event)
+		})
+	}
 	if ready != nil {
 		ready()
 	}
@@ -199,7 +240,7 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 		if result == 0 {
 			break
 		}
-		if message.Message == wmInput {
+		if message.Message == wmInput && c.observer == nil {
 			if err := c.raw.handle(c, message.LParam); err != nil {
 				c.mu.Lock()
 				c.callbackErr = err
@@ -241,6 +282,12 @@ func (c *Capturer) handleMouse(code uintptr, message uint32, data uintptr) uintp
 	c.mouseSeen.Add(1)
 	if native.Flags&llMouseInjected != 0 {
 		c.mouseInjected.Add(1)
+		return c.next(code, uintptr(message), data)
+	}
+	if c.observer != nil {
+		if event, emit := physicalMouseEvent(message, native); emit {
+			c.observer(event)
+		}
 		return c.next(code, uintptr(message), data)
 	}
 	if message == wmMouseMove {
@@ -310,6 +357,12 @@ func (c *Capturer) handleKeyboard(code uintptr, message uint32, data uintptr) ui
 	c.keyboardSeen.Add(1)
 	if native.Flags&llKeyboardInjected != 0 {
 		c.keyboardInjected.Add(1)
+		return c.next(code, uintptr(message), data)
+	}
+	if c.observer != nil {
+		if event, emit := physicalKeyboardEvent(message, native); emit {
+			c.observer(event)
+		}
 		return c.next(code, uintptr(message), data)
 	}
 	extended := native.Flags&llKeyboardExtended != 0

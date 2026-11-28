@@ -49,7 +49,7 @@ func (v *desktopView) devicesPage() fyne.CanvasObject {
 		layoutAction = quiet(label, v.toggleLayout)
 	}
 	positionHeader := container.NewBorder(nil, nil, nil, layoutAction, sectionTitle(fmt.Sprintf("电脑位置 · %d / %d 台，包含本机", len(v.records)+1, v.cfg.MaxDevices)))
-	position := container.NewVBox(positionHeader, board, secondary("从本机主屏边缘进入对端，Windows 的全部扩展显示器可连续操作；从反向边缘返回本机。控制期间也可用 "+targetShortcut()+" 切换目标。"))
+	position := container.NewVBox(positionHeader, board, secondary("从相邻方向的桌面最外侧边缘切换。Windows 内部显示器接缝不会切换电脑，键盘跟随鼠标。"))
 	position.Add(secondary("建立信任后自动跨屏，无需点击控制按钮或启用开关。"))
 	if v.layoutEditing {
 		controls := container.NewVBox(secondary("拖动电脑屏幕，或使用位置选项。编辑期间键鼠留在本机。"))
@@ -122,8 +122,21 @@ func (v *desktopView) controlSummary() (title, copy, action string, enabled bool
 	}
 	if v.view.Target != "" {
 		name := peerName(v.view.Target, v.view.Peers, v.records)
-		if v.cfg.Role == config.RoleController {
+		if v.view.PeerMode && v.view.ControlPhase == "preparing" {
+			return "正在准备跨屏", "双方键鼠就绪后自动切换。", "停止控制", true
+		}
+		if v.view.PeerMode && v.view.ControlPhase == "recovering" {
+			return "正在恢复本机控制", "正在释放按键并恢复光标。", "等待恢复", false
+		}
+		sending := v.cfg.Role == config.RoleController
+		if v.view.PeerMode {
+			sending = v.view.ControlSource == v.view.DeviceID
+		}
+		if sending {
 			return "正在控制 " + name, "按 " + emergencyShortcut() + " 随时结束控制。", "停止控制", true
+		}
+		if v.view.PeerMode {
+			return "正在接受 " + name + " 的控制", "操作本机实体键鼠可收回控制。", "停止控制", true
 		}
 		return "正在接受 " + name + " 的控制", "你可以随时暂停接受控制。", "暂停接受控制", true
 	}
@@ -136,6 +149,18 @@ func (v *desktopView) controlSummary() (title, copy, action string, enabled bool
 	if v.cfg.Role == config.RoleAgent {
 		if !v.view.Accepting {
 			return "已暂停接受控制", "文字与文件共享仍按你的设置运行。", "允许接受控制", true
+		}
+		if v.view.PeerMode {
+			if !v.view.EdgeEnabled {
+				return "跨屏切换已暂停", "鼠标留在本机。", "恢复跨屏", true
+			}
+			if v.view.EdgeError != "" {
+				return "跨屏暂不可用", v.view.EdgeError, "查看权限", true
+			}
+			if v.view.PeerEdgesReady && v.view.EdgeReady {
+				return "双向跨屏已就绪", "两端均可用实体鼠标跨越相邻外边缘，键盘自动跟随。", "暂停接受控制", true
+			}
+			return "正在准备双向跨屏", "可接受对端控制，反向触边等待两端权限与位置确认。", "暂停接受控制", true
 		}
 		return "跨屏连接已就绪", "主电脑的鼠标移入这台电脑后，键盘随之切换。", "暂停接受控制", true
 	}

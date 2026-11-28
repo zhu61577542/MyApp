@@ -191,6 +191,7 @@ func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteClo
 	if err != nil {
 		return err
 	}
+	var capture *desktopCapture
 	if state := desktop.From(ctx); state != nil {
 		gate := injector.(*desktopInjector)
 		current := state.Snapshot()
@@ -204,7 +205,6 @@ func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteClo
 		if err := enableDesktopLink(ctx, link, cfg, peer, gate); err != nil {
 			return err
 		}
-		var capture *desktopCapture
 		if desktopPeerFrom(ctx) != nil {
 			capture = newDesktopCapture(ctx, nil, []*app.Link{link}, []config.Peer{{ID: peer.ID, Address: peer.Address}}, state)
 			defer finishDesktopCapture(capture)
@@ -223,6 +223,9 @@ func runConnected(ctx context.Context, connection net.Conn, bulk io.ReadWriteClo
 		return err
 	}
 	workers := []func(context.Context) error{func(ctx context.Context) error { return link.RunChannels(ctx, connection, bulk) }}
+	if capture != nil {
+		workers = append(workers, capture.runEdges)
+	}
 	if state := desktop.From(ctx); state != nil {
 		state.Update(func(s *desktop.Snapshot) { s.Phase = "connected"; s.Error = "" })
 	}

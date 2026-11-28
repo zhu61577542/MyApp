@@ -1,0 +1,4 @@
+ok  	myapp/cmd/myapp	2.983s
+ok  	myapp/internal/app	4.622s
+ok  	myapp/internal/input	(cached)
+ok  	myapp/internal/pointer	(cached)

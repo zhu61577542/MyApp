@@ -13,6 +13,35 @@ type Topology struct {
 }
 type TopologyBackend interface{ Topology() (Topology, error) }
 
+func OppositeSide(side string) string {
+	return map[string]string{"left": "right", "right": "left", "up": "down", "down": "up"}[side]
+}
+
+func SourceScreen(backend Backend) (Screen, error) {
+	if t, ok := backend.(TopologyBackend); ok {
+		topology, err := t.Topology()
+		if err != nil {
+			return Screen{}, err
+		}
+		if !topology.Valid() {
+			return Screen{}, errors.New("来源显示器布局无效")
+		}
+		return topology.Bounds, nil
+	}
+	return backend.Screen()
+}
+
+func (t Topology) Landing(entry Entry, returning bool) (Point, error) {
+	if !t.Valid() {
+		return Point{}, errors.New("显示器布局无效")
+	}
+	p, err := Landing(t.Bounds, entry, returning)
+	if err != nil {
+		return Point{}, err
+	}
+	return project(p, t.Displays), nil
+}
+
 func NewTopology(displays []Screen) (Topology, error) {
 	if len(displays) == 0 || len(displays) > 32 {
 		return Topology{}, errors.New("显示器数量无效")

@@ -204,6 +204,7 @@ func TestPeerDesktopAssemblySupportsBothRoleDirections(t *testing.T) {
 		states[i] = desktop.New(cfg, ids[i])
 		contexts[i] = withDesktopPeer(desktop.WithSession(ctx, states[i]), states[i])
 		runtimes[i] = desktopPeerFrom(contexts[i])
+		runtimes[i].activity = &desktopActivity{ready: true}
 		injectors[i] = &peerNativeInjector{}
 		geometries[i] = &peerNativePointer{}
 		runtimes[i].driver.createInjector = func() (common.Injector, error) { return injectors[i], nil }
@@ -302,6 +303,7 @@ func TestPeerEdgeUsesTargetScreenKey(t *testing.T) {
 		states[i] = desktop.New(cfg, ids[i])
 		contexts[i] = withDesktopPeer(desktop.WithSession(ctx, states[i]), states[i])
 		peer := desktopPeerFrom(contexts[i])
+		peer.activity = &desktopActivity{ready: true}
 		injectors[i] = &peerNativeInjector{}
 		peer.driver.geometry = func() (pointer.Backend, error) { return geometry[i], nil }
 		peer.driver.createCapture = func() (common.Capturer, error) { return &peerNativeCapture{events: make(chan common.Event, 8)}, nil }

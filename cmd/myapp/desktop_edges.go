@@ -3,12 +3,20 @@ package main
 import (
 	"context"
 	"errors"
+	"myapp/internal/config"
 	"myapp/internal/desktop"
+	"myapp/internal/ownership"
 	"myapp/internal/pointer"
 	"time"
 )
 
 func (c *desktopCapture) runEdges(ctx context.Context) error {
+	if c.activity != nil {
+		monitorCtx, cancel := context.WithCancel(ctx)
+		done := make(chan struct{})
+		go func() { defer close(done); c.activity.run(monitorCtx) }()
+		defer func() { cancel(); <-done }()
+	}
 	if c.geometry == nil {
 		failure := "本机屏幕监视器不可用"
 		if c.geometryErr != nil {
@@ -24,6 +32,10 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 	var screen pointer.Screen
 	var screenErr error
 	var nextGeometry time.Time
+	var lastMove uint64
+	var lastEpoch uint64
+	physicalMovement := false
+	listening := c.state.Snapshot().Role == config.RoleAgent
 	for {
 		select {
 		case <-ctx.Done():
@@ -31,12 +43,32 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		case <-ticker.C:
 		}
 		state := c.state.Sharing()
+		peerEdgesReady := false
+		if len(c.links) == 1 {
+			_, peerEdgesReady = c.links[0].PeerPosition()
+		}
+		if state.PeerEdgesReady != peerEdgesReady {
+			c.state.Update(func(s *desktop.Snapshot) { s.PeerEdgesReady = peerEdgesReady })
+		}
+		if c.activity != nil {
+			epoch := c.activity.epoch.Load()
+			if epoch != lastEpoch {
+				lastEpoch = epoch
+				lastMove = c.activity.edgeBaseline.Load()
+				physicalMovement = false
+				watcher.Reset()
+			}
+		}
 		if !state.EdgeEnabled && state.Target == "" {
 			watcher.Reset()
 			continue
 		}
 		if !time.Now().Before(nextGeometry) {
-			screen, screenErr = c.geometry.Screen()
+			if c.activity != nil {
+				screen, screenErr = pointer.SourceScreen(c.geometry)
+			} else {
+				screen, screenErr = c.geometry.Screen()
+			}
 			nextGeometry = time.Now().Add(250 * time.Millisecond)
 		}
 		if screenErr != nil {
@@ -45,6 +77,9 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 				c.run.cancel()
 			}
 			c.mu.Unlock()
+			if peer := desktopPeerFrom(c.ctx); peer != nil {
+				_ = peer.stop(ctx, ownership.LayoutChanged)
+			}
 			c.state.ReportEdge(false, "读取本机显示器失败", screenErr.Error())
 			continue
 		}
@@ -60,16 +95,56 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			positions[id] = side
 		}
 		c.mu.Unlock()
+		if peer := desktopPeerFrom(c.ctx); peer != nil && currentScreen == "" {
+			peer.driver.mu.Lock()
+			if active := peer.driver.run; active != nil {
+				currentScreen = active.sourceScreen.Key()
+			}
+			peer.driver.mu.Unlock()
+		}
 		if currentScreen != "" && currentScreen != screen.Key() {
-			c.remoteStopped(run.peer)
+			if run != nil {
+				c.remoteStopped(run.peer)
+			} else if peer := desktopPeerFrom(c.ctx); peer != nil {
+				_ = peer.stop(ctx, ownership.LayoutChanged)
+			}
 			c.state.Update(func(s *desktop.Snapshot) {
 				s.Error = "本机主屏幕变化，已停止跨屏控制"
 			})
 		}
 		state = c.state.Sharing()
-		if !state.EdgeEnabled || state.Paused || state.Target != "" {
+		if !state.EdgeEnabled || state.Paused || state.Target != "" || state.PeerMode && state.ControlPhase != string(ownership.Local) {
 			watcher.Reset()
+			if c.activity != nil {
+				lastMove = c.activity.edgeBaseline.Load()
+				physicalMovement = false
+			}
 			continue
+		}
+		if c.activity != nil {
+			c.activity.mu.Lock()
+			ready, failure := c.activity.ready, c.activity.err
+			c.activity.mu.Unlock()
+			if !ready {
+				watcher.Reset()
+				message := ""
+				if failure != nil {
+					message = failure.Error()
+				}
+				c.state.ReportEdge(false, "等待实体输入监听", message)
+				continue
+			}
+			move := c.activity.moves.Load()
+			if peerEdgesReady && captureFailure == "" {
+				c.state.ReportEdge(true, "双向边缘监视已就绪", "")
+			}
+			if move != lastMove {
+				physicalMovement = true
+			}
+			if !physicalMovement {
+				continue
+			}
+			lastMove = move
 		}
 		point, err := c.geometry.Position()
 		if err != nil {
@@ -79,6 +154,11 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		neighbors := make(map[string]string)
 		for index, peer := range c.peers {
 			if c.links[index].RemoteScreen().Screen.Valid() {
+				if side, confirmed := c.links[index].PeerPosition(); confirmed {
+					positions[peer.ID] = side
+				} else if listening {
+					continue
+				}
 				neighbors[positions[peer.ID]] = peer.ID
 			}
 		}

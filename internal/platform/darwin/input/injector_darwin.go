@@ -24,6 +24,7 @@ type Injector struct {
 	createEvent        func(uintptr) uintptr
 	getLocation        func(uintptr) point
 	post               func(uint32, uintptr)
+	setInteger         func(uintptr, uint32, int64)
 	release            func(uintptr)
 	preflightPost      func() bool
 	tracker            *common.Tracker
@@ -46,6 +47,7 @@ func New() (*Injector, error) {
 	purego.RegisterLibFunc(&injector.createEvent, coreGraphics, "CGEventCreate")
 	purego.RegisterLibFunc(&injector.getLocation, coreGraphics, "CGEventGetLocation")
 	purego.RegisterLibFunc(&injector.post, coreGraphics, "CGEventPost")
+	purego.RegisterLibFunc(&injector.setInteger, coreGraphics, "CGEventSetIntegerValueField")
 	purego.RegisterLibFunc(&injector.preflightPost, coreGraphics, "CGPreflightPostEventAccess")
 	purego.RegisterLibFunc(&injector.release, coreFoundation, "CFRelease")
 	return injector, nil
@@ -120,6 +122,7 @@ func (i *Injector) injectLocked(event common.Event) error {
 	if nativeEvent == 0 {
 		return errors.New("CoreGraphics 无法创建输入事件")
 	}
+	i.setInteger(nativeEvent, eventSourceUserData, myAppEventMarker)
 	i.post(0, nativeEvent)
 	i.release(nativeEvent)
 	i.tracker.Apply(event)
@@ -155,6 +158,8 @@ func (i *Injector) moveType() (uint32, uint32) {
 	}
 	return 5, 0
 }
+
+func (i *Injector) PreservePhysical(event common.Event) { i.tracker.PreservePhysical(event) }
 
 func macMouseButton(code uint16, down bool) (uint32, uint32, error) {
 	switch code {

@@ -47,6 +47,7 @@ const (
 	TypePeerOffer
 	TypePeerControl
 	TypePeerInput
+	TypePeerPosition
 )
 
 type Flags byte
@@ -143,7 +144,7 @@ func (d Decoder) Decode(reader io.Reader) (Frame, error) {
 }
 
 func knownType(messageType MessageType) bool {
-	return messageType >= TypeHello && messageType <= TypePeerInput
+	return messageType >= TypeHello && messageType <= TypePeerPosition
 }
 
 func writeFull(writer io.Writer, data []byte) error {
