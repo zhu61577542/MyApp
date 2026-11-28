@@ -18,16 +18,18 @@ type cgRect struct {
 	Size   cgSize
 }
 type nativeBackend struct {
-	mainDisplay func() uint32
-	bounds      func(uint32) cgRect
-	createEvent func(uintptr) uintptr
-	location    func(uintptr) cgPoint
-	release     func(uintptr)
-	warp        func(cgPoint) int32
-	hide        func(uint32) int32
-	show        func(uint32) int32
-	visible     func() uint32
-	background  func(bool) error
+	mainDisplay    func() uint32
+	activeDisplays func(uint32, *uint32, *uint32) int32
+	mirrorsDisplay func(uint32) uint32
+	bounds         func(uint32) cgRect
+	createEvent    func(uintptr) uintptr
+	location       func(uintptr) cgPoint
+	release        func(uintptr)
+	warp           func(cgPoint) int32
+	hide           func(uint32) int32
+	show           func(uint32) int32
+	visible        func() uint32
+	background     func(bool) error
 }
 
 func New() (Backend, error) {
@@ -41,6 +43,8 @@ func New() (Backend, error) {
 	}
 	p := &nativeBackend{}
 	purego.RegisterLibFunc(&p.mainDisplay, cg, "CGMainDisplayID")
+	purego.RegisterLibFunc(&p.activeDisplays, cg, "CGGetActiveDisplayList")
+	purego.RegisterLibFunc(&p.mirrorsDisplay, cg, "CGDisplayMirrorsDisplay")
 	purego.RegisterLibFunc(&p.bounds, cg, "CGDisplayBounds")
 	purego.RegisterLibFunc(&p.createEvent, cg, "CGEventCreate")
 	purego.RegisterLibFunc(&p.location, cg, "CGEventGetLocation")

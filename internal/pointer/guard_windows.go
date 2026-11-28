@@ -123,7 +123,7 @@ func runWindowGuard(input io.Reader, output io.Writer) error {
 	if err := p.Warp(point); err != nil {
 		return err
 	}
-	if ok, _, err := timer.Call(window, 1, 50, 0); ok == 0 {
+	if ok, _, err := timer.Call(window, 1, 10, 0); ok == 0 {
 		return fmt.Errorf("启动光标看护计时器失败: %v", err)
 	}
 	go func() { _, _ = io.Copy(io.Discard, input); post.Call(window, 0x0010, 0, 0) }()
@@ -150,6 +150,10 @@ func runWindowGuard(input io.Reader, output io.Writer) error {
 			}
 			if !ready {
 				if state.Flags&1 == 0 {
+					if ok, _, err := timer.Call(window, 1, 50, 0); ok == 0 {
+						callbackErr = fmt.Errorf("更新光标看护计时器失败: %v", err)
+						break
+					}
 					if _, err := fmt.Fprintln(output, "hidden"); err != nil {
 						callbackErr = err
 						break

@@ -16,9 +16,10 @@ import (
 )
 
 type stage3Observer struct {
-	events  chan common.Event
-	failure chan error
-	closed  atomic.Bool
+	events        chan common.Event
+	failure       chan error
+	closed        atomic.Bool
+	physicalPoint atomic.Pointer[pointer.Point]
 }
 
 func (o *stage3Observer) Observe(ctx context.Context, activity func(common.Event), ready func()) error {
@@ -35,6 +36,14 @@ func (o *stage3Observer) Observe(ctx context.Context, activity func(common.Event
 	}
 }
 func (o *stage3Observer) Close() error { o.closed.Store(true); return nil }
+
+func (o *stage3Observer) PhysicalPosition() (int32, int32, bool) {
+	p := o.physicalPoint.Load()
+	if p == nil {
+		return 0, 0, false
+	}
+	return int32(p.X), int32(p.Y), true
+}
 
 func TestActivityObserverFailureClosesGateAndIsJoined(t *testing.T) {
 	o := &stage3Observer{events: make(chan common.Event), failure: make(chan error, 1)}

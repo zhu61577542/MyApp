@@ -8,15 +8,25 @@ import (
 )
 
 func (c *Capturer) physicalMotion(native *mouseHookData) (common.Event, bool) {
+	point := native.Point
 	previous, known := c.lastPoint, c.hasLastPoint
 	c.lastPoint, c.hasLastPoint = native.Point, true
 	if common.ConsumeCursorWarp(native.Point.X, native.Point.Y) || native.Flags&llMouseInjected != 0 {
 		return common.Event{}, false
 	}
+	c.physicalPoint.Store(&point)
 	if !known {
 		return common.Event{}, false
 	}
 	return common.Event{Kind: common.MouseRelative, X: native.Point.X - previous.X, Y: native.Point.Y - previous.Y}, true
+}
+
+func (c *Capturer) PhysicalPosition() (int32, int32, bool) {
+	point := c.physicalPoint.Load()
+	if point == nil {
+		return 0, 0, false
+	}
+	return point.X, point.Y, true
 }
 
 func physicalMouseEvent(message uint32, native *mouseHookData) (common.Event, bool) {

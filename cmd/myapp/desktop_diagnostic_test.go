@@ -37,6 +37,13 @@ func TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure(t *t
 	}
 	d.reportInputCounts()
 	diagnostics := state.DrainDiagnostics()
+	countsOnly := diagnostics[:0]
+	for _, diagnostic := range diagnostics {
+		if diagnostic.Event == "输入链路计数" {
+			countsOnly = append(countsOnly, diagnostic)
+		}
+	}
+	diagnostics = countsOnly
 	if len(diagnostics) != 1 {
 		t.Fatal("汇总数量错误")
 	}

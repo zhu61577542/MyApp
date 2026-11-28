@@ -47,6 +47,12 @@ func TestPhysicalMotionTracksInjectedLandingAndFiltersWarp(t *testing.T) {
 	if !ok || e.Kind != common.MouseRelative || e.X != 2 || e.Y != 0 {
 		t.Fatal("未按注入后落点计算实体方向", e)
 	}
+	if _, ok := c.physicalMotion(&mouseHookData{Point: nativePoint{100, 100}, Flags: llMouseInjected}); ok {
+		t.Fatal("注入产生了实体移动")
+	}
+	if x, y, known := c.PhysicalPosition(); !known || x != 2559 || y != 100 {
+		t.Fatal("晚到注入替换了实体落点")
+	}
 	cancel := common.ExpectCursorWarp(2557, 100)
 	defer cancel()
 	if _, ok := c.physicalMotion(&mouseHookData{Point: nativePoint{2557, 100}}); ok {

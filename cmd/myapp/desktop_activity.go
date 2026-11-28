@@ -9,7 +9,14 @@ import (
 
 	common "myapp/internal/input"
 	"myapp/internal/ownership"
+	"myapp/internal/pointer"
 )
+
+type desktopPhysicalMotion struct {
+	event common.Event
+	point pointer.Point
+	known bool
+}
 
 type desktopActivity struct {
 	create       func() (common.PhysicalObserver, error)
@@ -22,8 +29,9 @@ type desktopActivity struct {
 	epoch        atomic.Uint64
 	edgeBaseline atomic.Uint64
 	target       atomic.Pointer[peerTargetGuard]
-	motion       common.Event
+	motion       desktopPhysicalMotion
 	pendingMove  time.Time
+	observer     common.PhysicalObserver
 }
 
 func (a *desktopActivity) resetEdges() {
@@ -39,15 +47,16 @@ func (a *desktopActivity) clearEdgeIntent() {
 	a.mu.Unlock()
 }
 
-func (a *desktopActivity) resetUserEdges() {
+func (a *desktopActivity) resetUserEdges() (uint64, uint64) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.pendingMove = time.Time{}
-	a.edgeBaseline.Store(a.moves.Load())
-	a.epoch.Add(1)
+	move := a.moves.Load()
+	a.edgeBaseline.Store(move)
+	return a.epoch.Add(1), move
 }
 
-func (a *desktopActivity) edgeMotion(last uint64) (common.Event, uint64, bool) {
+func (a *desktopActivity) edgeMotion(last uint64) (desktopPhysicalMotion, uint64, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	move := a.moves.Load()
@@ -60,6 +69,9 @@ func (a *desktopActivity) run(ctx context.Context) {
 	for ctx.Err() == nil {
 		observer, err := a.create()
 		if err == nil {
+			a.mu.Lock()
+			a.observer = observer
+			a.mu.Unlock()
 			err = observer.Observe(ctx, a.observe, func() {
 				a.mu.Lock()
 				a.ready, a.err = true, nil
@@ -72,6 +84,11 @@ func (a *desktopActivity) run(ctx context.Context) {
 		}
 		a.mu.Lock()
 		a.ready, a.err = false, err
+		a.observer = nil
+		a.motion = desktopPhysicalMotion{}
+		a.pendingMove = time.Time{}
+		a.edgeBaseline.Store(a.moves.Load())
+		a.epoch.Add(1)
 		if guard := a.target.Load(); guard != nil && ctx.Err() == nil {
 			guard.stop(ownership.PermissionLost)
 		}
@@ -133,7 +150,11 @@ func (a *desktopActivity) observe(event common.Event) {
 	a.observeStateLocked(event)
 	switch event.Kind {
 	case common.MouseAbsolute, common.MouseRelative:
-		a.motion = event
+		a.motion = desktopPhysicalMotion{event: event}
+		if positioned, ok := a.observer.(interface{ PhysicalPosition() (int32, int32, bool) }); ok {
+			x, y, known := positioned.PhysicalPosition()
+			a.motion.point, a.motion.known = pointer.Point{X: int(x), Y: int(y)}, known
+		}
 		a.moves.Add(1)
 	}
 	if guard := a.target.Load(); guard != nil {

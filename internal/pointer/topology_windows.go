@@ -41,14 +41,18 @@ var monitorCallback = syscall.NewCallback(func(monitor, dc, rect, data uintptr) 
 })
 
 func (p *nativeBackend) Topology() (Topology, error) {
+	var topology Topology
+	err := p.withPhysicalCoordinates(func() error {
+		var err error
+		topology, err = p.physicalTopology()
+		return err
+	})
+	return topology, err
+}
+
+func (p *nativeBackend) physicalTopology() (Topology, error) {
 	if err := enumerateMonitors.Find(); err != nil {
 		return Topology{}, err
-	}
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	previous, _, _ := p.dpi.Call(^uintptr(3))
-	if previous != 0 {
-		defer p.dpi.Call(previous)
 	}
 	c := &monitorCollection{info: p.info}
 	token := uintptr(monitorToken.Add(1))

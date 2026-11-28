@@ -21,10 +21,21 @@ type stage3Pointer struct {
 	displays []pointer.Screen
 	point    atomic.Pointer[pointer.Point]
 	observed atomic.Pointer[pointer.Point]
+	updated  atomic.Pointer[pointer.Topology]
 }
 
-func (p *stage3Pointer) Screen() (pointer.Screen, error)     { return p.displays[0], nil }
-func (p *stage3Pointer) Topology() (pointer.Topology, error) { return pointer.NewTopology(p.displays) }
+func (p *stage3Pointer) Screen() (pointer.Screen, error) {
+	if topology := p.updated.Load(); topology != nil {
+		return topology.Displays[0], nil
+	}
+	return p.displays[0], nil
+}
+func (p *stage3Pointer) Topology() (pointer.Topology, error) {
+	if topology := p.updated.Load(); topology != nil {
+		return *topology, nil
+	}
+	return pointer.NewTopology(p.displays)
+}
 func (p *stage3Pointer) Position() (pointer.Point, error) {
 	point := p.point.Load()
 	p.observed.Store(point)
@@ -307,4 +318,58 @@ func TestStage3ReenableDoesNotReplayDisabledMovement(t *testing.T) {
 	}
 	c.activity.observe(common.Event{Kind: common.MouseRelative, X: 1})
 	nativeWait(t, func() bool { return p.geometry[1].hidden.Load() == 1 })
+}
+
+func TestStage3WindowsPhysicalEventPointOverridesMismatchedSystemSample(t *testing.T) {
+	p := newStage3Pair(t, "left")
+	// 模拟系统查询仍返回缩放位置，实体Hook已经给出真正的外边缘。
+	p.geometry[1].point.Store(&pointer.Point{X: 2047, Y: 500})
+	edge := pointer.Point{X: 2559, Y: 500}
+	p.activity[1].physicalPoint.Store(&edge)
+	p.activity[1].events <- common.Event{Kind: common.MouseRelative, X: 2}
+	nativeWait(t, func() bool {
+		s := p.states[1].Sharing()
+		return s.ControlPhase == string(ownership.Active) && s.ControlSource == "b-windows" && p.geometry[1].hidden.Load() == 1
+	})
+	p.checkKeyboard(t, 1)
+}
+
+func TestStage3WindowsTwentyCrossingsKeepKeyboardAndConnection(t *testing.T) {
+	p := newStage3Pair(t, "left")
+	for n := int64(1); n <= 20; n++ {
+		edge := pointer.Point{X: 2559, Y: 500}
+		p.activity[1].physicalPoint.Store(&edge)
+		p.move(t, 1, edge)
+		nativeWait(t, func() bool {
+			s := p.states[1].Sharing()
+			return s.ControlPhase == string(ownership.Active) && s.ControlSource == "b-windows"
+		})
+		p.checkKeyboard(t, 1)
+		p.capture[1].events <- common.Event{Kind: common.MouseRelative, X: -10, Sequence: 9}
+		nativeWait(t, func() bool {
+			return p.geometry[1].restored.Load() == n && p.states[0].Sharing().ControlPhase == string(ownership.Local) && p.states[1].Sharing().ControlPhase == string(ownership.Local)
+		})
+		if p.links[0].CurrentPeerControl().Err() != nil || p.links[1].CurrentPeerControl().Err() != nil {
+			t.Fatal("连续跨屏破坏连接", n)
+		}
+	}
+}
+
+func TestStage3LocalResolutionChangeDoesNotReuseOldMovement(t *testing.T) {
+	p := newStage3Pair(t, "left")
+	p.move(t, 1, pointer.Point{X: 2047, Y: 500})
+	changed, err := pointer.NewTopology([]pointer.Screen{{ID: "primary", Width: 2048, Height: 1152}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.geometry[1].updated.Store(&changed)
+	nativeWait(t, func() bool { return p.states[1].Snapshot().EdgeReady })
+	time.Sleep(350 * time.Millisecond)
+	if p.geometry[1].hidden.Load() != 0 {
+		t.Fatal("分辨率变化后重放了旧实体移动")
+	}
+	p.activity[1].events <- common.Event{Kind: common.MouseRelative, X: 1}
+	nativeWait(t, func() bool {
+		return p.geometry[1].hidden.Load() == 1 && p.states[1].Sharing().ControlPhase == string(ownership.Active)
+	})
 }

@@ -103,6 +103,8 @@ var (
 type Capturer struct {
 	keyboardSeen, keyboardInjected, keyboardUnknown atomic.Uint64
 	mouseSeen, mouseInjected, rawSeen               atomic.Uint64
+	physicalMoves                                   atomic.Uint64
+	physicalPoint                                   atomic.Pointer[nativePoint]
 	raw                                             *rawCapture
 	mu                                              sync.Mutex
 	setHook                                         *syscall.LazyProc
@@ -190,6 +192,7 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 		position := syscall.NewLazyDLL("user32.dll").NewProc("GetPhysicalCursorPos")
 		if ok, _, _ := position.Call(uintptr(unsafe.Pointer(&point))); ok != 0 {
 			c.lastPoint, c.hasLastPoint = point, true
+			c.physicalPoint.Store(&point)
 		}
 	}
 	defer func() {
@@ -298,6 +301,7 @@ func (c *Capturer) handleMouse(code uintptr, message uint32, data uintptr) uintp
 		if message == wmMouseMove {
 			event, emit := c.physicalMotion(native)
 			if emit {
+				c.physicalMoves.Add(1)
 				c.observer(event)
 			}
 			return c.next(code, uintptr(message), data)
@@ -403,7 +407,7 @@ func (c *Capturer) handleKeyboard(code uintptr, message uint32, data uintptr) ui
 }
 
 func (c *Capturer) Diagnostics() map[string]uint64 {
-	return map[string]uint64{"keyboard_messages": c.keyboardSeen.Load(), "keyboard_injected": c.keyboardInjected.Load(), "keyboard_unknown": c.keyboardUnknown.Load(), "mouse_messages": c.mouseSeen.Load(), "mouse_injected": c.mouseInjected.Load(), "raw_mouse_messages": c.rawSeen.Load()}
+	return map[string]uint64{"keyboard_messages": c.keyboardSeen.Load(), "keyboard_injected": c.keyboardInjected.Load(), "keyboard_unknown": c.keyboardUnknown.Load(), "mouse_messages": c.mouseSeen.Load(), "mouse_injected": c.mouseInjected.Load(), "raw_mouse_messages": c.rawSeen.Load(), "physical_moves": c.physicalMoves.Load()}
 }
 
 func (c *Capturer) emit(event common.Event) {

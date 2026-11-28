@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"myapp/internal/app"
 	"myapp/internal/config"
@@ -210,7 +211,13 @@ type desktopPeerDriver struct {
 	targetCounts   *peerInputCounts
 }
 
-func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, source bool, entry *pointer.Entry, emit func(common.Event) error, stopped func(bool)) error {
+func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, source bool, entry *pointer.Entry, emit func(common.Event) error, stopped func(bool)) (result error) {
+	startedAt := time.Now()
+	defer func() {
+		fields := tokenDiagnostic(token)
+		fields["source"], fields["duration_us"], fields["success"] = source, time.Since(startedAt).Microseconds(), result == nil
+		d.state.Diagnostic("原生输入准备耗时", fields)
+	}()
 	state := d.state.Sharing()
 	if state.Paused {
 		return ownership.ErrPaused
@@ -456,7 +463,11 @@ func (d *desktopPeerDriver) Activate(ctx context.Context, token ownership.Token)
 	if run.started {
 		return nil
 	}
+	hideStarted := time.Now()
 	restore, err := run.geometry.Hide(ctx)
+	fields := tokenDiagnostic(token)
+	fields["duration_us"], fields["success"] = time.Since(hideStarted).Microseconds(), err == nil
+	d.state.Diagnostic("来源光标隐藏耗时", fields)
 	if err != nil {
 		return err
 	}

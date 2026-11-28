@@ -16,18 +16,20 @@ type point struct {
 }
 
 type Injector struct {
-	mu                 sync.Mutex
-	createMouse        func(uintptr, uint32, point, uint32) uintptr
-	createKeyboard     func(uintptr, uint16, bool) uintptr
-	createScroll       func(uintptr, uint32, uint32, int32, int32, int32) uintptr
-	createEvent        func(uintptr) uintptr
-	getLocation        func(uintptr) point
-	post               func(uint32, uintptr)
-	setInteger         func(uintptr, uint32, int64)
-	release            func(uintptr)
-	preflightPost      func() bool
-	tracker            *common.Tracker
-	pressedMouseButton map[uint16]struct{}
+	mu                                sync.Mutex
+	createMouse                       func(uintptr, uint32, point, uint32) uintptr
+	createKeyboard                    func(uintptr, uint16, bool) uintptr
+	createScroll                      func(uintptr, uint32, uint32, int32, int32, int32) uintptr
+	createEvent                       func(uintptr) uintptr
+	getLocation                       func(uintptr) point
+	post                              func(uint32, uintptr)
+	setInteger                        func(uintptr, uint32, int64)
+	release                           func(uintptr)
+	preflightPost                     func() bool
+	flagsState                        func(int32) uint64
+	capsOn, capsHeld, capsInitialized bool
+	tracker                           *common.Tracker
+	pressedMouseButton                map[uint16]struct{}
 }
 
 func New() (*Injector, error) {
@@ -48,6 +50,7 @@ func New() (*Injector, error) {
 	purego.RegisterLibFunc(&injector.post, coreGraphics, "CGEventPost")
 	purego.RegisterLibFunc(&injector.setInteger, coreGraphics, "CGEventSetIntegerValueField")
 	purego.RegisterLibFunc(&injector.preflightPost, coreGraphics, "CGPreflightPostEventAccess")
+	purego.RegisterLibFunc(&injector.flagsState, coreGraphics, "CGEventSourceFlagsState")
 	purego.RegisterLibFunc(&injector.release, coreFoundation, "CFRelease")
 	return injector, nil
 }
@@ -80,6 +83,24 @@ func (i *Injector) Close() error {
 
 func (i *Injector) injectLocked(event common.Event) error {
 	var nativeEvent uintptr
+	capsEvent := (event.Kind == common.KeyDown || event.Kind == common.KeyUp) && event.Code == 57
+	capsNext := i.capsOn
+	if capsEvent {
+		if event.Kind == common.KeyUp {
+			i.capsHeld = false
+			return nil
+		}
+		if i.capsHeld {
+			return nil
+		}
+		if !i.capsInitialized {
+			if i.flagsState != nil {
+				i.capsOn = i.flagsState(0)&(1<<16) != 0
+			}
+			i.capsInitialized = true
+		}
+		capsNext = !i.capsOn
+	}
 	switch event.Kind {
 	case common.MouseAbsolute, common.MouseRelative:
 		location := point{X: float64(event.X), Y: float64(event.Y)}
@@ -114,7 +135,11 @@ func (i *Injector) injectLocked(event common.Event) error {
 		if !ok {
 			return errors.New("macOS 暂不支持此按键")
 		}
-		nativeEvent = i.createKeyboard(0, keyCode, event.Kind == common.KeyDown)
+		down := event.Kind == common.KeyDown
+		if capsEvent {
+			down = capsNext
+		}
+		nativeEvent = i.createKeyboard(0, keyCode, down)
 	default:
 		return errors.New("macOS 不支持该输入事件")
 	}
@@ -124,7 +149,11 @@ func (i *Injector) injectLocked(event common.Event) error {
 	i.setInteger(nativeEvent, eventSourceUserData, myAppEventMarker)
 	i.post(0, nativeEvent)
 	i.release(nativeEvent)
-	i.tracker.Apply(event)
+	if capsEvent {
+		i.capsOn, i.capsHeld = capsNext, true
+	} else {
+		i.tracker.Apply(event)
+	}
 	if event.Kind == common.MouseButtonDown {
 		i.pressedMouseButton[event.Code] = struct{}{}
 	} else if event.Kind == common.MouseButtonUp {
@@ -142,6 +171,7 @@ func (i *Injector) releaseAllLocked() error {
 		}
 	}
 	clear(i.pressedMouseButton)
+	i.capsHeld, i.capsInitialized = false, false
 	return result
 }
 

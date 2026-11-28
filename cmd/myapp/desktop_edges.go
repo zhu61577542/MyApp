@@ -36,7 +36,8 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 	var lastMove uint64
 	var lastEpoch uint64
 	physicalMovement := false
-	var physicalMotion common.Event
+	var physicalMotion desktopPhysicalMotion
+	diagnostic := &edgeDiagnostic{}
 	listening := c.state.Snapshot().Role == config.RoleAgent
 	for {
 		select {
@@ -45,6 +46,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		case <-ticker.C:
 		}
 		state := c.state.Sharing()
+		diagnostic.report(c, state, screen)
 		peerEdgesReady := false
 		if len(c.links) == 1 {
 			_, peerEdgesReady = c.links[0].PeerPosition()
@@ -62,6 +64,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			}
 		}
 		if !state.EdgeEnabled && state.Target == "" {
+			diagnostic.record("edge-disabled")
 			watcher.Reset()
 			physicalMovement = false
 			if c.activity != nil {
@@ -71,14 +74,29 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			continue
 		}
 		if !time.Now().Before(nextGeometry) {
+			previousScreen := screen.Key()
+			previousValid := screen.Valid()
 			if c.activity != nil {
 				screen, screenErr = pointer.SourceScreen(c.geometry)
 			} else {
 				screen, screenErr = c.geometry.Screen()
 			}
 			nextGeometry = time.Now().Add(250 * time.Millisecond)
+			if previousValid && previousScreen != screen.Key() {
+				watcher.Reset()
+				physicalMovement = false
+				if c.activity != nil && screen.Valid() {
+					lastEpoch, lastMove = c.activity.resetUserEdges()
+				}
+			}
 		}
 		if screenErr != nil {
+			watcher.Reset()
+			physicalMovement = false
+			if c.activity != nil {
+				lastEpoch, lastMove = c.activity.resetUserEdges()
+			}
+			diagnostic.record("geometry-error")
 			c.mu.Lock()
 			if c.run != nil {
 				c.run.cancel()
@@ -121,6 +139,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		}
 		state = c.state.Sharing()
 		if !state.EdgeEnabled || state.Paused || state.Target != "" || state.PeerMode && state.ControlPhase != string(ownership.Local) {
+			diagnostic.record("control-gated")
 			watcher.Reset()
 			if c.activity != nil {
 				lastMove = c.activity.edgeBaseline.Load()
@@ -137,6 +156,7 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			ready, failure := c.activity.ready, c.activity.err
 			c.activity.mu.Unlock()
 			if !ready {
+				diagnostic.record("listener-not-ready")
 				watcher.Reset()
 				message := ""
 				if failure != nil {
@@ -154,9 +174,28 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 		}
 		point, err := c.geometry.Position()
 		if err != nil {
+			diagnostic.record("position-error")
 			c.state.ReportEdge(false, "读取本机指针失败", err.Error())
 			continue
 		}
+		diagnostic.positionSource = "system"
+		if c.activity != nil && physicalMovement && physicalMotion.known {
+			physicalPoint := physicalMotion.point
+			if screen.Contains(physicalPoint) {
+				diagnostic.positionSource = "physical-event"
+				if physicalPoint != point {
+					diagnostic.positionDifferences++
+				}
+				point = physicalPoint
+			} else {
+				diagnostic.record("physical-position-outside-screen")
+				watcher.Reset()
+				physicalMovement = false
+				c.state.ReportEdge(false, "实体鼠标位置与显示器布局不一致", "请重新移动鼠标后重试")
+				continue
+			}
+		}
+		diagnostic.position(point, screen)
 		neighbors := make(map[string]string)
 		for index, peer := range c.peers {
 			if c.links[index].RemoteScreen().Screen.Valid() {
@@ -166,11 +205,14 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 					continue
 				}
 				neighbors[positions[peer.ID]] = peer.ID
+				diagnostic.side = positions[peer.ID]
 			}
 		}
 		if len(neighbors) == 0 {
+			diagnostic.record("neighbor-not-ready")
 			c.state.ReportEdge(false, "等待对端显示器布局", captureFailure)
 		} else if !screen.Contains(point) {
+			diagnostic.record("outside-source-screen")
 			c.state.ReportEdge(false, "请将鼠标移回本机主屏", captureFailure)
 		} else {
 			status := "边缘监视已就绪"
@@ -180,14 +222,15 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			c.state.ReportEdge(true, status, captureFailure)
 		}
 		if c.activity != nil && !physicalMovement {
+			diagnostic.record("no-physical-movement")
 			continue
 		}
 		var id string
 		var entry pointer.Entry
 		var hit bool
 		if c.activity != nil {
-			dx, dy := int(physicalMotion.X), int(physicalMotion.Y)
-			if physicalMotion.Kind == common.MouseAbsolute {
+			dx, dy := int(physicalMotion.event.X), int(physicalMotion.event.Y)
+			if physicalMotion.event.Kind == common.MouseAbsolute {
 				dx, dy = 0, 0
 			}
 			id, entry, hit = watcher.ObservePhysical(point, screen, neighbors, c.edgeDelay, time.Now(), dx, dy)
@@ -195,9 +238,11 @@ func (c *desktopCapture) runEdges(ctx context.Context) error {
 			id, entry, hit = watcher.Observe(point, screen, neighbors, c.edgeDelay, time.Now())
 		}
 		if !hit {
+			diagnostic.record("edge-not-triggered")
 			continue
 		}
 		request, done := context.WithTimeout(ctx, 8*time.Second)
+		diagnostic.record("edge-triggered")
 		physicalMovement = false
 		c.state.Diagnostic("跨屏申请", map[string]any{"side": entry.Side})
 		c.state.ReportEdge(false, "正在准备跨屏", "")

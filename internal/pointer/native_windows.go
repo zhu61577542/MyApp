@@ -25,25 +25,56 @@ type monitorInfo struct {
 	Monitor, Work nativeRect
 	Flags         uint32
 }
-type nativeBackend struct{ position, warp, monitor, info, dpi *syscall.LazyProc }
+type nativeBackend struct {
+	monitor, info, dpi *syscall.LazyProc
+	cursorRead         func(*nativePoint) error
+	cursorWarp         func(Point) error
+	cursorContext      func(uintptr) (uintptr, error)
+}
 
 func New() (Backend, error) {
 	user32 := syscall.NewLazyDLL("user32.dll")
-	p := &nativeBackend{position: user32.NewProc("GetPhysicalCursorPos"), warp: user32.NewProc("SetPhysicalCursorPos"), monitor: user32.NewProc("MonitorFromPoint"), info: user32.NewProc("GetMonitorInfoW"), dpi: user32.NewProc("SetThreadDpiAwarenessContext")}
-	for _, proc := range []*syscall.LazyProc{p.position, p.warp, p.monitor, p.info, p.dpi} {
+	position, warp := user32.NewProc("GetPhysicalCursorPos"), user32.NewProc("SetPhysicalCursorPos")
+	p := &nativeBackend{monitor: user32.NewProc("MonitorFromPoint"), info: user32.NewProc("GetMonitorInfoW"), dpi: user32.NewProc("SetThreadDpiAwarenessContext")}
+	for _, proc := range []*syscall.LazyProc{position, warp, p.monitor, p.info, p.dpi} {
 		if err := proc.Find(); err != nil {
 			return nil, err
 		}
 	}
+	p.cursorRead = func(point *nativePoint) error {
+		ok, _, err := position.Call(uintptr(unsafe.Pointer(point)))
+		if ok == 0 {
+			return fmt.Errorf("读取 Windows 光标失败: %v", err)
+		}
+		return nil
+	}
+	p.cursorWarp = func(point Point) error {
+		ok, _, err := warp.Call(uintptr(int32(point.X)), uintptr(int32(point.Y)))
+		if ok == 0 {
+			return fmt.Errorf("恢复 Windows 光标位置失败: %v", err)
+		}
+		return nil
+	}
+	p.cursorContext = func(context uintptr) (uintptr, error) {
+		previous, _, err := p.dpi.Call(context)
+		if previous == 0 {
+			return 0, fmt.Errorf("设置 Windows 光标 DPI 上下文失败: %v", err)
+		}
+		return previous, nil
+	}
 	return p, nil
 }
 func (p *nativeBackend) Screen() (Screen, error) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	previous, _, _ := p.dpi.Call(^uintptr(3))
-	if previous != 0 {
-		defer p.dpi.Call(previous)
-	}
+	var screen Screen
+	err := p.withPhysicalCoordinates(func() error {
+		var err error
+		screen, err = p.physicalScreen()
+		return err
+	})
+	return screen, err
+}
+
+func (p *nativeBackend) physicalScreen() (Screen, error) {
 	monitor, _, _ := p.monitor.Call(0, 1)
 	info := monitorInfo{Size: uint32(unsafe.Sizeof(monitorInfo{}))}
 	ok, _, err := p.info.Call(monitor, uintptr(unsafe.Pointer(&info)))
@@ -58,20 +89,29 @@ func (p *nativeBackend) Screen() (Screen, error) {
 }
 func (p *nativeBackend) Position() (Point, error) {
 	var point nativePoint
-	ok, _, err := p.position.Call(uintptr(unsafe.Pointer(&point)))
-	if ok == 0 {
-		return Point{}, err
-	}
-	return Point{int(point.X), int(point.Y)}, nil
+	err := p.withPhysicalCoordinates(func() error { return p.cursorRead(&point) })
+	return Point{int(point.X), int(point.Y)}, err
 }
 func (p *nativeBackend) Warp(point Point) error {
-	cancel := common.ExpectCursorWarp(int32(point.X), int32(point.Y))
-	ok, _, err := p.warp.Call(uintptr(int32(point.X)), uintptr(int32(point.Y)))
-	if ok == 0 {
-		cancel()
+	return p.withPhysicalCoordinates(func() error {
+		cancel := common.ExpectCursorWarp(int32(point.X), int32(point.Y))
+		err := p.cursorWarp(point)
+		if err != nil {
+			cancel()
+		}
+		return err
+	})
+}
+
+func (p *nativeBackend) withPhysicalCoordinates(action func() error) (result error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	previous, err := p.cursorContext(^uintptr(3))
+	if err != nil {
 		return err
 	}
-	return nil
+	defer func() { _, err := p.cursorContext(previous); result = errors.Join(result, err) }()
+	return action()
 }
 
 func (p *nativeBackend) Hide(ctx context.Context) (func() error, error) {
