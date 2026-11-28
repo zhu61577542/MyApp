@@ -311,6 +311,11 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 	if entry != nil && !state.EdgeEnabled {
 		return errors.New("跨屏切换已关闭")
 	}
+	scaler, err := common.NewScaler(state.InputSettings)
+	if err != nil {
+		return err
+	}
+	d.state.Diagnostic("来源键鼠速度", map[string]any{"pointer_percent": state.InputSettings.PointerPercent, "scroll_percent": state.InputSettings.ScrollPercent})
 	geometry, err := d.geometry()
 	if err != nil {
 		return err
@@ -372,7 +377,7 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 			}
 			return emergency(event)
 		}
-		handler := func(_ context.Context, event common.Event) error {
+		forward := func(event common.Event) error {
 			if travel != nil && event.Kind == common.MouseRelative {
 				point, back := travel.Move(int(event.X), int(event.Y))
 				if back {
@@ -403,6 +408,7 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 			}
 			return err
 		}
+		handler := func(_ context.Context, event common.Event) error { return scaler.Forward(event, forward) }
 		result := captureQueuedAfter(ctx, capturer, handler, func() { once.Do(func() { close(run.ready) }) }, run.start, filter)
 		run.mu.Lock()
 		run.err = result

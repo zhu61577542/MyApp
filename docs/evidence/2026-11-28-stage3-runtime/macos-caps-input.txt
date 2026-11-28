@@ -1,0 +1,15 @@
+=== RUN   TestCapsLockTapProducesOneLatchedTransitionAndNoCleanupToggle
+--- PASS: TestCapsLockTapProducesOneLatchedTransitionAndNoCleanupToggle (0.00s)
+=== RUN   TestCapsLockCreateFailureDoesNotCommitOrFlipDuringCleanup
+--- PASS: TestCapsLockCreateFailureDoesNotCommitOrFlipDuringCleanup (0.00s)
+=== RUN   TestMacNativeCapsEventFactoryWithoutPosting
+    caps_factory_darwin_test.go:33: 未投递的Caps事件：down=true type=12 alphaShift=true
+    caps_factory_darwin_test.go:33: 未投递的Caps事件：down=false type=12 alphaShift=false
+--- PASS: TestMacNativeCapsEventFactoryWithoutPosting (0.03s)
+=== RUN   TestMyAppInjectionPassesThroughWithoutCaptureOrModifierChanges
+--- PASS: TestMyAppInjectionPassesThroughWithoutCaptureOrModifierChanges (0.00s)
+=== RUN   TestAllInjectedKindsAndReleasesCarryMarker
+--- PASS: TestAllInjectedKindsAndReleasesCarryMarker (0.00s)
+=== RUN   TestHeldModifiersSeedCorrectReleaseWithoutTypingOrdinaryKeys
+--- PASS: TestHeldModifiersSeedCorrectReleaseWithoutTypingOrdinaryKeys (0.00s)
+PASS

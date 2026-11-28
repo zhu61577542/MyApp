@@ -1,0 +1,39 @@
+=== RUN   TestActivityObserverFailureClosesGateAndIsJoined
+--- PASS: TestActivityObserverFailureClosesGateAndIsJoined (0.01s)
+=== RUN   TestTakeoverMotionSurvivesRecoveryOnce
+=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/false
+=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/true
+--- PASS: TestTakeoverMotionSurvivesRecoveryOnce (0.00s)
+    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/false (0.00s)
+    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/true (0.00s)
+=== RUN   TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure
+--- PASS: TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure (0.00s)
+=== RUN   TestEdgeDiagnosticsExposeIdleGateWithoutInputContent
+--- PASS: TestEdgeDiagnosticsExposeIdleGateWithoutInputContent (0.00s)
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left
+=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right
+--- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover (0.50s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left (0.30s)
+    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right (0.20s)
+=== RUN   TestStage3ReceivedCursorCannotTriggerAutomaticBounce
+--- PASS: TestStage3ReceivedCursorCannotTriggerAutomaticBounce (0.30s)
+=== RUN   TestStage3FinalPhysicalPositionIsSampledAfterHookReturns
+--- PASS: TestStage3FinalPhysicalPositionIsSampledAfterHookReturns (0.21s)
+=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay
+=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/left
+=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/right
+--- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay (0.40s)
+    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/left (0.15s)
+    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/right (0.25s)
+=== RUN   TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge
+--- PASS: TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge (0.28s)
+=== RUN   TestStage3ReenableDoesNotReplayDisabledMovement
+--- PASS: TestStage3ReenableDoesNotReplayDisabledMovement (0.27s)
+=== RUN   TestStage3WindowsPhysicalEventPointOverridesMismatchedSystemSample
+--- PASS: TestStage3WindowsPhysicalEventPointOverridesMismatchedSystemSample (0.23s)
+=== RUN   TestStage3WindowsTwentyCrossingsKeepKeyboardAndConnection
+--- PASS: TestStage3WindowsTwentyCrossingsKeepKeyboardAndConnection (1.20s)
+=== RUN   TestStage3LocalResolutionChangeDoesNotReuseOldMovement
+--- PASS: TestStage3LocalResolutionChangeDoesNotReuseOldMovement (0.58s)
+PASS

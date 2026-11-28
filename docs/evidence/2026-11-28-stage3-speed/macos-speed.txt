@@ -1,0 +1,13 @@
+=== RUN   TestScalerPreservesSmallSignedMotionAndSeparateScroll
+--- PASS: TestScalerPreservesSmallSignedMotionAndSeparateScroll (0.00s)
+=== RUN   TestScalerScrollChunksStayValidAndStopOnFailure
+--- PASS: TestScalerScrollChunksStayValidAndStopOnFailure (0.00s)
+=== RUN   TestScalerDoesNotChangeKeysButtonsAbsoluteOrRelease
+--- PASS: TestScalerDoesNotChangeKeysButtonsAbsoluteOrRelease (0.00s)
+=== RUN   TestScalerSaturatesMotionAndRejectsInvalidSettings
+--- PASS: TestScalerSaturatesMotionAndRejectsInvalidSettings (0.00s)
+=== RUN   TestInputSettingsDefaultRoundTripAndFailurePreservesOld
+--- PASS: TestInputSettingsDefaultRoundTripAndFailurePreservesOld (0.02s)
+=== RUN   TestInputSettingsRejectCorruptAndUnsupportedFile
+--- PASS: TestInputSettingsRejectCorruptAndUnsupportedFile (0.00s)
+PASS

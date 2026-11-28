@@ -1,0 +1,18 @@
+=== RUN   TestPhysicalEdgeReentryRequiresOutwardIntent
+=== RUN   TestPhysicalEdgeReentryRequiresOutwardIntent/right
+=== RUN   TestPhysicalEdgeReentryRequiresOutwardIntent/left
+=== RUN   TestPhysicalEdgeReentryRequiresOutwardIntent/up
+=== RUN   TestPhysicalEdgeReentryRequiresOutwardIntent/down
+--- PASS: TestPhysicalEdgeReentryRequiresOutwardIntent (0.00s)
+    --- PASS: TestPhysicalEdgeReentryRequiresOutwardIntent/right (0.00s)
+    --- PASS: TestPhysicalEdgeReentryRequiresOutwardIntent/left (0.00s)
+    --- PASS: TestPhysicalEdgeReentryRequiresOutwardIntent/up (0.00s)
+    --- PASS: TestPhysicalEdgeReentryRequiresOutwardIntent/down (0.00s)
+=== RUN   TestMacRuntimeTopologyUsesGlobalCoordinatesAndFiltersMirrors
+--- PASS: TestMacRuntimeTopologyUsesGlobalCoordinatesAndFiltersMirrors (0.00s)
+=== RUN   TestMacRuntimeTopologyRejectsUnstableOrInvalidDisplays
+--- PASS: TestMacRuntimeTopologyRejectsUnstableOrInvalidDisplays (0.00s)
+=== RUN   TestMacNativeTopologyReadOnly
+    topology_native_darwin_test.go:29: 只读查询通过：1台有效显示器，桌面范围1470x956；未安装Hook或操作光标
+--- PASS: TestMacNativeTopologyReadOnly (0.05s)
+PASS

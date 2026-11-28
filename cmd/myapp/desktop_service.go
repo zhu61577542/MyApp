@@ -19,6 +19,7 @@ import (
 
 	"myapp/internal/config"
 	"myapp/internal/desktop"
+	"myapp/internal/input"
 	"myapp/internal/instance"
 )
 
@@ -48,6 +49,9 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 		cfg.Files.Cache = filepath.Join(filepath.Dir(*configPath), "cache", "files")
 	}
 	state := desktop.New(cfg, local.DeviceID)
+	if err := state.ConfigureInput(input.SettingsPath(*configPath)); err != nil {
+		return err
+	}
 	ctx = desktop.WithSession(ctx, state)
 	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
 		ctx = withDesktopPeer(ctx, state)

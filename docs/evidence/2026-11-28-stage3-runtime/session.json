@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-28",
+  "version": "0.1.16-alpha-stage3",
+  "sourceCommit": "bf4c0bc8",
+  "status": "用户确认快速触边与CapsLock正常；移动偏快、滚轮偏慢，第三阶段继续修复",
+  "macApp": "/Users/zhuguoqing/MyApp/work/peer-stage3-runtime-v16-ui/MyApp.app",
+  "macLogPath": "/Users/zhuguoqing/Library/Application Support/MyApp/logs/myapp.log",
+  "macLogOffset": 682476,
+  "windows": {
+    "delivered": true,
+    "version": "MyApp 0.1.16-alpha-stage3 commit=bf4c0bc8 protocol=1.0",
+    "sha256": "0b1f110d1ecd8b3af13ba81f723e4d2d17c7a7e6883ca6628eefc7c87abdd0e1",
+    "exeSha256": "97cea9d50aa765412838a382adbde995b59877b3e342325a60267b14583bd6df",
+    "guiSubsystem": 2,
+    "guiStarted": false,
+    "launcher": "E:\\test\\MyApp-0.1.16-alpha-stage3\\app\\Launch-in-E-test.ps1",
+    "profile": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile",
+    "programLog": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile\\AppData\\Roaming\\MyApp\\logs\\myapp.log",
+    "logBytes": 4004683,
+    "existingProcesses": [
+      {
+        "ProcessId": 14932,
+        "ExecutablePath": "E:\\test\\MyApp-0.1.15-alpha-stage3\\app\\MyApp.exe"
+      },
+      {
+        "ProcessId": 24384,
+        "ExecutablePath": "E:\\test\\MyApp-0.1.15-alpha-stage3\\app\\MyApp.exe"
+      }
+    ]
+  },
+  "checks": {
+    "dockerRaceAndVet": "passed",
+    "guiBuild": "passed",
+    "macSignature": "verified",
+    "macNativeGeometryAndInput": "passed",
+    "windowsNativeSuites": 3,
+    "geometryMatrixCases": 64,
+    "repeatedReverseCrossings": 20
+  },
+  "userAcceptanceConfirmed": false,
+  "stageFourStarted": false,
+  "manualCompatibilityNote": "本轮允许Mac 0.1.15保持运行搭配Windows 0.1.16；补丁只影响Windows实体拟落点复核，最终结果以实际进程和用户反馈记录。",
+  "recording": [
+    "连接与控制状态",
+    "申请和停止原因",
+    "阶段耗时",
+    "输入数量"
+  ],
+  "excluded": [
+    "按键内容与键码",
+    "剪贴板正文",
+    "原始指针轨迹",
+    "屏幕录像"
+  ],
+  "userFeedback": {
+    "fastEdge": "passed",
+    "capsLock": "passed",
+    "pointer": "Windows控制Mac偏快",
+    "scroll": "Windows控制Mac偏慢",
+    "comparison": "不同输入设备"
+  }
+}

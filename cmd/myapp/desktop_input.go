@@ -399,6 +399,10 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 	if c.hub == nil {
 		return errors.New("对端未协商双向能力，请更新两端软件")
 	}
+	scaler, err := common.NewScaler(state.InputSettings)
+	if err != nil {
+		return err
+	}
 	if err := c.stopLocked(ctx); err != nil {
 		return err
 	}
@@ -494,10 +498,7 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 			}()
 			return nil
 		})
-		handler := func(eventCtx context.Context, event common.Event) error {
-			if consumed, err := choose(event); consumed || err != nil {
-				return err
-			}
+		forward := func(eventCtx context.Context, event common.Event) error {
 			if travel != nil && event.Kind == common.MouseRelative {
 				point, back := travel.Move(int(event.X), int(event.Y))
 				if back {
@@ -518,6 +519,12 @@ func (c *desktopCapture) startAt(ctx context.Context, id string, entry *pointer.
 			c.sequence++
 			event.Sequence = c.sequence
 			return c.hub.SendInput(eventCtx, event)
+		}
+		handler := func(eventCtx context.Context, event common.Event) error {
+			if consumed, err := choose(event); consumed || err != nil {
+				return err
+			}
+			return scaler.Forward(event, func(event common.Event) error { return forward(eventCtx, event) })
 		}
 		result := captureQueuedAfter(captureCtx, capturer, handler, onReady, startSending, emergency)
 		cancel()

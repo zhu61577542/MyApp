@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"myapp/internal/config"
+	"myapp/internal/input"
 )
 
 const Version = 1
@@ -44,31 +45,33 @@ func (t Task) Active() bool {
 }
 
 type Snapshot struct {
-	PeerEdgesReady bool        `json:"peer_edges_ready,omitempty"`
-	Revision       uint64      `json:"revision"`
-	Phase          string      `json:"phase"`
-	DeviceID       string      `json:"device_id"`
-	Role           config.Role `json:"role"`
-	Target         string      `json:"target"`
-	Paused         bool        `json:"paused"`
-	Text           bool        `json:"text"`
-	Files          bool        `json:"files"`
-	Accepting      bool        `json:"accepting"`
-	EdgeEnabled    bool        `json:"edge_enabled"`
-	EdgeReady      bool        `json:"edge_ready"`
-	EdgeStatus     string      `json:"edge_status,omitempty"`
-	EdgeError      string      `json:"edge_error,omitempty"`
-	Attempt        int         `json:"attempt"`
-	Error          string      `json:"error,omitempty"`
-	Peers          []Peer      `json:"peers"`
-	Tasks          []Task      `json:"tasks"`
-	PeerMode       bool        `json:"peer_mode,omitempty"`
-	ControlPhase   string      `json:"control_phase,omitempty"`
-	ControlSource  string      `json:"control_source,omitempty"`
-	ControlTarget  string      `json:"control_target,omitempty"`
+	InputSettings  input.Settings `json:"input_settings"`
+	PeerEdgesReady bool           `json:"peer_edges_ready,omitempty"`
+	Revision       uint64         `json:"revision"`
+	Phase          string         `json:"phase"`
+	DeviceID       string         `json:"device_id"`
+	Role           config.Role    `json:"role"`
+	Target         string         `json:"target"`
+	Paused         bool           `json:"paused"`
+	Text           bool           `json:"text"`
+	Files          bool           `json:"files"`
+	Accepting      bool           `json:"accepting"`
+	EdgeEnabled    bool           `json:"edge_enabled"`
+	EdgeReady      bool           `json:"edge_ready"`
+	EdgeStatus     string         `json:"edge_status,omitempty"`
+	EdgeError      string         `json:"edge_error,omitempty"`
+	Attempt        int            `json:"attempt"`
+	Error          string         `json:"error,omitempty"`
+	Peers          []Peer         `json:"peers"`
+	Tasks          []Task         `json:"tasks"`
+	PeerMode       bool           `json:"peer_mode,omitempty"`
+	ControlPhase   string         `json:"control_phase,omitempty"`
+	ControlSource  string         `json:"control_source,omitempty"`
+	ControlTarget  string         `json:"control_target,omitempty"`
 }
 
 type Command struct {
+	Input   *input.Settings   `json:"input_settings,omitempty"`
 	Version int               `json:"version"`
 	ID      uint64            `json:"id"`
 	Action  string            `json:"action"`
@@ -87,6 +90,7 @@ type Message struct {
 type Handler func(context.Context, Command) error
 
 type Session struct {
+	inputPath          string
 	commandMu          sync.Mutex
 	mu                 sync.Mutex
 	state              Snapshot
@@ -102,11 +106,23 @@ type Session struct {
 }
 
 func New(cfg config.Config, id string) *Session {
-	s := &Session{state: Snapshot{Phase: "starting", DeviceID: id, Role: cfg.Role, Text: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Accepting: true, EdgeEnabled: cfg.Role == config.RoleController}, tasks: make(map[string]Task), taskActions: make(map[string]Handler), senders: make(map[string]func([]string) error)}
+	s := &Session{state: Snapshot{InputSettings: input.DefaultSettings(), Phase: "starting", DeviceID: id, Role: cfg.Role, Text: cfg.Clipboard.TextEnabled, Files: cfg.Files.Enabled, Accepting: true, EdgeEnabled: cfg.Role == config.RoleController}, tasks: make(map[string]Task), taskActions: make(map[string]Handler), senders: make(map[string]func([]string) error)}
 	for _, p := range cfg.Peers {
 		s.state.Peers = append(s.state.Peers, Peer{ID: p.ID, Address: p.Address, Name: p.ID, Status: "offline"})
 	}
 	return s
+}
+
+func (s *Session) ConfigureInput(path string) error {
+	s.commandMu.Lock()
+	defer s.commandMu.Unlock()
+	settings, err := input.LoadSettings(path)
+	if err != nil {
+		return err
+	}
+	s.inputPath = path
+	s.Update(func(state *Snapshot) { state.InputSettings = settings })
+	return nil
 }
 
 func (s *Session) Update(change func(*Snapshot)) {
@@ -144,7 +160,7 @@ func (s *Session) ReportEdge(ready bool, status, failure string) {
 func (s *Session) Sharing() Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return Snapshot{Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting, EdgeEnabled: s.state.EdgeEnabled, Target: s.state.Target, PeerMode: s.state.PeerMode, PeerEdgesReady: s.state.PeerEdgesReady, ControlPhase: s.state.ControlPhase, ControlSource: s.state.ControlSource, ControlTarget: s.state.ControlTarget, Error: s.state.Error}
+	return Snapshot{InputSettings: s.state.InputSettings, Paused: s.state.Paused, Text: s.state.Text, Files: s.state.Files, Accepting: s.state.Accepting, EdgeEnabled: s.state.EdgeEnabled, Target: s.state.Target, PeerMode: s.state.PeerMode, PeerEdgesReady: s.state.PeerEdgesReady, ControlPhase: s.state.ControlPhase, ControlSource: s.state.ControlSource, ControlTarget: s.state.ControlTarget, Error: s.state.Error}
 }
 
 func (s *Session) UpdatePeer(id string, update func(*Peer)) {
@@ -224,6 +240,17 @@ func (s *Session) Apply(ctx context.Context, command Command) error {
 	defer s.commandMu.Unlock()
 	if command.Version != Version || command.ID == 0 {
 		return errors.New("桌面命令版本或请求编号无效")
+	}
+	if command.Action == "input_settings" {
+		if command.Input == nil || s.inputPath == "" {
+			return errors.New("键鼠速度设置或保存路径无效")
+		}
+		settings := *command.Input
+		if err := input.SaveSettings(s.inputPath, settings); err != nil {
+			return err
+		}
+		s.Update(func(state *Snapshot) { state.InputSettings = settings })
+		return nil
 	}
 	s.mu.Lock()
 	handler := s.handler

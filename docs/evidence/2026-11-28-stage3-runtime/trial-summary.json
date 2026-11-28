@@ -1,0 +1,62 @@
+{
+  "candidate": {
+    "samples": [
+      126,
+      132,
+      110,
+      132,
+      117,
+      118,
+      112,
+      117,
+      114,
+      117,
+      115,
+      116,
+      118,
+      125,
+      104,
+      120,
+      127,
+      103,
+      117,
+      110,
+      124,
+      124
+    ],
+    "count": 22,
+    "min": 103,
+    "max": 132,
+    "median": 117
+  },
+  "v15": {
+    "samples": [
+      81,
+      74,
+      75,
+      95,
+      71,
+      98,
+      123,
+      69
+    ],
+    "count": 8,
+    "min": 69,
+    "max": 123,
+    "median": 78
+  },
+  "note": "同一Windows内申请至Active的时间，不是端到端光标延迟；不将不同会话采样数量用于成功率",
+  "keyboardCandidate": {
+    "sent": 465,
+    "received": 465,
+    "handled": 465,
+    "failed": 0
+  },
+  "userFeedback": {
+    "candidateWindowsCanEnterMac": true,
+    "candidateDelayNoticeable": true,
+    "windowsCapsKey": "CapsLock",
+    "macLocalCapsWorks": true
+  },
+  "v16AcceptanceConfirmed": false
+}

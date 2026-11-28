@@ -1,0 +1,22 @@
+{
+  "delivered": true,
+  "version": "MyApp 0.1.16-alpha-stage3 commit=bf4c0bc8 protocol=1.0",
+  "sha256": "0b1f110d1ecd8b3af13ba81f723e4d2d17c7a7e6883ca6628eefc7c87abdd0e1",
+  "exeSha256": "97cea9d50aa765412838a382adbde995b59877b3e342325a60267b14583bd6df",
+  "guiSubsystem": 2,
+  "guiStarted": false,
+  "launcher": "E:\\test\\MyApp-0.1.16-alpha-stage3\\app\\Launch-in-E-test.ps1",
+  "profile": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile",
+  "programLog": "E:\\test\\MyApp-0.1.6-alpha-edge\\app\\profile\\AppData\\Roaming\\MyApp\\logs\\myapp.log",
+  "logBytes": 4004683,
+  "existingProcesses": [
+    {
+      "ProcessId": 14932,
+      "ExecutablePath": "E:\\test\\MyApp-0.1.15-alpha-stage3\\app\\MyApp.exe"
+    },
+    {
+      "ProcessId": 24384,
+      "ExecutablePath": "E:\\test\\MyApp-0.1.15-alpha-stage3\\app\\MyApp.exe"
+    }
+  ]
+}

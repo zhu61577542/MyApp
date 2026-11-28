@@ -1,0 +1,27 @@
+{
+  "physicalInput": false,
+  "passed": true,
+  "results": [
+    {
+      "suite": "desktop-after.test.exe",
+      "timedOut": false,
+      "exitCode": 0,
+      "stdout": "=== RUN   TestActivityObserverFailureClosesGateAndIsJoined\n--- PASS: TestActivityObserverFailureClosesGateAndIsJoined (0.01s)\n=== RUN   TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey\n--- PASS: TestPhysicalTakeoverRejectsOldInputAndPreservesFirstLocalKey (0.00s)\n=== RUN   TestTargetCannotAttachAfterReadinessDisappears\n--- PASS: TestTargetCannotAttachAfterReadinessDisappears (0.00s)\n=== RUN   TestHeldPhysicalModifierBeforeReceivingIsNotReleased\n--- PASS: TestHeldPhysicalModifierBeforeReceivingIsNotReleased (0.00s)\n=== RUN   TestTakeoverMotionSurvivesRecoveryOnce\n=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/false\n=== RUN   TestTakeoverMotionSurvivesRecoveryOnce/true\n--- PASS: TestTakeoverMotionSurvivesRecoveryOnce (0.03s)\n    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/false (0.00s)\n    --- PASS: TestTakeoverMotionSurvivesRecoveryOnce/true (0.00s)\n=== RUN   TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure\n--- PASS: TestKeyboardDiagnosticsDistinguishInjectedRejectedAndPermissionFailure (0.00s)\n=== RUN   TestEdgeDiagnosticsExposeIdleGateWithoutInputContent\n--- PASS: TestEdgeDiagnosticsExposeIdleGateWithoutInputContent (0.00s)\n=== RUN   TestPeerSourceSpeedBeforeTravelAndFixedForLease\n=== RUN   TestPeerSourceSpeedBeforeTravelAndFixedForLease/relative\n=== RUN   TestPeerSourceSpeedBeforeTravelAndFixedForLease/edge\n--- PASS: TestPeerSourceSpeedBeforeTravelAndFixedForLease (0.00s)\n    --- PASS: TestPeerSourceSpeedBeforeTravelAndFixedForLease/relative (0.00s)\n    --- PASS: TestPeerSourceSpeedBeforeTravelAndFixedForLease/edge (0.00s)\n=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover\n=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left\n=== RUN   TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right\n--- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover (0.61s)\n    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/left (0.30s)\n    --- PASS: TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover/right (0.30s)\n=== RUN   TestStage3ReceivedCursorCannotTriggerAutomaticBounce\n--- PASS: TestStage3ReceivedCursorCannotTriggerAutomaticBounce (0.30s)\n=== RUN   TestStage3FinalPhysicalPositionIsSampledAfterHookReturns\n--- PASS: TestStage3FinalPhysicalPositionIsSampledAfterHookReturns (0.21s)\n=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay\n=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/left\n=== RUN   TestStage3WindowsReturnLandsOnRealSourceDisplay/right\n--- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay (0.50s)\n    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/left (0.25s)\n    --- PASS: TestStage3WindowsReturnLandsOnRealSourceDisplay/right (0.25s)\n=== RUN   TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge\n--- PASS: TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge (0.28s)\n=== RUN   TestStage3ReenableDoesNotReplayDisabledMovement\n--- PASS: TestStage3ReenableDoesNotReplayDisabledMovement (0.27s)\n=== RUN   TestStage3WindowsPhysicalEventPointOverridesMismatchedSystemSample\n--- PASS: TestStage3WindowsPhysicalEventPointOverridesMismatchedSystemSample (0.13s)\n=== RUN   TestStage3WindowsTwentyCrossingsKeepKeyboardAndConnection\n--- PASS: TestStage3WindowsTwentyCrossingsKeepKeyboardAndConnection (1.20s)\n=== RUN   TestStage3LocalResolutionChangeDoesNotReuseOldMovement\n--- PASS: TestStage3LocalResolutionChangeDoesNotReuseOldMovement (0.58s)\n=== RUN   TestStage3WindowsOutwardOvershootWaitsForClippedSystemPosition\n--- PASS: TestStage3WindowsOutwardOvershootWaitsForClippedSystemPosition (0.23s)\n=== RUN   TestStage3WindowsInvalidHookPositionCannotInventEdge\n--- PASS: TestStage3WindowsInvalidHookPositionCannotInventEdge (0.24s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "suite": "speed-after.test.exe",
+      "timedOut": false,
+      "exitCode": 0,
+      "stdout": "=== RUN   TestScalerPreservesSmallSignedMotionAndSeparateScroll\n--- PASS: TestScalerPreservesSmallSignedMotionAndSeparateScroll (0.00s)\n=== RUN   TestScalerScrollChunksStayValidAndStopOnFailure\n--- PASS: TestScalerScrollChunksStayValidAndStopOnFailure (0.00s)\n=== RUN   TestScalerDoesNotChangeKeysButtonsAbsoluteOrRelease\n--- PASS: TestScalerDoesNotChangeKeysButtonsAbsoluteOrRelease (0.00s)\n=== RUN   TestScalerSaturatesMotionAndRejectsInvalidSettings\n--- PASS: TestScalerSaturatesMotionAndRejectsInvalidSettings (0.00s)\n=== RUN   TestInputSettingsDefaultRoundTripAndFailurePreservesOld\n--- PASS: TestInputSettingsDefaultRoundTripAndFailurePreservesOld (0.14s)\n=== RUN   TestInputSettingsRejectCorruptAndUnsupportedFile\n--- PASS: TestInputSettingsRejectCorruptAndUnsupportedFile (0.00s)\nPASS\n",
+      "stderr": ""
+    },
+    {
+      "suite": "session-after.test.exe",
+      "timedOut": false,
+      "exitCode": 0,
+      "stdout": "=== RUN   TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected\n--- PASS: TestInputSettingsPersistBeforeUpdateAndWorkWhileDisconnected (0.14s)\nPASS\n",
+      "stderr": ""
+    }
+  ]
+}

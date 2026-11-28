@@ -1,0 +1,1 @@
+ok  	myapp/cmd/myapp	5.467s

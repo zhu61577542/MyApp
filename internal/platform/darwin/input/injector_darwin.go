@@ -129,7 +129,8 @@ func (i *Injector) injectLocked(event common.Event) error {
 		i.release(current)
 		nativeEvent = i.createMouse(0, eventType, location, button)
 	case common.MouseScroll:
-		nativeEvent = i.createScroll(0, 0, 2, event.Y, event.X, 0)
+		const scrollUnitLine = 1
+		nativeEvent = i.createScroll(0, scrollUnitLine, 2, event.Y, event.X, 0)
 	case common.KeyDown, common.KeyUp:
 		keyCode, ok := macKeyCodes[event.Code]
 		if !ok {
