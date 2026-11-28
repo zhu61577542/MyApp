@@ -87,15 +87,18 @@ type Message struct {
 type Handler func(context.Context, Command) error
 
 type Session struct {
-	commandMu   sync.Mutex
-	mu          sync.Mutex
-	state       Snapshot
-	handler     Handler
-	bindID      uint64
-	tasks       map[string]Task
-	taskActions map[string]Handler
-	senders     map[string]func([]string) error
-	stopPending map[string]bool
+	commandMu          sync.Mutex
+	mu                 sync.Mutex
+	state              Snapshot
+	handler            Handler
+	bindID             uint64
+	tasks              map[string]Task
+	taskActions        map[string]Handler
+	senders            map[string]func([]string) error
+	stopPending        map[string]bool
+	diagnosticMu       sync.Mutex
+	diagnostics        []Diagnostic
+	diagnosticsDropped uint64
 }
 
 func New(cfg config.Config, id string) *Session {

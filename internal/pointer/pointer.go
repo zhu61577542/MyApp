@@ -115,6 +115,15 @@ type Watcher struct {
 
 func (w *Watcher) Reset() { w.armed = false; w.last = layout.Switch{}; w.since = time.Time{} }
 func (w *Watcher) Observe(point Point, screen Screen, neighbors map[string]string, delay time.Duration, now time.Time) (string, Entry, bool) {
+	return w.observe(point, screen, neighbors, delay, now, nil)
+}
+
+// ObservePhysical 只允许新的实体移动解除入口处的防反弹限制。
+func (w *Watcher) ObservePhysical(point Point, screen Screen, neighbors map[string]string, delay time.Duration, now time.Time, dx, dy int) (string, Entry, bool) {
+	return w.observe(point, screen, neighbors, delay, now, &Point{dx, dy})
+}
+
+func (w *Watcher) observe(point Point, screen Screen, neighbors map[string]string, delay time.Duration, now time.Time, motion *Point) (string, Entry, bool) {
 	if !screen.Valid() || !screen.Contains(point) {
 		w.Reset()
 		return "", Entry{}, false
@@ -124,6 +133,10 @@ func (w *Watcher) Observe(point Point, screen Screen, neighbors map[string]strin
 		w.screen = screen.Key()
 	}
 	x, y := point.X-screen.X, point.Y-screen.Y
+	if motion != nil {
+		stationary := motion.X == 0 && motion.Y == 0
+		w.armed = w.armed || neighbors["left"] != "" && x < 2 && (motion.X < 0 || stationary) || neighbors["right"] != "" && x >= screen.Width-2 && (motion.X > 0 || stationary) || neighbors["up"] != "" && y < 2 && (motion.Y < 0 || stationary) || neighbors["down"] != "" && y >= screen.Height-2 && (motion.Y > 0 || stationary)
+	}
 	if x >= 6 && y >= 6 && x < screen.Width-6 && y < screen.Height-6 {
 		w.armed = true
 		w.last = layout.Switch{}

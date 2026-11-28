@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ type stage3Pair struct {
 	geometry    [2]*stage3Pointer
 	activity    [2]*stage3Observer
 	capture     [2]*peerNativeCapture
-	injectors   [2]*peerNativeInjector
+	injectors   [2]*stage3RecordingInjector
 	controllers [2]*desktopCapture
 }
 
@@ -63,7 +64,7 @@ func newStage3Pair(t *testing.T, windowsSide string) *stage3Pair {
 		p.geometry[i].point.Store(&pointer.Point{X: 100, Y: 500})
 		p.activity[i] = &stage3Observer{events: make(chan common.Event, 32), failure: make(chan error, 1)}
 		p.capture[i] = &peerNativeCapture{events: make(chan common.Event, 32)}
-		p.injectors[i] = &peerNativeInjector{}
+		p.injectors[i] = &stage3RecordingInjector{}
 		runtime := desktopPeerFrom(localCtx)
 		runtime.driver.geometry = func() (pointer.Backend, error) { return p.geometry[i], nil }
 		runtime.driver.createCapture = func() (common.Capturer, error) { return p.capture[i], nil }
@@ -125,8 +126,7 @@ func TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover(t *testing.T) {
 			nativeWait(t, func() bool {
 				return p.geometry[1].hidden.Load() == 1 && p.states[0].Sharing().ControlPhase == string(ownership.Active)
 			})
-			p.capture[1].events <- common.Event{Kind: common.KeyDown, Code: 4, Sequence: 1}
-			nativeWait(t, func() bool { return p.injectors[0].events.Load() >= 2 })
+			p.checkKeyboard(t, 1)
 			p.activity[0].events <- common.Event{Kind: common.KeyDown, Code: 4}
 			nativeWait(t, func() bool {
 				return p.geometry[1].restored.Load() == 1 && p.states[0].Sharing().ControlPhase == string(ownership.Local) && p.states[1].Sharing().ControlPhase == string(ownership.Local)
@@ -143,6 +143,7 @@ func TestStage3AutomaticCrossingBothPhysicalSourcesAndTakeover(t *testing.T) {
 			nativeWait(t, func() bool {
 				return p.geometry[0].hidden.Load() == 1 && p.states[1].Sharing().ControlPhase == string(ownership.Active)
 			})
+			p.checkKeyboard(t, 0)
 			p.activity[1].events <- common.Event{Kind: common.MouseAbsolute, X: 100, Y: 500}
 			nativeWait(t, func() bool {
 				return p.geometry[0].restored.Load() == 1 && p.states[0].Sharing().ControlPhase == string(ownership.Local)
@@ -219,4 +220,91 @@ func TestStage3WindowsReturnLandsOnRealSourceDisplay(t *testing.T) {
 			}
 		})
 	}
+}
+
+type stage3RecordingInjector struct {
+	peerNativeInjector
+	mu       sync.Mutex
+	keyboard []common.Event
+}
+
+func (i *stage3RecordingInjector) Inject(e common.Event) error {
+	if keyboardEvent(e) {
+		i.mu.Lock()
+		i.keyboard = append(i.keyboard, e)
+		i.mu.Unlock()
+	}
+	return i.peerNativeInjector.Inject(e)
+}
+func (i *stage3RecordingInjector) keyboardEvents() []common.Event {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	return append([]common.Event(nil), i.keyboard...)
+}
+func (p *stage3Pair) checkKeyboard(t *testing.T, source int) {
+	t.Helper()
+	target := p.injectors[1-source]
+	before := len(target.keyboardEvents())
+	expected := []common.Event{
+		{Kind: common.KeyDown, Code: 4}, {Kind: common.KeyUp, Code: 4},
+		{Kind: common.KeyDown, Code: 30}, {Kind: common.KeyUp, Code: 30},
+		{Kind: common.KeyDown, Code: 225}, {Kind: common.KeyDown, Code: 5},
+		{Kind: common.KeyUp, Code: 5}, {Kind: common.KeyUp, Code: 225},
+	}
+	for n, e := range expected {
+		e.Sequence = uint64(n + 1)
+		p.capture[source].events <- e
+	}
+	nativeWait(t, func() bool { return len(target.keyboardEvents()) >= before+len(expected) })
+	got := target.keyboardEvents()[before:]
+	if len(got) != len(expected) {
+		t.Fatal("键盘事件数量错误", len(got))
+	}
+	for n, e := range got {
+		if e.Kind != expected[n].Kind || e.Code != expected[n].Code {
+			t.Fatal("按下释放顺序或键映射不一致", n)
+		}
+	}
+}
+
+func TestStage3PhysicalTakeoverContinuesDirectlyAcrossLandingEdge(t *testing.T) {
+	p := newStage3Pair(t, "left")
+	p.move(t, 0, pointer.Point{X: 500, Y: 400})
+	p.move(t, 0, pointer.Point{X: 0, Y: 400})
+	nativeWait(t, func() bool { return p.states[1].Sharing().ControlPhase == string(ownership.Active) })
+	// 入口距外边缘2像素；仅一条本机朝外移动，不先回到屏幕中央。
+	p.geometry[1].point.Store(&pointer.Point{X: 2559, Y: 500})
+	p.controllers[1].activity.observe(common.Event{Kind: common.MouseRelative, X: 2})
+	nativeWait(t, func() bool {
+		s := p.states[1].Sharing()
+		return s.ControlPhase == string(ownership.Active) && s.ControlSource == "b-windows" && p.geometry[1].hidden.Load() == 1
+	})
+	p.checkKeyboard(t, 1)
+	if p.links[0].CurrentPeerControl().Err() != nil || p.links[1].CurrentPeerControl().Err() != nil {
+		t.Fatal("接续破坏连接")
+	}
+}
+
+func TestStage3ReenableDoesNotReplayDisabledMovement(t *testing.T) {
+	p := newStage3Pair(t, "left")
+	c := p.controllers[1]
+	unbind := bindDesktop(c.ctx, nil, nil, c, nil)
+	defer unbind()
+	for _, action := range []string{"edge", "pause"} {
+		disabled := action == "pause"
+		if err := p.states[1].Apply(p.ctx, desktop.Command{Version: desktop.Version, ID: 1, Action: action, Enabled: disabled}); err != nil {
+			t.Fatal(err)
+		}
+		p.geometry[1].point.Store(&pointer.Point{X: 2559, Y: 500})
+		c.activity.observe(common.Event{Kind: common.MouseRelative, X: 2})
+		if err := p.states[1].Apply(p.ctx, desktop.Command{Version: desktop.Version, ID: 2, Action: action, Enabled: !disabled}); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(30 * time.Millisecond)
+		if p.geometry[1].hidden.Load() != 0 {
+			t.Fatal("重新启用重放了停用期间的移动", action)
+		}
+	}
+	c.activity.observe(common.Event{Kind: common.MouseRelative, X: 1})
+	nativeWait(t, func() bool { return p.geometry[1].hidden.Load() == 1 })
 }

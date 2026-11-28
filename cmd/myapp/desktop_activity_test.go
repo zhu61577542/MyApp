@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -184,5 +185,32 @@ func TestHeldPhysicalModifierBeforeReceivingIsNotReleased(t *testing.T) {
 	}
 	if len(i.released) != 1 || i.released[0].Code != 225 {
 		t.Fatal("松开了接收前已按住的本机键或按钮", i.released)
+	}
+}
+
+func TestTakeoverMotionSurvivesRecoveryOnce(t *testing.T) {
+	for _, mouse := range []bool{false, true} {
+		t.Run(fmt.Sprint(mouse), func(t *testing.T) {
+			a := &desktopActivity{ready: true}
+			guard := &peerTargetGuard{stopped: func(ownership.Reason) {}}
+			if err := a.attachTarget(guard); err != nil {
+				t.Fatal(err)
+			}
+			event := common.Event{Kind: common.KeyDown, Code: 4}
+			if mouse {
+				event = common.Event{Kind: common.MouseRelative, X: 2}
+			}
+			a.observe(event)
+			a.resetEdges()
+			a.detachTarget(guard)
+			a.resetEdges()
+			_, seq, fresh := a.edgeMotion(a.edgeBaseline.Load())
+			if fresh != mouse {
+				t.Fatal("接管意图丢失或凭空产生", fresh)
+			}
+			if _, _, again := a.edgeMotion(seq); again {
+				t.Fatal("重放了接管意图")
+			}
+		})
 	}
 }

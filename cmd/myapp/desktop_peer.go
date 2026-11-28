@@ -104,6 +104,10 @@ func enablePeerDesktop(ctx context.Context, link *app.Link, cfg config.Config, i
 		phase := string(control.Phase)
 		paused := p.device.Paused()
 		if current.ControlPhase != phase || current.ControlSource != source || current.ControlTarget != target {
+			fields := tokenDiagnostic(ownership.Token{Fence: control.Fence})
+			fields["phase"], fields["reason"] = phase, control.Reason
+			fields["source_local"] = source == state.Snapshot().DeviceID
+			state.Diagnostic("控制权变化", fields)
 			p.mu.Lock()
 			activity := p.activity
 			p.mu.Unlock()
@@ -184,6 +188,7 @@ type peerCaptureRun struct {
 	returnPoint        *pointer.Point
 	restoreCursor      func() error
 	sourceScreen       pointer.Screen
+	counts             *peerInputCounts
 }
 
 type desktopPeerDriver struct {
@@ -202,6 +207,7 @@ type desktopPeerDriver struct {
 	takeover       func(ownership.Token, ownership.Reason)
 	guard          *peerTargetGuard
 	guardActivity  *desktopActivity
+	targetCounts   *peerInputCounts
 }
 
 func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, source bool, entry *pointer.Entry, emit func(common.Event) error, stopped func(bool)) error {
@@ -217,6 +223,7 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 		if err := activity.waitReady(ctx); err != nil {
 			return err
 		}
+		activity.clearEdgeIntent()
 	}
 	if !source {
 		if entry != nil && d.position != nil {
@@ -252,6 +259,8 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 		d.mu.Lock()
 		d.injector = i
 		d.targetToken = token
+		d.targetCounts = &peerInputCounts{token: token}
+		i.counts = d.targetCounts
 		guard := &peerTargetGuard{token: token, stopped: func(reason ownership.Reason) {
 			if reason == ownership.LocalTakeover {
 				d.state.ReportEdge(false, "本机实体操作已接管", "")
@@ -325,6 +334,7 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	run := &peerCaptureRun{token: token, capture: capturer, cancel: cancel, done: make(chan struct{}), ready: make(chan struct{}), start: make(chan struct{}), geometry: geometry, returnPoint: &position, sourceScreen: screen}
+	run.counts = &peerInputCounts{token: token}
 	var sourceTopology *pointer.Topology
 	if backend, ok := geometry.(pointer.TopologyBackend); ok {
 		topology, err := backend.Topology()
@@ -345,6 +355,9 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 		var once sync.Once
 		emergency := newEmergencyKeys(func() { stopped(true) })
 		filter := func(event common.Event) bool {
+			if keyboardEvent(event) {
+				run.counts.keyboardCaptured.Add(1)
+			}
 			if d.activity != nil {
 				if activity := d.activity(); activity != nil {
 					activity.observeState(event)
@@ -373,7 +386,15 @@ func (d *desktopPeerDriver) Prepare(ctx context.Context, token ownership.Token, 
 				}
 				event.Kind, event.X, event.Y = common.MouseAbsolute, int32(point.X), int32(point.Y)
 			}
-			return emit(event)
+			err := emit(event)
+			if err != nil {
+				run.counts.failed.Add(1)
+			} else if keyboardEvent(event) {
+				run.counts.keyboardSent.Add(1)
+			} else {
+				run.counts.mouseSent.Add(1)
+			}
+			return err
 		}
 		result := captureQueuedAfter(ctx, capturer, handler, func() { once.Do(func() { close(run.ready) }) }, run.start, filter)
 		run.mu.Lock()
@@ -493,10 +514,17 @@ func (d *desktopPeerDriver) Restore(ctx context.Context) error {
 		result = errors.Join(result, i.Close())
 	}
 	if result == nil {
+		if run != nil {
+			run.counts.report(d.state, true, true, run.capture)
+		}
+		if i != nil {
+			i.counts.report(d.state, false, true, nil)
+		}
 		d.mu.Lock()
 		d.run, d.injector = nil, nil
 		d.targetToken, d.entry = ownership.Token{}, nil
 		d.guard, d.guardActivity = nil, nil
+		d.targetCounts = nil
 		d.mu.Unlock()
 	}
 	return result
@@ -506,8 +534,15 @@ func (d *desktopPeerDriver) Inject(event common.Event) error {
 	d.mu.Lock()
 	i := d.injector
 	guard := d.guard
+	counts := d.targetCounts
 	d.mu.Unlock()
+	if counts != nil && keyboardEvent(event) {
+		counts.keyboardReceived.Add(1)
+	}
 	if guard != nil && guard.revoked.Load() {
+		if counts != nil && keyboardEvent(event) {
+			counts.keyboardRejected.Add(1)
+		}
 		return nil
 	}
 	if i == nil {

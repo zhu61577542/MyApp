@@ -120,6 +120,9 @@ func bindDesktop(ctx context.Context, text *clipboard.Synchronizer, files *filec
 	}
 	return state.Bind(func(commandCtx context.Context, command desktop.Command) error {
 		current := state.Snapshot()
+		if capture != nil && capture.activity != nil && (command.Action == "pause" || command.Action == "edge" || command.Action == "layout" || command.Action == "stop_control") {
+			capture.activity.resetUserEdges()
+		}
 		switch command.Action {
 		case "start_control":
 			if capture == nil {

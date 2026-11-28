@@ -33,3 +33,11 @@ Mac所有本程序注入事件（含按键释放）统一写入CGEventSourceUser
 覆盖注入标记过滤、观察模式放行实体输入、实体接管后旧事件拒绝、同名按键保护、迟到回调、监听失败和恢复退出；真实Link位置协商、旧端与旧修订拒绝；Windows主屏/扩展屏来源、负坐标、四方向最外边缘与凹口、返程落点。Go编译与测试均在Docker；原生测试只使用测试替身。人工验收双向跨屏、多屏内部往返、两端实体接管、拖拽修饰键与急停，实际键鼠操作由用户完成。Windows文件与测试只在E:\test，不做GUI自动化。
 
 API依据：Apple SDK的CGEventSource.h/CGEventTypes.h及[事件来源字段](https://developer.apple.com/documentation/coregraphics/cgeventfield/eventsourceuserdata)、[只监听选项](https://developer.apple.com/documentation/coregraphics/cgeventtapoptions/listenonly)；Windows遵循[低级鼠标Hook的回调与放行约定](https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc)。
+
+## 首轮人工反馈修复（0.1.14）
+
+首轮发现 Windows 入口距返程边缘仅2像素，而监听重新待命要求先进入6像素内部，导致拿起接收端实体鼠标直接朝外不能接续。新的实体朝外移动可解除该入口限制；普通位置采样仍保持防反弹。鼠标在系统外边缘被夹住但产生实体移动消息时，也允许一次接续。Windows监听以最近Hook位置计算物理方向，注入移动只更新参考位置；本进程恢复光标登记短时、精确、一次性排除标记，不把恢复移动当作实体接管。
+
+实体鼠标接管时的最后移动意图可跨越恢复屏障保留一次，最长3秒；只在双方回到Local后使用，新控制准备、暂停、关闭边缘或连接结束会清除。键盘接管、正常返程和远程注入不生成该意图。两个就绪状态合并为每轮一次更新。
+
+增加有界诊断队列，独立于界面快照保存触边申请结果、控制阶段与停止原因。输入按同一会话摘要及代次每2秒/结束时汇总：捕获键盘事件数、成功发送数、接收数、实际调用注入成功数、拒绝数及失败数；Windows补充原生Hook消息、注入过滤和未知映射数量。不写键码、文本、剪贴板或坐标轨迹；系统注入API返回成功不能代替目标文本框实机验收。双向回归须逐条核对字母、数字、修饰键的按下与释放顺序。

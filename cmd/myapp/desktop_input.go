@@ -33,6 +33,7 @@ type desktopInjector struct {
 	recoveryErr     error
 	onRecoveryError func(error)
 	guard           *peerTargetGuard
+	counts          *peerInputCounts
 }
 
 func (i *desktopInjector) control(_ context.Context, action string) error {
@@ -140,10 +141,17 @@ func (i *desktopInjector) endLocked() error {
 func (i *desktopInjector) Inject(event common.Event) error {
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	rejected := func() {
+		if i.counts != nil && keyboardEvent(event) {
+			i.counts.keyboardRejected.Add(1)
+		}
+	}
 	if i.guard != nil && i.guard.revoked.Load() {
+		rejected()
 		return nil
 	}
 	if !i.active {
+		rejected()
 		if i.begun {
 			return nil
 		}
@@ -151,16 +159,23 @@ func (i *desktopInjector) Inject(event common.Event) error {
 	}
 	state := i.state.Sharing()
 	if state.Paused || !state.Accepting {
+		rejected()
 		return i.endLocked()
 	}
 	check := !time.Now().Before(i.nextCheck)
 	if checker, ok := i.inner.(interface{ CanInject() bool }); check && ok && !checker.CanInject() {
+		if i.counts != nil {
+			i.counts.failed.Add(1)
+		}
 		_ = i.endLocked()
 		return errors.New("控制键鼠权限已撤销")
 	}
 	if check && i.edgeScreen != "" {
 		screen, err := pointer.ScreenWithKey(i.geometry, i.edgeScreen)
 		if err != nil || screen.Key() != i.edgeScreen {
+			if i.counts != nil {
+				i.counts.failed.Add(1)
+			}
 			_ = i.endLocked()
 			return errors.New("目标显示器布局变化，已停止控制")
 		}
@@ -168,7 +183,17 @@ func (i *desktopInjector) Inject(event common.Event) error {
 	if check {
 		i.nextCheck = time.Now().Add(250 * time.Millisecond)
 	}
-	return i.inner.Inject(event)
+	err := i.inner.Inject(event)
+	if i.counts != nil {
+		if err != nil {
+			i.counts.failed.Add(1)
+		} else if keyboardEvent(event) {
+			i.counts.keyboardInjected.Add(1)
+		} else {
+			i.counts.mouseInjected.Add(1)
+		}
+	}
+	return err
 }
 func (i *desktopInjector) ReleaseAll() error { i.mu.Lock(); defer i.mu.Unlock(); return i.endLocked() }
 func (i *desktopInjector) Close() error {

@@ -37,3 +37,38 @@ func TestPhysicalObservationFiltersInjectedEvents(t *testing.T) {
 		t.Fatal("未识别实体左键")
 	}
 }
+
+func TestPhysicalMotionTracksInjectedLandingAndFiltersWarp(t *testing.T) {
+	var c Capturer
+	if _, ok := c.physicalMotion(&mouseHookData{Point: nativePoint{2557, 100}, Flags: llMouseInjected}); ok {
+		t.Fatal("注入落点触发接管")
+	}
+	e, ok := c.physicalMotion(&mouseHookData{Point: nativePoint{2559, 100}})
+	if !ok || e.Kind != common.MouseRelative || e.X != 2 || e.Y != 0 {
+		t.Fatal("未按注入后落点计算实体方向", e)
+	}
+	cancel := common.ExpectCursorWarp(2557, 100)
+	defer cancel()
+	if _, ok := c.physicalMotion(&mouseHookData{Point: nativePoint{2557, 100}}); ok {
+		t.Fatal("程序恢复位置被当成实体移动")
+	}
+	e, ok = c.physicalMotion(&mouseHookData{Point: nativePoint{2559, 100}})
+	if !ok || e.X != 2 {
+		t.Fatal("恢复后实体方向错误", e)
+	}
+	e, ok = c.physicalMotion(&mouseHookData{Point: nativePoint{2559, 100}})
+	if !ok || e.X != 0 {
+		t.Fatal("边缘夹住后丢失实体意图")
+	}
+}
+
+func TestFirstUnseededPhysicalMotionOnlyEstablishesBaseline(t *testing.T) {
+	var c Capturer
+	if _, ok := c.physicalMotion(&mouseHookData{Point: nativePoint{2558, 100}}); ok {
+		t.Fatal("无方向基线的首移动被当成朝外")
+	}
+	e, ok := c.physicalMotion(&mouseHookData{Point: nativePoint{2557, 100}})
+	if !ok || e.X != -1 {
+		t.Fatal("朝内方向错误")
+	}
+}

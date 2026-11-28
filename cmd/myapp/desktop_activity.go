@@ -22,6 +22,8 @@ type desktopActivity struct {
 	epoch        atomic.Uint64
 	edgeBaseline atomic.Uint64
 	target       atomic.Pointer[peerTargetGuard]
+	motion       common.Event
+	pendingMove  time.Time
 }
 
 func (a *desktopActivity) resetEdges() {
@@ -29,6 +31,29 @@ func (a *desktopActivity) resetEdges() {
 	defer a.mu.Unlock()
 	a.edgeBaseline.Store(a.moves.Load())
 	a.epoch.Add(1)
+}
+
+func (a *desktopActivity) clearEdgeIntent() {
+	a.mu.Lock()
+	a.pendingMove = time.Time{}
+	a.mu.Unlock()
+}
+
+func (a *desktopActivity) resetUserEdges() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.pendingMove = time.Time{}
+	a.edgeBaseline.Store(a.moves.Load())
+	a.epoch.Add(1)
+}
+
+func (a *desktopActivity) edgeMotion(last uint64) (common.Event, uint64, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	move := a.moves.Load()
+	pending := !a.pendingMove.IsZero() && time.Since(a.pendingMove) < 3*time.Second
+	a.pendingMove = time.Time{}
+	return a.motion, move, move != last || pending
 }
 
 func (a *desktopActivity) run(ctx context.Context) {
@@ -77,6 +102,7 @@ func (a *desktopActivity) attachTarget(guard *peerTargetGuard) error {
 	if !a.target.CompareAndSwap(nil, guard) {
 		return ownership.ErrBusy
 	}
+	a.pendingMove = time.Time{}
 	return nil
 }
 
@@ -107,6 +133,7 @@ func (a *desktopActivity) observe(event common.Event) {
 	a.observeStateLocked(event)
 	switch event.Kind {
 	case common.MouseAbsolute, common.MouseRelative:
+		a.motion = event
 		a.moves.Add(1)
 	}
 	if guard := a.target.Load(); guard != nil {
@@ -138,12 +165,16 @@ func (a *desktopActivity) detachTarget(guard *peerTargetGuard) {
 	defer a.mu.Unlock()
 	guard.closed.Store(true)
 	guard.revoked.Store(true)
-	a.target.CompareAndSwap(guard, nil)
+	if a.target.CompareAndSwap(guard, nil) && guard.localTakeover.Load() && guard.mouseTakeover.Load() {
+		a.pendingMove = time.Now()
+	}
 }
 
 type peerTargetGuard struct {
 	token           ownership.Token
 	closed, revoked atomic.Bool
+	localTakeover   atomic.Bool
+	mouseTakeover   atomic.Bool
 	keys            [256]atomic.Bool
 	buttons         [8]atomic.Bool
 	stopped         func(ownership.Reason)
@@ -164,13 +195,17 @@ func (g *peerTargetGuard) observe(event common.Event) {
 		}
 	}
 	switch event.Kind {
-	case common.MouseAbsolute, common.MouseRelative, common.MouseButtonDown, common.MouseScroll, common.KeyDown:
+	case common.MouseAbsolute, common.MouseRelative:
+		g.mouseTakeover.Store(true)
+		g.stop(ownership.LocalTakeover)
+	case common.MouseButtonDown, common.MouseScroll, common.KeyDown:
 		g.stop(ownership.LocalTakeover)
 	}
 }
 
 func (g *peerTargetGuard) stop(reason ownership.Reason) {
 	if !g.closed.Load() && g.revoked.CompareAndSwap(false, true) {
+		g.localTakeover.Store(reason == ownership.LocalTakeover)
 		go func() {
 			if !g.closed.Load() {
 				g.stopped(reason)

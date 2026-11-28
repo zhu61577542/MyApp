@@ -63,6 +63,16 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 		var revision uint64
 		var edgeDiagnostic string
 		var controlDiagnostic string
+		var nextInputDiagnostic time.Time
+		flushDiagnostics := func() {
+			for _, diagnostic := range state.DrainDiagnostics() {
+				data, err := json.Marshal(diagnostic)
+				if err == nil {
+					fmt.Fprintln(stderr, "跨屏诊断："+string(data))
+				}
+			}
+		}
+		defer flushDiagnostics()
 		write := func(message desktop.Message) bool {
 			if err := encoder.Encode(message); err != nil {
 				cancel()
@@ -77,6 +87,13 @@ func runDesktopService(args []string, stdin io.Reader, stdout, stderr io.Writer)
 					return
 				}
 			case <-ticker.C:
+				if !time.Now().Before(nextInputDiagnostic) {
+					if peer := desktopPeerFrom(ctx); peer != nil {
+						peer.driver.reportInputCounts()
+					}
+					nextInputDiagnostic = time.Now().Add(2 * time.Second)
+				}
+				flushDiagnostics()
 				snapshot := state.Snapshot()
 				diagnostic := snapshot.EdgeStatus + ": " + snapshot.EdgeError
 				if snapshot.EdgeStatus != "" && diagnostic != edgeDiagnostic {

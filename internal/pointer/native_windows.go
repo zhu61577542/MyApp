@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	common "myapp/internal/input"
 	"os"
 	"os/exec"
 	"runtime"
@@ -64,8 +65,10 @@ func (p *nativeBackend) Position() (Point, error) {
 	return Point{int(point.X), int(point.Y)}, nil
 }
 func (p *nativeBackend) Warp(point Point) error {
+	cancel := common.ExpectCursorWarp(int32(point.X), int32(point.Y))
 	ok, _, err := p.warp.Call(uintptr(int32(point.X)), uintptr(int32(point.Y)))
 	if ok == 0 {
+		cancel()
 		return err
 	}
 	return nil

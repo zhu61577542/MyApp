@@ -185,6 +185,13 @@ func (c *Capturer) CaptureWithReady(ctx context.Context, handler func(common.Eve
 	c.threadID = uint32(threadID)
 	c.handler, c.callbackErr, c.sequence, c.hasLastPoint = handler, nil, 1, false
 	c.mu.Unlock()
+	if c.observer != nil {
+		var point nativePoint
+		position := syscall.NewLazyDLL("user32.dll").NewProc("GetPhysicalCursorPos")
+		if ok, _, _ := position.Call(uintptr(unsafe.Pointer(&point))); ok != 0 {
+			c.lastPoint, c.hasLastPoint = point, true
+		}
+	}
 	defer func() {
 		c.mu.Lock()
 		c.threadID, c.handler = 0, nil
@@ -282,9 +289,19 @@ func (c *Capturer) handleMouse(code uintptr, message uint32, data uintptr) uintp
 	c.mouseSeen.Add(1)
 	if native.Flags&llMouseInjected != 0 {
 		c.mouseInjected.Add(1)
+		if c.observer != nil && message == wmMouseMove {
+			c.physicalMotion(native)
+		}
 		return c.next(code, uintptr(message), data)
 	}
 	if c.observer != nil {
+		if message == wmMouseMove {
+			event, emit := c.physicalMotion(native)
+			if emit {
+				c.observer(event)
+			}
+			return c.next(code, uintptr(message), data)
+		}
 		if event, emit := physicalMouseEvent(message, native); emit {
 			c.observer(event)
 		}
